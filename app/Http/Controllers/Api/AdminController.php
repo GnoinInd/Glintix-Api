@@ -829,14 +829,29 @@ public function destroyEmployee(Request $request, $employeeId)
 // }
 
 
-// public function profile(Request $request)
-// {
-//     session_start();
-//     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-//     {
-//         $user = DB::table('users')->get();
-//     }
-// }
+public function profile(Request $request)
+{
+    session_start();
+    if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+    {
+        $username = $_SESSION["username"];
+        $dbName = $_SESSION["dbName"];
+        $user = User::where('username',$username)
+        ->where('dbName',$dbName)->first();
+        
+        if($user)
+        {
+           return response()->json(['message' => 'data found','data' => $user]);
+        }
+        else{
+            return response()->json(['message' => 'profile details not found']);
+            }
+    }
+    else 
+    {
+        return response()->json(['message' => 'Session out,pls login']);
+    }
+}
 
 
 
