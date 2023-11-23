@@ -178,7 +178,8 @@ public function logout()
             $user->save();
 
             // Create the dynamic database if not exists
-            $dbName = $validatedData['dbName'];
+            
+             $dbName = $validatedData['dbName'];
             $dbUsername = $validatedData['username'];
             $dbPassword = $validatedData['password'];
 

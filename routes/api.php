@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\EmployeeController;
 
 use App\Http\Controllers\Api\EmployeeRegistration;
+use App\Http\Controllers\Api\AssetController;
 
  use App\Http\Controllers\Api\LoanController;
 
@@ -295,6 +296,9 @@ Route::post('emp_search_yearly',[EmployeeRegistration::class,'empSearchByYear'])
 
 
 
+  Route::post('add-asset',[AssetController::class,'addAsset']);
+
+  Route::post('asset-request',[AssetController::class,'requestAsset']);
 
 
 
