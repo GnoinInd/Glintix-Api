@@ -3917,6 +3917,42 @@ public function assetAlloc(Request $request)
 
 
 
+public function allAssetRequest(Request $request)
+{
+    session_start();
+    if(isset($_SESSION['username']) &&isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    {
+        $username = $_SESSION['username'];
+        $password = $_SESSION['password'];
+        $dbName   = $_SESSION['dbName'];
+        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+        $dynamicDB = DB::connection('dynamic');
+        $totalRequest = $dynamicDB->table('asset_request')->where('status', 'pending')->count();
+        $allRequest = $dynamicDB->table('asset_request')->where('status','pending')->get();
+
+        return response()->json(['success' => true,'message' => $allRequest]);
+        
+
+
+    }
+    return response()->json(['success' => false,'message' => 'session out! pls login']);
+
+}
+
 
 
 

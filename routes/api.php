@@ -298,7 +298,8 @@ Route::post('emp_search_yearly',[EmployeeRegistration::class,'empSearchByYear'])
 
   Route::post('add-asset',[AssetController::class,'addAsset']);
 
-  Route::post('asset-request',[AssetController::class,'requestAsset']);
+  Route::post('emp-asset-request',[AssetController::class,'requestAsset']);
+  Route::post('all-asset-request',[AdminController::class,'allAssetRequest']);
 
 
 
