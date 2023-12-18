@@ -1,9 +1,6 @@
 <?php
 
 namespace App\Exports;
-
-//use Maatwebsite\Excel\Concerns\FromCollection;
-
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Illuminate\Support\Facades\Session;
@@ -13,30 +10,20 @@ use Carbon\Carbon;
 
 class ThreeMonthWiseData implements FromQuery
 {
-    
-
     protected $username;
     protected $password;
     protected $dbName;
-
-
     
     public function __construct($username,$password,$dbName)
     {
-       
-       
         $this->username = $username;
         $this->password = $password;
         $this->dbName = $dbName;
   
     }
-
-
     public function query()
   
     { 
-
-        // Set the dynamic database connection
     config(['database.connections.dynamic' => [
     'driver' => 'mysql',
     'host' => 'localhost',
@@ -51,15 +38,9 @@ class ThreeMonthWiseData implements FromQuery
 ]]);
 
         $dynamicDB = DB::connection('dynamic');
-
-        // $oneYearAgo = Carbon::now()->timezone('Asia/Kolkata')->subYear();
-
         $startDate = Carbon::now()->subMonth(3)->startOfDay();
-        
         $endDate = Carbon::now();
-   
-         return $dynamicDB->table('user')
-        ->whereBetween('created_at', [$startDate, $endDate])
+         return $dynamicDB->table('user')->whereBetween('created_at', [$startDate, $endDate])
         ->orderBy('created_at', 'desc');
     }
 

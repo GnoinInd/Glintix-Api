@@ -25,7 +25,6 @@ class YearwiseData implements FromQuery
 
     public function query()
     {
-          // Set the dynamic database connection
     config(['database.connections.dynamic' => [
         'driver' => 'mysql',
         'host' => 'localhost',
@@ -39,16 +38,10 @@ class YearwiseData implements FromQuery
         'engine' => null,
     ]]);
     
-            $dynamicDB = DB::connection('dynamic');
-    
-            // $oneYearAgo = Carbon::now()->timezone('Asia/Kolkata')->subYear();
-    
-            $startDate = Carbon::now()->subYear()->startOfDay();
-            
-            $endDate = Carbon::now();
-            
-            return $dynamicDB->table('user')
-            ->whereBetween('created_at', [$startDate, $endDate])
+            $dynamicDB = DB::connection('dynamic');    
+            $startDate = Carbon::now()->subYear()->startOfDay();   
+            $endDate = Carbon::now();  
+            return $dynamicDB->table('user')->whereBetween('created_at', [$startDate, $endDate])
             ->orderBy('created_at', 'desc');
             
     }

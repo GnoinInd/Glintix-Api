@@ -6,33 +6,23 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Exports\ThreeMonthsRecordexport;
-
 use App\Models\Client;
-//use Mail;
-// use Illuminate\Mail\Mailable;
  use Illuminate\Support\Facades\Mail;
  use App\Mail\LeaveMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Response;
-
 use Illuminate\Support\Facades\URL;
-
 use App\Http\Controllers\Api\AdminController;
-
-//use App\Http\Controllers\Api\Auth;
 use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
-
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
-//use Illuminate\Http\Response;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 use App\Models\PasswordReset;
@@ -68,15 +58,8 @@ public function register(Request $request)
         else{
             return response()->json(['status'=>'Fail','message'=>'User registration Fail']);
         }
-
-        
-
-        
-        
+ 
     }
-
-
-
 
     public function login(Request $request)
 {
@@ -85,7 +68,7 @@ public function register(Request $request)
         'password' => $request->password
     ];
     if (auth()->attempt($data)) {
-        $user = auth()->user(); // Get the authenticated user
+        $user = auth()->user(); 
         $token = $user->createToken('token_key')->accessToken;
 
        // $request->session()->put('access_token', $token);
@@ -128,7 +111,7 @@ public function logout()
         $user = Auth::user();
 
         if ($user) {
-            // Revoke the access tokens for the authenticated user
+            
             $user->tokens->each(function ($token, $key) {
                 $token->delete();
             });
@@ -136,7 +119,7 @@ public function logout()
 
             return response()->json(['message' => 'Logged out successfully'], 200);
         } else {
-            // The user is not authenticated, handle this scenario as needed
+        
             return response()->json(['message' => 'User not authenticated','user' => $user], 401);
         }
     }
@@ -155,7 +138,7 @@ public function logout()
     public function registerCompany(Request $request)
     {
         try {
-            // Validate the input data
+           
             $validatedData = $request->validate([
                 'dbName' => 'required|string|max:255',
                 'name' => 'required|string|max:255',
@@ -163,11 +146,11 @@ public function logout()
                 'username' => 'required|string|max:255',
                 'password' => 'required|string|min:6',
                 'phone' => 'required|string|max:20',
+                'company_code' => 'required',
+                'role' => 'required',
+                'total' => 'required',
             ]);
 
-           
-
-            // Save data to the default database users table
             $user = new User;
             $user->name = $validatedData['name'];
             $user->email = $validatedData['email'];
@@ -175,20 +158,18 @@ public function logout()
             // $user->password = $validatedData['password'];
             $user->dbName = $validatedData['dbName'];
             $user->username = $validatedData['username'];
+            $user->total   = $validatedData['total'];
             $user->save();
-
-            // Create the dynamic database if not exists
             
-             $dbName = $validatedData['dbName'];
+            $dbName = $validatedData['dbName'];
             $dbUsername = $validatedData['username'];
             $dbPassword = $validatedData['password'];
 
             $this->createDynamicDatabase($dbName, $dbUsername, $dbPassword);
 
-            // Connect to the dynamic database
             Config::set('database.connections.dynamic', [
                 'driver' => 'mysql',
-                'host' => 'localhost', // Set your database host
+                'host' => 'localhost',
                 'database' => $dbName,
                 'username' => $dbUsername,
                 'password' => $dbPassword,
@@ -199,22 +180,22 @@ public function logout()
                 'engine' => null,
             ]);
 
-            // Use the dynamic database connection
             $dynamicDB = DB::connection('dynamic');
-
-            // Check if the "clients" table exists, if not create it
             if (!$this->tableExists($dynamicDB, 'clients')) {
                 $this->createClientsTable($dynamicDB);
             }
-
-            // Insert the data into the "clients" table in the dynamic database
+            $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
             $clientData = [
-                'Name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'username' => $request->input('username'),
-                'password' =>$request->input('password'),
-                'phone' => $request->input('phone'),
-                'dbName' => $request->input('dbName'),
+                'name'    => $request->input('name'),
+                'email'   => $request->input('email'),
+                'username'=> $request->input('username'),
+                'password'=>$request->input('password'),
+                'phone'   => $request->input('phone'),
+                'dbName'  => $request->input('dbName'),
+                'company_code'    => $request->input('company_code'), 
+                'role'     =>  $request->input('role'),
+                'created_at' => $date,
+                'updated_at' => $date,
             ];
             $dynamicDB->table('clients')->insert($clientData);
 
@@ -225,33 +206,12 @@ public function logout()
     }
 
 
-    // private function createDynamicDatabase($dbName, $dbUsername, $dbPassword)
-    // {
-    //     // Use the default database connection to create the dynamic database
-    //     $defaultDB = DB::getDefaultConnection();
-    
-    //     // Create the database if it doesn't exist
-    //     $createDatabaseQuery = "CREATE DATABASE IF NOT EXISTS ?";
-    //     $createDatabaseBindings = [$dbName];
-    //     DB::statement($createDatabaseQuery, $createDatabaseBindings);
-    
-    //     // Grant privileges to the user for the dynamic database
-    //     $grantQuery = "GRANT ALL ON ?.* TO ?@'localhost' IDENTIFIED BY ?";
-    //     $grantBindings = [$dbName, $dbUsername, $dbPassword];
-    //     DB::statement($grantQuery, $grantBindings);
-    
-    //     // Flush privileges
-    //     DB::statement("FLUSH PRIVILEGES");
-    
-    //     // Switch back to the default database connection
-    //     DB::setDefaultConnection($defaultDB);
-    // }
     
 
 
     private function createDynamicDatabase($dbName, $dbUsername, $dbPassword)
     {
-        // Use the default database connection to create the dynamic database
+       
         $defaultDB = DB::getDefaultConnection();
         DB::statement("CREATE DATABASE IF NOT EXISTS $dbName");
         DB::statement("GRANT ALL ON $dbName.* TO '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
@@ -266,18 +226,7 @@ public function logout()
 
     private function createClientsTable($connection)
     {
-        // $connection->statement('CREATE TABLE clients (
-        //     Name VARCHAR(255),
-        //     email VARCHAR(255),
-        //     username VARCHAR(255),
-        //     password VARCHAR(255),
-        //     phone VARCHAR(20),
-        //     dbName VARCHAR(255)
-        // );');
-
-
-
-
+    
         if (!$connection->getSchemaBuilder()->hasTable('clients')) {
             $connection->getSchemaBuilder()->create('clients', function (Blueprint $table) {
                 $table->id();
@@ -287,6 +236,8 @@ public function logout()
                 $table->string('password', 255);
                 $table->string('phone', 20);
                 $table->string('dbName', 255);
+                $table->string('company_code',255);
+                $table->enum('role',['admin','subadmin'])->default('admin');
                 $table->timestamps();
             });
         }
@@ -295,70 +246,40 @@ public function logout()
     }
 
 
-
-
-
-
-
 public function logoutSession(Request $request)
 {
     session_start();
-    // Clear the session data
-
-    //unset($_SESSION['username']);
     session_unset();
-    //unset($_SESSION["username"],$_SESSION["password"],$_SESSION["dbName"]);
-    
     session_destroy();
 
-    // Return a success response
+   
     return response()->json(['message' => 'Logged out successfully'], 200);
 }
 
-
-    
-
-
-
-
-
-
 public function logincompany(Request $request)
     {
-         // Start the session
-
-      //$request->session()->start();
-
-        // Validate the input data
+        
     $validatedData = $request->validate([
         'username' => 'required|string|max:255',
         'password' => 'required|string|min:6',           
     ]);
 
-    // Find the user by username
     $user = User::where('username', $validatedData['username'])->first();
-
     if ($user && Hash::check($validatedData['password'], $user->password)) {
-        // If authentication is successful, fetch the dbName from the users table
         $dbName = $user->dbName;
-
-        // Store the user's credentials and dbName in the session
         $this->storeSessionCredentials($request, $validatedData['username'], $validatedData['password'], $dbName);
 
-        // Return a success response
         return response()->json(['success' => true, 'message' => 'Login Successfully' ], 200);
     } else {
-        // If authentication fails, return an error response
         return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
     }
 }
 
 private function storeSessionCredentials($request, $username, $password, $dbName)
 {
-    // Set database connection configuration for the dynamic database
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
-        'host' => 'localhost', // Set your database host
+        'host' => 'localhost',
         'database' => $dbName,
         'username' => $username,
         'password' => $password,
@@ -368,13 +289,6 @@ private function storeSessionCredentials($request, $username, $password, $dbName
         'strict' => true,
         'engine' => null,
     ]);
-
-    // Store the user's credentials and dbName in the session
-
-    // $request->session()->put('username', $username);
-    // $request->session()->put('password', $password);
-    // $request->session()->put('dbName', $dbName);
-
            session_start(); 
            $_SESSION["username"] = $username;
            $_SESSION["password"] = $password;
@@ -384,32 +298,6 @@ private function storeSessionCredentials($request, $username, $password, $dbName
 
 
 }
-
-
-
-
-
-
-
-
-
-
-// public function profile(Request $request)
-// {
-//     {
-//         // Retrieve the credentials from the session
-//         session_start();
-
-//         if (isset($_SESSION["username"]) && $_SESSION["password"] && $_SESSION["dbName"])
-//         {
-//              $username = $_SESSION["username"];
-//              $password = $_SESSION["password"];
-//              $dbName = $_SESSION["dbName"];
-//         }
-
- 
-// }
-
 
 public function profile(Request $request)
 {
@@ -469,18 +357,6 @@ public function forgetpassword(Request $request)
     });
 
 
-    // $to_name = 'gemsfiem@gmail.com';
-    // $to_email = 'gnoinhrms@gmail.com';
-    // $data = array('name'=>"Ogbonna Vitalis(sender_name)", "body" => "A test mail");
-
-    // Mail::send('emailsmail', $data, function($message) use ($to_name, $to_email) {
-    //     $message->to($to_email, $to_name)
-    //     ->subject('Laravel Test Mail');
-    //     $message->from('gnoinhrms@gmail.com','Test Mail');
-    //     });
-    
-    
-      
 
       $datetime = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
       PasswordReset::updateOrCreate(
@@ -505,8 +381,6 @@ public function forgetpassword(Request $request)
   {
     Log::error('Email sending error: ' . $e->getMessage());
     
-    // return response()->json(['success' => false, 'msg' => 'Email sending failed']);
-    
    return response()->json(['success' => false,'msg'=>$e->getMessage()]);
   }
 
@@ -516,26 +390,14 @@ public function forgetpassword(Request $request)
 
 
 
-
-
-
 public function resetpasswordLoad(Request $request)
     
 {
     $token = $request->token;
-
-    
-    // $resetData = PasswordReset::where('token',$request->token)->get();
     $userData = DB::table('password_resets')->where('token',$token)->get();
     
-    
-  
-    
-   
     if(isset($request->token) && count($userData) > 0)
     {
-     //$user = User::where('email',$resetData[0]['email'])->get();
-    // $userData = DB::table('password_resets')->where('token',$token)->get();
     $usersData = DB::table('password_resets')->where('token',$token)->value('email');
      
       return view('resetPassword',compact('usersData'));
@@ -546,10 +408,6 @@ public function resetpasswordLoad(Request $request)
     }
 }
 
-
-
-
-
 public function resetPassword(Request $request)
 {
     $request->validate([
@@ -557,73 +415,150 @@ public function resetPassword(Request $request)
     ]);
    $email = $request->email;
     $userUpdate = DB::table('users')->where('email',$email)->value('id');
-    //dd($userUpdate);
     $user = User::find($userUpdate);
-//    dd($user->id);
    $user->password = Hash::make($request->password);
    $user->save();
-
    PasswordReset::where('email',$email)->delete();
    return "<h1> Your Password has been reset Successfully </h1>";
     
 }
 
 
+// public function addEmployee(Request $request)
+// {
 
-
-
-
-
-
-public function addEmployee(Request $request)
-{
-
-    $validatedData = $request->validate([
-          //basic details
-        'name' => 'required',
-        'email' => 'required|email',
-        'designation' => 'required|string|min:6',
-        'address' => 'required',
-
-        // 'gender' => 'required',
-        // 'official_mail' => 'nullable',
-        // 'd.o.b' => 'required',
-        // 'joining_date' => 'required',
-        // 'office_shift' => 'required',
-        // 'contact_number' => 'required',
-        // 'reference_contact_number' => 'nullable',
+//     $validatedData = $request->validate([
+//         'name' => 'required',
+//         'email' => 'required|email',
+//         'designation' => 'required|string|min:6',
+//         'address' => 'required',
         
-        // 'marital_status' => 'required',
-        // 'nationality' => 'required',
-        // 'highest_qualification' => 'required',
-        // 'univercity' => 'required',
-        // 'passing_year' => 'required',
-        // 'marks' => 'nullable',
-        // 'grade' => 'required',
-        // 'resume_upload' => 'nullable',
-        // 'adhar_no' => 'required',
-        // 'pan_no' =>'required',
-        // 'voter_id' => 'required',
-        // 'driving_licence' => 'required',
-        // 'passport_no' => 'nullable',
-        // 'passport_to' => 'nullable',
-        // 'passport_from' => 'nullable',
-        // 'blood_group' => 'required',
+//     ]);
 
-        // 'father_name' => 'required',
-        // 'father_contact_no' => 'nullable',
-        // 'father_adhar_no' => 'required',
-        // 'mother_name' => 'required',
+//     session_start();
+//     $now = time();
+//     if(isset($_SESSION['expire']) && $now > $_SESSION['expire'])
+//     {
+//        session_destroy();
+//     }
 
-        // 'bank_name' => 'required',
-        // 'account_no' => 'required',
-        // 'ifsc' => 'required',
-    ]);
-  
+//  try {
+//     if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]) ) 
+// {
+//         $username = $_SESSION["username"];
+//         $password = $_SESSION["password"];
+//         $dbName = $_SESSION["dbName"];
 
+//         $passcode = Hash::make($password);
+
+//         $maxEmp = User::where('username',$username)->where('dbName',$dbName)->value('total');
+        
+
+//         Config::set('database.connections.dynamic', [
+//             'driver' => 'mysql', 
+//             'host' => 'localhost', 
+//             'database' => $dbName,
+//             'username' => $username,
+//             'password' => $password,
+//             'charset' => 'utf8mb4',
+//             'collation' => 'utf8mb4_unicode_ci',
+//             'prefix' => '',
+//             'strict' => true,
+//             'engine' => null,
+//         ]);
+
+
+   
+//        if (!Schema::connection('dynamic')->hasTable('employees')) {
+//         Schema::connection('dynamic')->create('employees', function (Blueprint $table) {
+//             $table->id();
+//             $table->string('name');
+//             $table->string('email')->unique()->index();
+//             $table->string('username');
+//             $table->string('password');
+           
+//             $table->string('designation');
+//             $table->string('address')->nullable();
+            
+//             $table->timestamps();
+//             // $table->index('email');
+    
+           
+//         });
+//     }   
+   
+//         $empCount = DB::connection('dynamic')->table('employees')->count();
+
+//         $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+//         if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//         {
+//             if($empCount < $maxEmp)
+//        {
+//          $employee = DB::connection('dynamic')->table('employees')->insert([
+//             'name' => $request->input('name'),
+//             'email' => $request->input('email'),
+//             'username' => $username,
+//             'password' => $passcode,
+//             'designation' => $request->input('designation'),
+//             'address' => $request->input('address'),
+//             'created_at' => $date,
+//             'updated_at' => $date,
+//         ]); 
+//         return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
+
+//        }
+//        else
+//        {
+//         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'],400);
+//        }
+
+//         }
+
+//         else
+//         {
+//             return response()->json(['message' => 'You have no permission.'],400);
+//         }
+
+       
+//     }
+     
+//         return response()->json(['message' => 'Sorry Session out, to add please login'], 400);
+      
+// } 
+//  catch (Exception $e) 
+//  {
+//     return response()->json(['message' => 'An error occurred: ' . $e->getMessage()], 500);
+//  }
+
+    
+// }
+
+
+
+
+private function checkSession()
+{
     session_start();
+    $now = time();
 
-try {
+    if (isset($_SESSION['expire']) && $now > $_SESSION['expire']) {
+        session_destroy();
+        return false;
+    } elseif (isset($_SESSION['expire']) && $now <= $_SESSION['expire']) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+private function checkSessionAndSetupConnection()
+{
+    if (!$this->checkSession()) {
+        return false;
+    }
+   
+
     if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"])) {
         $username = $_SESSION["username"];
         $password = $_SESSION["password"];
@@ -631,10 +566,11 @@ try {
 
         $passcode = Hash::make($password);
 
-        // Use the stored credentials to connect to the dynamic database
+        $maxEmp = User::where('username', $username)->where('dbName', $dbName)->value('total');
+
         Config::set('database.connections.dynamic', [
-            'driver' => 'mysql', 
-            'host' => 'localhost', // Set your database host
+            'driver' => 'mysql',
+            'host' => 'localhost',
             'database' => $dbName,
             'username' => $username,
             'password' => $password,
@@ -645,287 +581,318 @@ try {
             'engine' => null,
         ]);
 
-
-       // Check if the 'employees' table exists in the dynamic database
-       if (!Schema::connection('dynamic')->hasTable('employees')) {
-        // If the 'employees' table doesn't exist, create it
-        Schema::connection('dynamic')->create('employees', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email');
-            $table->string('username');
-            $table->string('password');
-            
-            // $table->enum('gender',['male','female','other']);
-            // $table->string('official_mail');
-            // $table->date('dob');
-            // $table->date('joining_date');
-            // $table->enum('office_shift',['day','night']);  //
-            // $table->integer('contact_number');
-            // $table->integer('reference_contact_number');
-            // $table->enum('marital_status',['single','married']);
-            // $table->string('nationality');
-            // $table->string('highest_qualification');
-            // $table->string('univercity');
-            // $table->string('passing_year');
-            // $table->float('marks');
-            // $table->string('grade');
-            // $table->string('resume_upload');
-            // $table->integer('adhar_no');
-            // $table->string('pan_no');
-            // $table->string('voter_id');
-            // $table->string('driving_licence');
-            // $table->string('passport_no');
-            // $table->date('passport_to');
-            // $table->date('passport_from');
-            // $table->string('blood_group');
-            // $table->string('father_name');
-            // $table->integer('father_contact_no');
-            // $table->integer('father_adhar_no');
-            // $table->string('mother_name');
-            // $table->string('bank_name');
-            // $table->string('account_no');
-            // $table->string('ifsc');
-
-            // $table->date('hiredate');
-            // $table->unsignedBigInteger('dept_id');
-            // $table->decimal('salary', 10, 2)->default(0.00);
-            // $table->decimal('bonus', 10, 2)->default(0.00);
-            // $table->unsignedBigInteger('ctc');
-            $table->string('designation');
-            $table->string('address')->nullable();
-            // $table->unsignedBigInteger('project_id')->nullable();
-            $table->timestamps(); 
-    
-            // Define the foreign key constraint for project_id
-            // $table->foreign('project_id')->references('id')->on('projects');
-    
-           
-        });
+        return compact('maxEmp');
     }
 
+    return false; // Session data not set
+}
 
+public function addEmployee(Request $request)
+{
+    $validatedData = $request->validate([
+        'name' => 'required',
+        'email' => 'required|email',
+        'designation' => 'required|string|min:6',
+        'address' => 'required',
+        'username' => 'required|string',
+        'password' => 'required',
+    ]);
 
-        // $date = Carbon::createFromFormat('Y-m-d', '2023-08-08');
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
 
-        // Now, insert the new Employee record in the 'employees' table
-        $employee = DB::connection('dynamic')->table('employees')->insert([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'username' => $username,
-            'password' => $passcode,
-            'designation' => $request->input('designation'),
-            'address' => $request->input('address'),
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    }
 
-            // 'gender' => $request->input('gender'),
-            // 'official_mail' => $request->input('official_mail'),
-            // 'dob' => $request->input('d.o.b' ),
-            // 'joining_date' => $request->input('joining_date'),
-            // 'office_shift' =>$request->input('office_shift'),
-            // 'contact_number' => $request->input('contact_number'),
-            // 'reference_contact_number' => $request->input('reference_contact_number'),
-            // 'marital_status' => $request->input('marital_status'),
-            // 'nationality' => $request->input('nationality'),
-            // 'highest_qualification' => $request->input('highest_qualification'),
-            // 'univercity' => $request->input('univercity'),
-            // 'passing_year' => $request->input('passing_year'),
-            // 'marks' => $request->input('marks'),
-            // 'grade'  => $request->input('grade'),
-            // 'resume_upload' => $request->input('resume_upload'),
-            // 'adhar_no' => $request->input('adhar_no'),
-            // 'pan_no' => $request->input('pan_no'),
-            // 'voter_id' => $request->input('voter_id'),
-            // 'driving_licence' => $request->input('driving_licence'),
-            // 'passport_no' => $request->input('passport_no'),
-            // 'passport_to' => $request->input('passport_to'),
-            // 'passport_from' => $request->input('passport_from'),
-            // 'blood_group' => $request->input('blood_group'),
-            // 'father_name' => $request->input('father_name'),
-            // 'father_contact_no' => $request->input('father_contact_no'),
-            // 'father_adhar_no' => $request->input('father_adhar_no'),
-            // 'mother_name' => $request->input('mother_name'),
-            // 'bank_name' => $request->input('bank_name'),
-            // 'account_no' => $request->input('account_no'),
-            // 'ifsc' => $request->input('ifsc'), 
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $empCount = DB::connection('dynamic')->table('employees')->count();
 
+    if (isset($_SESSION['create']) && $_SESSION['create'] == 1) {
+        if ($empCount < $maxEmp) {
+            // Check if the "employees" table exists; if not, create it
+            if (!Schema::connection('dynamic')->hasTable('employees')) {
+                Schema::connection('dynamic')->create('employees', function (Blueprint $table) {
+                    $table->id();
+                    $table->string('name');
+                    $table->string('email')->unique()->index();
+                    $table->string('username');
+                    $table->string('password');
+                    $table->string('designation');
+                    $table->string('address')->nullable();
+                    $table->timestamps();
+                });
+            }
 
-            'created_at' => $date,
-            'updated_at' => $date,
-        ]);
-        // Return a success response
-        return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
+            $username = $request->username;
+            $passcode = Hash::make($request->password); 
+
+            $employee = DB::connection('dynamic')->table('employees')->insert([
+                'name' => $request->input('name'),
+                'email' => $request->input('email'),
+                'username' => $username,
+                'password' => $passcode,
+                'designation' => $request->input('designation'),
+                'address' => $request->input('address'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
+        } else {
+            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+        }
     } else {
-        return response()->json(['message' => 'Sorry Session out, to add please login'], 400);
+        return response()->json(['message' => 'You have no permission.'], 400);
     }
-} catch (Exception $e) {
-    // Handle exceptions here, e.g., log the error or return an error response
-    return response()->json(['message' => 'An error occurred: ' . $e->getMessage()], 500);
 }
 
+
+
+
+
+
+
+
+
+
+
+// public function allEmployee(Request $request)
+//    {
+  
+//    session_start();
+//    if (isset($_SESSION["username"]) && $_SESSION["password"] && $_SESSION["dbName"])
+//    {
+//         $username = $_SESSION["username"];
+//         $password = $_SESSION["password"];
+//         $dbName = $_SESSION["dbName"];
+
     
-}
+ 
+//    Config::set('database.connections.dynamic', [
+//     'driver' => 'mysql',
+//     'host' => 'localhost',
+//     'database' => $dbName,
+//     'username' => $username,
+//     'password' => $password,
+//     'charset' => 'utf8mb4',
+//     'collation' => 'utf8mb4_unicode_ci',
+//     'prefix' => '',
+//     'strict' => true,
+//     'engine' => null,
+// ]);
+
+//  if (!Schema::connection('dynamic')->hasTable('employees')) {
+ 
+//     return response()->json(['message' => 'data not found'], 404);
+// }
+
+//  $employee = DB::connection('dynamic')->table('employees')->get();
+
+//  if (!$employee) {
+//     return response()->json(['message' => 'Employee not found'], 404);
+// }
+
+//  return response()->json(['message' => 'all Employee', 'data' => $employee]);
+
+
+
+
+//    }
+//    else
+//    {
+//     return response()->json(['message' => 'sorry session out,pls login']);
+//    }
+
+
+    
+  
+   
+// }
 
 
 
 public function allEmployee(Request $request)
-   {
-   // Retrieve the credentials from the session
-   session_start();
-   if (isset($_SESSION["username"]) && $_SESSION["password"] && $_SESSION["dbName"])
-   {
-        $username = $_SESSION["username"];
-        $password = $_SESSION["password"];
-        $dbName = $_SESSION["dbName"];
+{
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if(!$sessionCheckResult)
+    {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    }
+    //$maxEmp = $sessionCheckResult['maxEmp'];
 
-    
-   // Use the stored credentials to connect to the dynamic database
-   Config::set('database.connections.dynamic', [
-    'driver' => 'mysql',
-    'host' => 'localhost', // Set your database host
-    'database' => $dbName,
-    'username' => $username,
-    'password' => $password,
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'prefix' => '',
-    'strict' => true,
-    'engine' => null,
-]);
- // Check if the 'employees' table exists in the dynamic database
- if (!Schema::connection('dynamic')->hasTable('employees')) {
-    // If the 'employees' table doesn't exist, return an error response
-    return response()->json(['message' => 'Dynamic database table not found'], 404);
+    if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+    {
+        if (!Schema::connection('dynamic')->hasTable('employees'))
+         {
+          return response()->json(['message' => 'table not found'], 404);
+         }
+         $allEmp = DB::connection('dynamic')->table('employees')->get();
+         if(!$allEmp)
+         {
+            return response()->json(['message' => 'no record found']);
+         }
+         return response()->json(['success' => true,'message' => $allEmp]);
+        
+    }
+    return response()->json(['message' => 'you have no permission']);
+
 }
 
-// Find the employee by ID in the 'employees' table
- $employee = DB::connection('dynamic')->table('employees')->get();
-
-// If the employee is not found, return an error response
- if (!$employee) {
-    return response()->json(['message' => 'Employee not found'], 404);
-}
-
- // Return the employee data as a JSON response
- return response()->json(['message' => 'all Employee', 'data' => $employee]);
 
 
 
+// public function singleEmployee(Request $request, $employeeId)
+// {
 
-   }
-   else
-   {
-    return response()->json(['message' => 'sorry session out,pls login']);
-   }
-
-
-    
-  
+//    session_start();
    
-}
+//    if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+//    {
+      
+//    $username = $_SESSION["username"];
+//    $password = $_SESSION["password"];
+//    $dbName = $_SESSION["dbName"];
 
+//    Config::set('database.connections.dynamic', [
+//     'driver' => 'mysql',
+//     'host' => 'localhost', 
+//     'database' => $dbName,
+//     'username' => $username,
+//     'password' => $password,
+//     'charset' => 'utf8mb4',
+//     'collation' => 'utf8mb4_unicode_ci',
+//     'prefix' => '',
+//     'strict' => true,
+//     'engine' => null,
+// ]);
+ 
+//  if (!Schema::connection('dynamic')->hasTable('employees')) {
+    
+//     return response()->json(['message' => 'Dynamic database table not found'], 404);
+// }
+// $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
 
+// if (!$employee) {
+//     return response()->json(['message' => 'Employee not found'], 404);
+// }
+// return response()->json(['message' => 'Employee found', 'data' => $employee]);
+  
+//  }
+//   else
+//   {
+//     return response()->json(['message' => 'sorry session out,pls login']);
+//   }
 
+  
+// }
 
 
 public function singleEmployee(Request $request, $employeeId)
 {
- // Retrieve the credentials from the session
-   session_start();
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if(!$sessionCheckResult)
+    {
+      return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    }
    
-   if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-   {
+    if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+    {
+        if(!Schema::connection('dynamic')->hasTable('employees'))
+        {
+          return response()->json(['message' => 'no table found'],404);
+        }
+       $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+       if(!$employee)
+       {
+        return response()->json(['message' => 'data not found']);
+       }
+     return response()->json(['message' => $employee]);
+    }
+    else
+    {
+        return response()->json(['message' => 'you have no permission'],403);
+    }
+  
+}
+
+
+
+
+
+
+// public function editEmployee(Request $request, $employeeId)
+// {
+    
+//     session_start();
+
+//     if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+//     {
+//         $username = $_SESSION["username"];
+//         $password = $_SESSION["password"];
+//         $dbName = $_SESSION["dbName"];
+     
+//         Config::set('database.connections.dynamic', [
+//             'driver' => 'mysql',
+//             'host' => 'localhost', 
+//             'database' => $dbName,
+//             'username' => $username,
+//             'password' => $password,
+//             'charset' => 'utf8mb4',
+//             'collation' => 'utf8mb4_unicode_ci',
+//             'prefix' => '',
+//             'strict' => true,
+//             'engine' => null,
+//         ]);
+    
       
-   $username = $_SESSION["username"];
-   $password = $_SESSION["password"];
-   $dbName = $_SESSION["dbName"];
-
-   // Use the stored credentials to connect to the dynamic database
-   Config::set('database.connections.dynamic', [
-    'driver' => 'mysql',
-    'host' => 'localhost', // Set your database host
-    'database' => $dbName,
-    'username' => $username,
-    'password' => $password,
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'prefix' => '',
-    'strict' => true,
-    'engine' => null,
-]);
- // Check if the 'employees' table exists in the dynamic database
- if (!Schema::connection('dynamic')->hasTable('employees')) {
-    // If the 'employees' table doesn't exist, return an error response
-    return response()->json(['message' => 'Dynamic database table not found'], 404);
-}
-
-// Find the employee by ID in the 'employees' table
-$employee = DB::connection('dynamic')->table('employees')->find($employeeId);
-
-// If the employee is not found, return an error response
-if (!$employee) {
-    return response()->json(['message' => 'Employee not found'], 404);
-}
-
-// Return the employee data as a JSON response
-return response()->json(['message' => 'Employee found', 'data' => $employee]);
-  
- }
-  else
-  {
-    return response()->json(['message' => 'sorry session out,pls login']);
-  }
-
-  
-}
-
-
-
-
+//         if (!Schema::connection('dynamic')->hasTable('employees')) {
+          
+//             return response()->json(['message' => 'Dynamic database table not found'], 404);
+//         }  
+//         $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+//         if (!$employee) {
+//             return response()->json(['message' => 'Employee not found'], 404);
+//         }
+//         $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+//         DB::connection('dynamic')->table('employees')->where('id', $employeeId)->update([
+//             'name' => $request->input('name'),
+//             'email' => $request->input('email'),
+//             'designation' => $request->input('designation'),
+//             'address' => $request->input('address'),
+//             'updated_at' => $date,
+//         ]);
+    
+//         return response()->json(['message' => 'Employee updated successfully through session'], 200);
+//     }
+//     else
+//     {
+//         return response()->json(['message' => 'sorry session out,pls login']);
+//     }
+   
+// }
 
 
 public function editEmployee(Request $request, $employeeId)
 {
-    // Retrieve the credentials from the session
-    session_start();
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
 
-    if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-    {
-        $username = $_SESSION["username"];
-        $password = $_SESSION["password"];
-        $dbName = $_SESSION["dbName"];
-       // echo $dbName;die();
-       
-    
-        // Use the stored credentials to connect to the dynamic database
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost', // Set your database host
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-    
-        // Check if the 'employees' table exists in the dynamic database
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    }
+
+    if (isset($_SESSION['edit']) && $_SESSION['edit'] == 1) {
         if (!Schema::connection('dynamic')->hasTable('employees')) {
-            // If the 'employees' table doesn't exist, return an error response
-            return response()->json(['message' => 'Dynamic database table not found'], 404);
+            return response()->json(['message' => 'Table not found'], 404);
         }
-    
-        // Find the employee by ID in the 'employees' table
+
         $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
-    
-        // If the employee is not found, return an error response
+
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
         }
-        $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
-        // Update the employee record in the 'employees' table
+
+        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
         DB::connection('dynamic')->table('employees')->where('id', $employeeId)->update([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
@@ -933,270 +900,249 @@ public function editEmployee(Request $request, $employeeId)
             'address' => $request->input('address'),
             'updated_at' => $date,
         ]);
-    
-        // Return a success response
-        return response()->json(['message' => 'Employee updated successfully through session'], 200);
+
+        return response()->json(['message' => 'Employee updated successfully'], 200);
     }
-    else
-    {
-        return response()->json(['message' => 'sorry session out,pls login']);
-    }
-   
+
+    return response()->json(['message' => 'You have no permission to edit'], 403);
 }
 
+
+
+
+// public function destroyEmployee(Request $request, $employeeId)
+// {
+//     session_start();
+//     if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+//     {
+//         $username = $_SESSION["username"];
+//         $password = $_SESSION["password"];
+//         $dbName = $_SESSION["dbName"];
+
+      
+//     Config::set('database.connections.dynamic', [
+//         'driver' => 'mysql',
+//         'host' => 'localhost',
+//         'database' => $dbName,
+//         'username' => $username,
+//         'password' => $password,
+//         'charset' => 'utf8mb4',
+//         'collation' => 'utf8mb4_unicode_ci',
+//         'prefix' => '',
+//         'strict' => true,
+//         'engine' => null,
+//     ]);
+
+//     if (!Schema::connection('dynamic')->hasTable('employees')) {
+//         return response()->json(['message' => 'Dynamic database table not found'], 404);
+//     }
+
+//     $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+//     if (!$employee) {
+//         return response()->json(['message' => 'Employee not found'], 404);
+//     }
+//     DB::connection('dynamic')->table('employees')->where('id', $employeeId)->delete();
+
+//     return response()->json(['message' => 'Employee deleted successfully through session']);
     
+//     }
+//     else
+//     {
+//         return response()->json(['message' => 'Sorry session out,pls login']);
+//     }
+    
+    
+// }
+
+
+
 
 public function destroyEmployee(Request $request, $employeeId)
 {
-    // Retrieve the credentials from the session
-    session_start();
-    if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+    // $validatedData = $request->validate([
+    //     'employeeId' => 'required|integer',
+    // ]);
+
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if(!$sessionCheckResult)
     {
-        $username = $_SESSION["username"];
-        $password = $_SESSION["password"];
-        $dbName = $_SESSION["dbName"];
-
-        // Use the stored credentials to connect to the dynamic database
-    Config::set('database.connections.dynamic', [
-        'driver' => 'mysql',
-        'host' => 'localhost', // Set your database host
-        'database' => $dbName,
-        'username' => $username,
-        'password' => $password,
-        'charset' => 'utf8mb4',
-        'collation' => 'utf8mb4_unicode_ci',
-        'prefix' => '',
-        'strict' => true,
-        'engine' => null,
-    ]);
-
-    // Check if the 'employees' table exists in the dynamic database
-    if (!Schema::connection('dynamic')->hasTable('employees')) {
-        // If the 'employees' table doesn't exist, return an error response
-        return response()->json(['message' => 'Dynamic database table not found'], 404);
+      return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);    
     }
-
-    // Find the employee by ID in the 'employees' table
-    $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
-
-    // If the employee is not found, return an error response
-    if (!$employee) {
-        return response()->json(['message' => 'Employee not found'], 404);
+    if(!Schema::connection('dynamic')->hasTable('employees'))
+    {
+        return response()->json(['message' => 'table not found'],500);
     }
-
-    // Delete employee from the 'employees' table
-    DB::connection('dynamic')->table('employees')->where('id', $employeeId)->delete();
-
-    // Return a success response
-    return response()->json(['message' => 'Employee deleted successfully through session']);
-    
+    if(isset($_SESSION['delete']) && $_SESSION['delete'] == 1)
+    {
+      $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+      if(!$employee)
+      {
+        return response()->json(['message' => 'no record found']);
+      }
+      DB::connection('dynamic')->table('employees')->where('id',$employeeId)->delete(); 
+      return response()->json(['message' => 'record deleted successfully']);
     }
     else
     {
-        return response()->json(['message' => 'Sorry session out,pls login']);
+        return response()->json(['message' => 'you have no permission to perform this action']);
     }
-    
-    
+   
+
+
 }
 
 
 
 
 
+// public function searchEmpByValue(Request $request)
+// {
+//    try
+//    {   
+//     $validatedData = $request->validate([
+//         'option' => 'required',
+//         'value' => 'required',
+        
+//     ]);
+//     session_start();
+//     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+//     {
+//        $username = $_SESSION["username"];
+//        $password = $_SESSION["password"];
+//        $dbName = $_SESSION["dbName"];
 
+//        $option = $validatedData['option'];
+//        $value = $validatedData['value'];
+       
+//        Config::set('database.connections.dynamic', [
+//         'driver' => 'mysql',
+//         'host' => 'localhost', 
+//         'database' => $dbName,
+//         'username' => $username,
+//         'password' => $password,
+//         'charset' => 'utf8mb4',
+//         'collation' => 'utf8mb4_unicode_ci',
+//         'prefix' => '',
+//         'strict' => true,
+//         'engine' => null,
+//     ]);
+    
+//      $dynamicDB = DB::connection('dynamic');
+//      $results = $dynamicDB->table('employees')->where($option,'like', '%' . $value . '%')->get();
+//     if( count($results) > 0)
+//     {
+//         return response()->json(['data' => $results]);
+//     }
+//     return response()->json(['message' => 'Data not Found']);
 
+//     }
+
+//     return response()-json(['message' => 'pls login first']);
+//    }
+
+//    catch(\Exception $e)
+//    {
+//     return response()->json(['error' => $e->getMessage()]);
+//    }
+  
+
+    
+// }
 
 
 
 
 public function searchEmpByValue(Request $request)
 {
-   try
-   {
-     
-    $validatedData = $request->validate([
-        // 'option' => 'required|in:name,email,designation,address',
+    $validatedData = $request->validate
+    ([
         'option' => 'required',
-        'value' => 'required',
-        
+        'value' => 'required',      
     ]);
 
-    session_start();
-    if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-    {
-       $username = $_SESSION["username"];
-       $password = $_SESSION["password"];
-       $dbName = $_SESSION["dbName"];
-
-       $option = $validatedData['option'];
-       $value = $validatedData['value'];
-       
-       Config::set('database.connections.dynamic', [
-        'driver' => 'mysql',
-        'host' => 'localhost', // Set your database host
-        'database' => $dbName,
-        'username' => $username,
-        'password' => $password,
-        'charset' => 'utf8mb4',
-        'collation' => 'utf8mb4_unicode_ci',
-        'prefix' => '',
-        'strict' => true,
-        'engine' => null,
-    ]);
-    
-     $dynamicDB = DB::connection('dynamic');
-     $results = $dynamicDB->table('employees')->where($option,'like', '%' . $value . '%')->get();
-    // $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
-    // $results = Employee::where($option, 'like', '%' . $value . '%')->get();
-    if( count($results) > 0)
-    {
-        return response()->json(['data' => $results]);
-    }
-    return response()->json(['message' => 'Data not Found']);
-
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
     }
 
-    return response()-json(['message' => 'pls login first']);
-   }
+     if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+     {
+        if(!Schema::connection('dynamic')->hasTable('employees'))
+        {
+            return response()->json(['message' => 'table not found'], 404);
+        }
+        $option = $request->input('option');
+        $value = $request->input('value');
+        $results = DB::connection('dynamic')->table('employees')->where($option, 'like', '%' . $value .'%')->get();
+        if(count($results) > 0)
+        {
+            return response()->json(['message' => $results]);
+        }
+        return response()->json(['message' => 'data not found'],404);
+     }
 
-   catch(\Exception $e)
-   {
-    return response()->json(['error' => $e->getMessage()]);
-   }
-  
+     return response()->json(['message' => 'you have no permission'],403);
 
-    
 }
+
+
+
+
+
+
+// public function latestMember(Request $request)
+// {
+//     session_start();
+//     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+//     {
+//        $username = $_SESSION["username"];
+//        $password = $_SESSION["password"];
+//        $dbName = $_SESSION["dbName"];
+
+//        Config::set('database.connections.dynamic', [
+//         'driver' => 'mysql',
+//         'host' => 'localhost', 
+//         'database' => $dbName,
+//         'username' => $username,
+//         'password' => $password,
+//         'charset' => 'utf8mb4',
+//         'collation' => 'utf8mb4_unicode_ci',
+//         'prefix' => '',
+//         'strict' => true,
+//         'engine' => null,
+//     ]);
+    
+//      $dynamicDB = DB::connection('dynamic');
+
+//     $recentEmp = $dynamicDB->table('employees')->orderBy('created_at','desc')->limit(10)->get();
+//     return response()->json(['data' => $recentEmp]);
+
+//     }
+//     return response()->json(['message' => 'pls login']);
+// }
 
 
 public function latestMember(Request $request)
 {
-    session_start();
-    if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if(!$sessionCheckResult)
     {
-       $username = $_SESSION["username"];
-       $password = $_SESSION["password"];
-       $dbName = $_SESSION["dbName"];
-
-       Config::set('database.connections.dynamic', [
-        'driver' => 'mysql',
-        'host' => 'localhost', // Set your database host
-        'database' => $dbName,
-        'username' => $username,
-        'password' => $password,
-        'charset' => 'utf8mb4',
-        'collation' => 'utf8mb4_unicode_ci',
-        'prefix' => '',
-        'strict' => true,
-        'engine' => null,
-    ]);
-    
-     $dynamicDB = DB::connection('dynamic');
-
-    $recentEmp = $dynamicDB->table('employees')->orderBy('created_at','desc')->limit(10)->get();
-    return response()->json(['data' => $recentEmp]);
-
+      return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);    
     }
-    return response()->json(['message' => 'pls login']);
+   if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+   {
+     if(!Schema::connection('dynamic')->hasTable('employees'))
+     {
+        return response()->json(['message' => 'table not found']);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $latestEmp = $dynamicDB->table('employees')->orderBy('created_at','desc')->limit(10)->get();
+     return response()->json(['message' => $latestEmp]);
+
+   }
+   return response()->json(['message' => 'you have no permission']);
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// public function loginEmp(Request $request)
-// {
-//     try {
-//         $validatedData = $request->validate([
-//          'username' => 'required',
-//          'userpassword' => 'required',
-//          'email' => 'required|email',
-//          'empPassword' => 'required|string|min:6',
-//                  ]);
-
-//                  $username = $validatedData['username'];
-//                  $password = $validatedData['userpassword'];
-//                  $empEmail = $validatedData['email'];
-//                  $empPassword = $validatedData['empPassword'];
-                 
-
-//          $check = User::where('username', $username)->first();
-         
-          
-
-//         if ($check && Hash::check($password, $check->password)) 
-//         {
-//             $dbName = $check->dbName;
-            
-//                // Set database connection
-//                Config::set('database.connections.dynamic', [
-//                 'driver' => 'mysql',
-//                 'host' => 'localhost', 
-//                 'database' => $dbName, 
-//                 'username' => $username,
-//                 'password' => $password, 
-//                 'charset' => 'utf8mb4',
-//                 'collation' => 'utf8mb4_unicode_ci',
-//                 'prefix' => '',
-//                 'strict' => true,
-//                 'engine' => null,
-//             ]);
-    
-//             // Use the dynamic database connection
-//             $dynamicDB = DB::connection('dynamic');
-             
-          
-            
-
-
-//             $checkEmp = $dynamicDB->table('employees')->where('email',$empEmail)->get();
-//             $checkPass = $dynamicDB->table('employees')->where('password',$empPassword)->get();
-//             echo $checkEmp;die();
-//              if($checkEmp && $checkPass)
-//             // if($checkEmp->count() > 0 && $checkPass->count() > 0)
-//             {
-//                return response()->json(['Success' =>'true','Message'=> 'Login Successful']);
-//             }
-//             else{
-//                 return response()->json(['Success' =>'false','Message'=> 'Email and Password is incorrect']);
-//             }
-                
-//         //   $currentDatabaseName = DB::connection()->getDatabaseName();
-//         //   echo "Current Database Name: " . $currentDatabaseName;die();
-
-//             // if ($checkEmp && Hash::check($empPassword, $checkEmp->password)) {
-//             //     return response()->json(['success' => 'true', 'message' => 'Login Successful']);
-//             // }
-
-         
-//         } 
-//         return response()->json(['meaasge' => 'Connection not possible']);
-//     } catch (\Exception $e) {
-//         return response()->json(['success' => 'false', 'error' => $e->getMessage()]);
-//     }
-// }
-
-
-
-
-
-
 
 
 
@@ -1207,17 +1153,14 @@ public function applyLeave(Request $request)
         'startdate' => 'required|date', 
         'enddate' => 'required|date', 
         'reason' => 'required',  
-        // 'attachment' => 'nullable',
     ]);
      session_start();
-
     if(isset($_SESSION['username']) && 
     isset($_SESSION['password']) && 
     isset($_SESSION['dbName']) && 
     isset($_SESSION['empEmail']) &&
     isset($_SESSION['empPass']))
     {
-        
         $username = $_SESSION["username"];
         $password = $_SESSION["password"];
         $dbName = $_SESSION["dbName"];
@@ -1225,8 +1168,6 @@ public function applyLeave(Request $request)
         $empPass = $_SESSION['empPass'];
 
         $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-        // Connect to dynamic database
         Config::set('database.connections.dynamic', [
             'driver' => 'mysql',
             'host' => 'localhost',
@@ -1257,23 +1198,18 @@ public function applyLeave(Request $request)
                 $table->unsignedBigInteger('employee_id');
                 $table->date('start_date')->nullable();
                 $table->date('end_date')->nullable();
-                // $table->enum('leave_type',['sick leave','earned leave','casual leave','other'])->nullable();
                 $table->string('leave_type')->nullable();
                 $table->integer('duration')->nullable();
                 $table->string('reason')->nullable();
                 $table->enum('status', ['pending', 'approved','reject'])->default('pending');
-                // $table->string('why_reject')->nullable();
                 $table->string('approved_by')->nullable();
                 $table->date('approval_date')->nullable();
                 $table->string('attachment')->nullable();
                 $table->date('date');
                 $table->timestamps();
-
-                // Define the foreign key constraint
                 $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             });
         }
-
           $currentTime = Carbon::now()->timezone('Asia/Kolkata')->format('H:i:s');
 
           $start_date = Carbon::parse($validatedData['startdate']);
@@ -1294,17 +1230,15 @@ public function applyLeave(Request $request)
                 'date' => now()->toDateString(),
             ];
             $dynamicDB->table('leaves')->insert($data);
-            // $details = ['title' => "This is leave Application", 'message' => 'My Employee id is '.$id .'. I am applying for '.$validatedData['leavetype'].'leave'];
             $details = ['title' => "Leave Application",'applicantName' => $name,'designation' => $currentEmp->designation,
             'leave_type'=>$validatedData['leavetype'],'startdate' =>$validatedData['startdate'],'enddate' =>$validatedData['enddate'],
             'days' => $updateDuration,'reason' => $validatedData['reason'],'date' =>now()->toDateString()];
-            // Mail::to($email)->send(new LeaveMail($details));
+            
             Mail::to("gemsfiem@gmail.com")->send(new LeaveMail($details)); 
             
             return response()->json(['message' => 'employee leave request created successfully']);
           }
           catch (\Exception $e) {
-            // Handle the exception here, you can log the error or return an error response.
             return response()->json(['error' => $e->getMessage()], 500);
         }  
        
@@ -1313,9 +1247,6 @@ public function applyLeave(Request $request)
      return response()->json(['message' => 'Access Denied']);
 
 }
-
-
-
 
 public function approveLeave(Request $request)
 {
@@ -1356,9 +1287,7 @@ public function approveLeave(Request $request)
             {
                 $employee = $dynamicDB->table('employees')->where('id', $empId)->first();
                 if ($employee) {
-                    // $designation = $employee->designation;
-            
-                  $dynamicDB->table('leaves')
+               $dynamicDB->table('leaves')
                   ->where('employee_id', $empId) 
                   ->update([
                       'status' => $status,
@@ -1369,8 +1298,6 @@ public function approveLeave(Request $request)
                 }
                 return response()->json(['message' => 'employee not found']);
 
-            
-            
             }
             return response()->json(['message' => 'user not found']);
             
@@ -1381,16 +1308,6 @@ public function approveLeave(Request $request)
 
     }
 }
-
-
-
-
-
-
-
-
-
-
 public function datewiseAttend(Request $request, $date)
 {
     session_start();
@@ -1401,8 +1318,6 @@ public function datewiseAttend(Request $request, $date)
             ->where('dbName', $dbName)->first();
 
         if ($user) {
-
-            // Connect to dynamic database
             Config::set('database.connections.dynamic', [
                 'driver' => 'mysql',
                 'host' => 'localhost',
@@ -1432,10 +1347,6 @@ public function datewiseAttend(Request $request, $date)
 
 
 
-
-
-
-
 public function monthwiseAttend(Request $request, $year, $month)
 {
     session_start();
@@ -1447,7 +1358,6 @@ public function monthwiseAttend(Request $request, $year, $month)
 
         if ($user) {
 
-            // Connect to dynamic database
             Config::set('database.connections.dynamic', [
                 'driver' => 'mysql',
                 'host' => 'localhost',
@@ -1461,8 +1371,6 @@ public function monthwiseAttend(Request $request, $year, $month)
                 'engine' => null,
             ]);
             $dynamicDB = DB::connection('dynamic');
-            
-            // Query attendance data for the specific month and year
             $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
             $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
             
@@ -1483,79 +1391,6 @@ public function monthwiseAttend(Request $request, $year, $month)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// public function idWise(Request $request,$id) //admin check attendence id wise
-// {
-
-//     session_start();
-//     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-//     {
-//         $username = $_SESSION["username"];
-//         $dbName = $_SESSION["dbName"];
-//         $user = User::where('username',$username)
-//         ->where('dbName',$dbName)->first();
-        
-//         if($user)
-//         {
-           
-//            // Connect to dynamic database
-//          Config::set('database.connections.dynamic', [
-//             'driver' => 'mysql',
-//             'host' => 'localhost',
-//             'database' => $dbName,
-//             'username' => $username,
-//             'password' => $password,
-//             'charset' => 'utf8mb4',
-//             'collation' => 'utf8mb4_unicode_ci',
-//             'prefix' => '',
-//             'strict' => true,
-//             'engine' => null,
-//         ]);
-//         $dynamicDB = DB::connection('dynamic');
-//         $allAttend = $dynamicDB->table('attendences')->whereDate('date',$date)->get();
-//         if($allAtend)
-//         {
-//        return response()->json(['message' => 'Datewise all Employee Attendence','data' => $allAttend]);
-//         }
-//        else
-//        {
-//            return response()->json(['message' => 'No data found']);
-//        }
-//         }
-//         else
-//         {
-//             return response()->json(['message' => 'profile details not found']);
-//          }
-//     }
-//     else 
-//     {
-//         return response()->json(['message' => 'Session out,pls login']);
-//     }
-
- 
-  
-
-// }
-
-
-
-
-
-
-
-
 public function idWiseMonthwiseAttend(Request $request, $year, $month, $employeeId)
 {
     session_start();
@@ -1566,8 +1401,6 @@ public function idWiseMonthwiseAttend(Request $request, $year, $month, $employee
             ->where('dbName', $dbName)->first();
 
         if ($user) {
-
-            // Connect to dynamic database
             Config::set('database.connections.dynamic', [
                 'driver' => 'mysql',
                 'host' => 'localhost',
@@ -1581,8 +1414,6 @@ public function idWiseMonthwiseAttend(Request $request, $year, $month, $employee
                 'engine' => null,
             ]);
             $dynamicDB = DB::connection('dynamic');
-            
-            // Query attendance data for the specific month, year, and employee ID
             $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
             $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
             
@@ -1605,10 +1436,6 @@ public function idWiseMonthwiseAttend(Request $request, $year, $month, $employee
 }
 
 
-
-
-
-
 public function addHoliday(Request $request)
 {
     session_start();
@@ -1620,7 +1447,6 @@ public function addHoliday(Request $request)
         $user = User::where('username', $username)->first();
         $email = $user->email;
 
-        // Connect to dynamic database
         Config::set('database.connections.dynamic', [
             'driver' => 'mysql',
             'host' => 'localhost',
@@ -1645,7 +1471,7 @@ public function addHoliday(Request $request)
                 });
             }
 
-            $holidayDates = $request->input('holidays'); // Frontend side select option name = holidays
+            $holidayDates = $request->input('holidays'); 
             foreach ($holidayDates as $date) {
                 $dynamicDB->table($table)->insert([
                     'holiday' => $date
@@ -1660,24 +1486,13 @@ public function addHoliday(Request $request)
 }
 
 
- 
-
-
-
-
-
-
-
-
-
-
 
 
 public function workingDay(Request $request)
 {
     $validatedData = $request->validate([
-        'working-days' => 'required',  //mon - sat or mon - fri or mon - sun
-        'shift' => 'required',         //dayshift or nightshift  
+        'working-days' => 'required',  
+        'shift' => 'required',        
     ]);     
 
     session_start();
@@ -1693,8 +1508,6 @@ public function workingDay(Request $request)
         
  if($user)
  {
-   
-    // Connect to dynamic database
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
         'host' => 'localhost',
@@ -1708,9 +1521,7 @@ public function workingDay(Request $request)
         'engine' => null,
     ]);
          $dynamicDB = DB::connection('dynamic');
-
-
-        
+ 
          if (!$dynamicDB->getSchemaBuilder()->hasTable('workings')) {
             $dynamicDB->getSchemaBuilder()->create('workings', function (Blueprint $table) {
                 $table->id();
@@ -1720,17 +1531,12 @@ public function workingDay(Request $request)
                 $table->timestamps();
               
             });
-            // return response()->json(['message' => 'table create successfully']);
         }
-        // calculation will start here
         return response()->json(['message' => 'working table data will create from here']);
       
 }
 
      return response()->json(['message' => 'user not found']);
-
-
- 
 
     }
     return response()->json(['message' => 'pls login']);
@@ -1740,347 +1546,14 @@ public function workingDay(Request $request)
 }
 
 
- 
-
-
-
-
-
-
-
-// public function calculateWorkingDays(Request $request)
-// {
-//     $workingDaysOption = $request->input('workingDaysOption');
-//     $startDate = Carbon::parse($request->input('startDate'));
-//     $endDate = Carbon::parse($request->input('endDate'));
-
-//     $holidays = Holiday::pluck('holiday')->toArray(); // Fetch holidays from the table
-
-//     $workingDaysCount = $this->calculateWorkingDaysBetweenDates($startDate, $endDate, $workingDaysOption, $holidays);
-
-//     return response()->json(['workingDays' => $workingDaysCount]);
-// }
-
-// private function calculateWorkingDaysBetweenDates($startDate, $endDate, $workingDaysOption, $holidays)
-// {
-//     // Initialize the working days count
-//     $workingDays = 0;
-
-//     // Loop through each date between the start and end dates
-//     while ($startDate <= $endDate) {
-//         // Check if the current date is a weekend (Saturday or Sunday)
-//         $isWeekend = $startDate->isWeekend();
-
-//         // Check if the current date is a holiday
-//         $isHoliday = in_array($startDate->format('Y-m-d'), $holidays);
-
-//         // Determine if the current date is a working day based on the selected option
-//         if ($workingDaysOption === 'monday_to_friday' && !$isWeekend && !$isHoliday) {
-//             $workingDays++;
-//         } elseif ($workingDaysOption === 'monday_to_saturday' && $startDate->dayOfWeek !== Carbon::SUNDAY && !$isHoliday) {
-//             $workingDays++;
-//         }
-
-//         // Move to the next day
-//         $startDate->addDay();
-//     }
-
-//     return $workingDays;
-// }
-
-
-
-
-
-
-
-// public function calculateAndStoreWorkingDays(Request $request)
-// {
-//     try {
-//         // Retrieve user inputs
-//         $workingDaysOption = $request->input('workingDaysOption');
-//         $startDate = Carbon::parse($request->input('startDate'));
-//         $endDate = Carbon::parse($request->input('endDate'));
-
-//         session_start();
-//         if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"])) {
-//             $username = $_SESSION["username"];
-//             $password = $_SESSION["password"];
-//             $dbName = $_SESSION["dbName"];
-//         }
-
-//         // Dynamically set the database connection for the dynamic database
-//         Config::set('database.connections.dynamic', [
-//             'driver' => 'mysql',
-//             'host' => 'localhost',
-//             'database' => $dbName,
-//             'username' => $username,
-//             'password' => $password,
-//             'charset' => 'utf8mb4',
-//             'collation' => 'utf8mb4_unicode_ci',
-//             'prefix' => '',
-//             'strict' => true,
-//             'engine' => null,
-//         ]);
-
-//         $dynamicDB = DB::connection('dynamic');
-
-//         // Check if the dynamic table exists, and create it if not
-//         if (!Schema::connection('dynamic')->hasTable('workings')) {
-//             Schema::connection('dynamic')->create('workings', function (Blueprint $table) {
-//                 $table->id();
-//                 $table->string('month');
-//                 $table->integer('working_days')->nullable();
-//                 $table->timestamps();
-//             });
-//         }
-
-//         // Calculate and store working days for each month
-//         for ($month = $startDate->month; $month <= $endDate->month; $month++) {
-//             $daysInMonth = Carbon::createFromDate($startDate->year, $month)->daysInMonth;
-//             $startOfMonth = $month === $startDate->month ? $startDate->day : 1;
-//             $endOfMonth = $month === $endDate->month ? $endDate->day : $daysInMonth;
-
-//             $workingDaysCount = $this->calculateWorkingDaysBetweenDates(
-//                 Carbon::create($startDate->year, $month, $startOfMonth),
-//                 Carbon::create($startDate->year, $month, $endOfMonth),
-//                 $workingDaysOption,
-//                 []
-//             );
-
-//             // Store the calculated working days in the dynamic table
-//             $dynamicDB->table('workings')->insert([
-//                 'month' => Carbon::create($startDate->year, $month)->format('F'),
-//                 'working_days' => $workingDaysCount,
-//                 'created_at' => now(),
-//                 'updated_at' => now()
-//             ]);
-//         }
-
-//         return response()->json(['message' => 'Working days calculated and stored successfully']);
-//     } catch (\Exception $e) {
-//         return response()->json(['error' => $e->getMessage()], 500);
-//     }
-// }
-
-
-
-
-
-
-
-
-
-
-
-// public function calculateAndStoreWorkingDays(Request $request)
-//     {
-//         try {
-//             // Retrieve user inputs
-//             $workingDaysOption = $request->input('workingDaysOption');
-//             $startDate = Carbon::parse($request->input('startDate'));
-//             $endDate = Carbon::parse($request->input('endDate'));
-
-//             // ... Session and database connection setup ...
-
-//             $dynamicDB = DB::connection('dynamic');
-
-//             // Check if the dynamic table exists, and create it if not
-//             if (!Schema::connection('dynamic')->hasTable('workings')) {
-//                 Schema::connection('dynamic')->create('workings', function (Blueprint $table) {
-//                     $table->id();
-//                     $table->string('month');
-//                     $table->integer('working_days')->nullable();
-//                     $table->timestamps();
-//                 });
-//             }
-
-//             // Calculate and store working days for each month
-//             for ($month = $startDate->month; $month <= $endDate->month; $month++) {
-//                 $daysInMonth = Carbon::createFromDate($startDate->year, $month)->daysInMonth;
-//                 $startOfMonth = $month === $startDate->month ? $startDate->day : 1;
-//                 $endOfMonth = $month === $endDate->month ? $endDate->day : $daysInMonth;
-
-//                 $workingDaysCount = $this->calculateWorkingDaysBetweenDates(
-//                     Carbon::create($startDate->year, $month, $startOfMonth),
-//                     Carbon::create($startDate->year, $month, $endOfMonth),
-//                     $workingDaysOption,
-//                     []
-//                 );
-
-//                 // Store the calculated working days in the dynamic table
-//                 $dynamicDB->table('workings')->insert([
-//                     'month' => Carbon::create($startDate->year, $month)->format('F'),
-//                     'working_days' => $workingDaysCount,
-//                     'created_at' => now(),
-//                     'updated_at' => now()
-//                 ]);
-//             }
-
-//             return response()->json(['message' => 'Working days calculated and stored successfully']);
-//         } catch (\Exception $e) {
-//             return response()->json(['error' => $e->getMessage()], 500);
-//         }
-//     }
-
-//     private function calculateWorkingDaysBetweenDates($startDate, $endDate, $workingDaysOption, $holidays)
-//     {
-//         $workingDays = 0;
-//         $currentDate = $startDate;
-    
-//         while ($currentDate <= $endDate) {
-//             // Check if the current date is a working day based on the working days option,
-//             // weekends, and holidays. Increment $workingDays if it's a working day.
-//             if ($this->isWorkingDay($currentDate, $workingDaysOption, $holidays)) {
-//                 $workingDays++;
-//             }
-            
-//             $currentDate->addDay();
-//         }
-    
-//         return $workingDays;
-//     }
-    
-//     private function isWorkingDay($date, $workingDaysOption, $holidays)
-//     {
-//         // Implement your logic here to determine if a given date is a working day.
-//         // Consider working days option, weekends, and holidays.
-        
-//         // Placeholder logic: Check if the day is not a weekend (Saturday or Sunday)
-//         // and is not a holiday.
-//         if ($date->isWeekday() && !in_array($date->format('Y-m-d'), $holidays)) {
-//             return true;
-//         }
-        
-//         return false;
-//     }
-
-
-
-
-
-
-
-// public function calculateAndStoreWorkingDays(Request $request)
-// {
-//     try {
-//         // Retrieve user inputs
-//         $workingDaysOption = $request->input('workingDaysOption');
-//         $startDate = Carbon::parse($request->input('startDate'));
-//         $endDate = Carbon::parse($request->input('endDate'));
-
-//         // Check if session variables are set
-//         session_start();
-//         if (
-//             isset($_SESSION["username"]) &&
-//             isset($_SESSION["password"]) &&
-//             isset($_SESSION["dbName"])
-//         ) {
-//             $username = $_SESSION["username"];
-//             $password = $_SESSION["password"];
-//             $dbName = $_SESSION["dbName"];
-
-//             // Dynamically set the database connection for the dynamic database
-//             Config::set('database.connections.dynamic', [
-//                 'driver' => 'mysql',
-//                 'host' => 'localhost',
-//                 'database' => $dbName,
-//                 'username' => $username,
-//                 'password' => $password,
-//                 'charset' => 'utf8mb4',
-//                 'collation' => 'utf8mb4_unicode_ci',
-//                 'prefix' => '',
-//                 'strict' => true,
-//                 'engine' => null,
-//             ]);
-
-//             $dynamicDB = DB::connection('dynamic');
-
-//             // Check if the dynamic table exists, and create it if not
-//             if (!$dynamicDB->getSchemaBuilder()->hasTable('workings')) {
-//                 $dynamicDB->getSchemaBuilder()->create('workings', function (Blueprint $table) {
-//                     $table->id();
-//                     $table->integer('year');
-//                     $table->integer('month');
-//                     $table->integer('working_days');
-//                     $table->integer('weekends');
-//                     $table->integer('holidays');
-//                     $table->timestamps();
-//                 });
-//             }
-
-//             // Calculate and store working days for each month
-//             while ($startDate <= $endDate) {
-//                 $year = $startDate->year;
-//                 $month = $startDate->month;
-
-//                 $weekendDays = $this->calculateWeekendDays($workingDaysOption);
-//                 $holidays = $this->getHolidaysForMonth($dynamicDB, $year, $month);
-
-//                 $workingDaysCount = $this->calculateWorkingDays($startDate, $weekendDays, $holidays);
-
-//                 // Store the calculated data in the dynamic table
-//                 $dynamicDB->table('workings')->insert([
-//                     'year' => $year,
-//                     'month' => $month,
-//                     'working_days' => $workingDaysCount,
-//                     'weekends' => $weekendDays,
-//                     'holidays' => count($holidays),
-//                     'created_at' => now(),
-//                     'updated_at' => now(),
-//                 ]);
-
-//                 $startDate->addMonth(); // Move to the next month
-//             }
-
-//             return response()->json(['message' => 'Working days calculated and stored successfully']);
-//         } else {
-//             return response()->json(['message' => 'Please login'], 401);
-//         }
-//     } catch (\Exception $e) {
-//         return response()->json(['error' => $e->getMessage()], 500);
-//     }
-// }
-
-// // Other methods remain the same...
-
-// private function getHolidaysForMonth($dynamicDB, $year, $month)
-// {
-//     // Fetch holidays for the specified year and month from the dynamic database
-//     $holidays = $dynamicDB->table('holidays')
-//         ->whereYear('holiday', $year)
-//         ->whereMonth('holiday', $month)
-//         ->pluck('holiday')
-//         ->toArray();
-
-//     return $holidays;
-// }
-
-// // Other methods remain the same...
-
-
-
-
-
-
-
-
-
-
-
 
 public function calculateAndStoreWorkingDays(Request $request)
 {
     try {
-        // Retrieve user inputs
-
-        // $workingDaysOption = $request->input('workingDaysOption');
-        // $startDate = Carbon::parse($request->input('startDate'));
-        // $endDate = Carbon::parse($request->input('endDate'));
         $start = '2023-06-10';
         $end = '2023-11-30';
         $workingDaysOption = 'mon-fri';
-        $startDate = Carbon::parse($start); //2023-06-01 00:00:00
+        $startDate = Carbon::parse($start);
         $endDate = Carbon::parse($end);
        
 
@@ -2122,24 +1595,18 @@ public function calculateAndStoreWorkingDays(Request $request)
                 });
             }
 
-            // Calculate and store working days for each month
+
             $processingDate = $startDate->copy();
            $workingCount = $dynamicDB->table('workings')->count();
-           if (!($workingCount > 0))    //or ($workingCount <= 0)
+           if (!($workingCount > 0)) 
            {
             while ($processingDate <= $endDate) {
                 $year = $processingDate->year;
                 $month = $processingDate->month;
                 $monthName = $processingDate->format('F');
-                // echo $processingDate;die();
-                // $isweek = $processingDate->isWeekend();
-                // echo $isweek; die();
                 $weekendDays = $this->calculateWeekendDays($workingDaysOption);
                 $holidays = $this->getHolidaysForMonth($dynamicDB, $year, $month);
                 $workingDaysCount = $this->calculateWorkingDays($processingDate, $weekendDays, $holidays,$workingDaysOption);
-                //    echo $workingDaysCount;die();
-                // Store the calculated data in the dynamic table
-                
                 $dynamicDB->table('workings')->insert([
                     'year' => $year,
                     'month' => $month,
@@ -2150,12 +1617,9 @@ public function calculateAndStoreWorkingDays(Request $request)
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                // echo $processingDate;die();
-                // $processingDate->addMonth(); // Move to the next month
-                // echo $processingDate->startOfMonth();die();
-                $processingDate->startOfMonth()->addMonth(); //startOfMonth (2023-08-10 to change 2023-08-01)
-                // echo $processingDate;die();
-            }   // end while
+                $processingDate->startOfMonth()->addMonth(); 
+               
+            }   
             return response()->json(['message' => 'Working days calculated and stored successfully']);
 
            }
@@ -2174,22 +1638,21 @@ public function calculateAndStoreWorkingDays(Request $request)
 
 private function calculateWeekendDays($workingDaysOption)
 {
-    // Calculate the number of weekend days based on the working days option
+    
     if ($workingDaysOption === 'mon-fri') {
-        return 2; // Saturday and Sunday are considered as weekend
+        return 2; 
     } elseif ($workingDaysOption === 'mon-sat') {
-        return 1; // Only Sunday is considered as weekend
+        return 1; 
     } elseif ($workingDaysOption === 'mon-sun') {
-        return 0; // No weekends, all days are working days
+        return 0;
     } else {
-        return 0; // Default to no weekends
+        return 0; 
     }
 }
 
 
 private function getHolidaysForMonth($dynamicDB, $year, $month)
 {
-    // Fetch holidays for the specified year and month from the dynamic database
     $holidays = $dynamicDB->table('holidays') 
         ->whereYear('holiday', $year)
         ->whereMonth('holiday', $month)
@@ -2204,22 +1667,17 @@ private function getHolidaysForMonth($dynamicDB, $year, $month)
 
 
 private function calculateWorkingDays($processingDate, $weekendDays, $holidays, $workingDaysOption) 
-   // $processingDate passed and renamed it $startDate,now $startDate month is fixed(like 6,7,8 or 9 till endDate month
-   // but $currentDate increment by day so when month is over then loop will exit
 {
     $workingDays = 0;
     $currentDate = $processingDate->copy();
-    //  return $startDate;die();
 
-    while ($currentDate->month === $processingDate->month) {   // check $currentDate->month after addDay()
+    while ($currentDate->month === $processingDate->month) {   
         if (
             (!$currentDate->isWeekend() && $workingDaysOption === 'mon-fri') ||
             (!$currentDate->isSunday() && $workingDaysOption === 'mon-sat') ||
-            // (!$currentDate->isWeekend() && $workingDaysOption === 'mon-sat') ||
             $workingDaysOption === 'mon-sun'
         ) {
-            $formattedDate = $currentDate->toDateString();    // $formattedDate like 2023-06-10
-        //    echo $formattedDate;die();
+            $formattedDate = $currentDate->toDateString();
             if (!in_array($formattedDate, $holidays)) {
                 $workingDays++; 
                 
@@ -2234,84 +1692,6 @@ private function calculateWorkingDays($processingDate, $weekendDays, $holidays, 
     
     
 }
-
-
-
-
-
-
-
-
-
-// // private function calculateWorkingDays($startDate, $weekendDays, $holidays)
-// // {
-// //     $workingDays = 0;
-// //     $currentDate = $startDate->copy();
-
-// //     while ($currentDate->month === $startDate->month) {
-// //         if (!$currentDate->isWeekend() && !in_array($currentDate->toDateString(), $holidays)) {
-// //             $workingDays++;
-// //         }
-
-// //         $currentDate->addDay();
-// //     }
-
-// //     return $workingDays - $weekendDays - count($holidays);
-// // }
-
-
-
-// // private function calculateWorkingDays($startDate, $weekendDays, $holidays)
-// // {
-// //     $workingDays = 0;
-// //     $currentDate = $startDate->copy();
-
-// //     while ($currentDate->month === $startDate->month) {
-// //         if (!$currentDate->isWeekend() || $weekendDays === 0) {
-// //             $formattedDate = $currentDate->toDateString();
-// //             if (!in_array($formattedDate, $holidays)) {
-// //                 $workingDays++;
-// //             }
-// //         }
-
-// //         $currentDate->addDay();
-// //     }
-
-// //     return $workingDays;
-// // }
-
-
-
-
-
-
-
-// private function calculateWorkingDays($startDate, $endDate, $workingDaysOption, $holidays)
-// {
-//     $workingDays = 0;
-//     $currentDate = $startDate->copy();
-
-//     while ($currentDate <= $endDate) {
-//         $dayOfWeek = $currentDate->dayOfWeek;
-
-//         if (
-//             ($workingDaysOption === 'mon-fri' && $dayOfWeek >= Carbon::MONDAY && $dayOfWeek <= Carbon::FRIDAY) ||
-//             ($workingDaysOption === 'mon-sat' && $dayOfWeek >= Carbon::MONDAY && $dayOfWeek <= Carbon::SATURDAY) ||
-//             $workingDaysOption === 'mon-sun'
-//         ) {
-//             $formattedDate = $currentDate->toDateString();
-//             if (!in_array($formattedDate, $holidays)) {
-//                 $workingDays++;
-//             }
-//         }
-
-//         $currentDate->addDay();
-//     }
-
-//     return $workingDays;
-// }
-
-
 
 
 public function calculateAndStoreWorkingDayss(Request $request)
@@ -2335,7 +1715,7 @@ while ($currentDate <= $endDate) {
     $dayOfMonth = $currentDate->day; // 20
     $monthDays = $currentDate->daysInMonth; //31
    
-    // Calculate weekends only within the range of 20th to last day of the month
+  
     for ($day = $dayOfMonth; $day <= $monthDays; $day++) {
         $dateString = "{$currentDate->year}-{$currentDate->month}-$day";
         $currentDay = Carbon::parse($dateString);
@@ -2359,8 +1739,6 @@ while ($currentDate <= $endDate) {
         }
           
     }
-
-    // Move to the next month
     $currentDate->addMonth();
 }
 
@@ -2373,93 +1751,21 @@ die();
 
 
     try {
-
-
-// $startDateString = '2023-09-16';
-// $startDate = Carbon::parse($startDateString);
-// $year = $startDate->year;
-// $month = $startDate->month;
-// $totalDaysInMonth = $startDate->daysInMonth;
-
-
-// $saturdaysCount = 0;
-// $sundaysCount = 0;
-
-// for ($day = $startDate->day; $day <= $totalDaysInMonth; $day++) {
-//     $dateString = "$year-$month-$day";
-//     $currentDate = Carbon::parse($dateString);
-
-//     if ($currentDate->dayOfWeek === Carbon::SATURDAY) {
-//         $saturdaysCount++;
-//     }
-
-//     if ($currentDate->dayOfWeek === Carbon::SUNDAY) {
-//         $sundaysCount++;
-//     }
-// }
-
-// echo "Number of Saturdays from $startDateString: $saturdaysCount\n";
-// echo "Number of Sundays from $startDateString: $sundaysCount";die();
-
-
-
-
-
-
-//         $year = 2023;
-//         $month = 10;
-//         $totalDaysInMonth = Carbon::create($year, $month)->daysInMonth;
-
-//       $saturdaysCount = 0;
-//       $sundaysCount = 0;
-//       for ($day = 1; $day <= $totalDaysInMonth; $day++) {
-//         $dateString = "$year-$month-$day";
-//         $currentDate = Carbon::parse($dateString);
-
-//     if ($currentDate->dayOfWeek === Carbon::SATURDAY) {
-//         $saturdaysCount++;
-//     }
-
-//     if ($currentDate->dayOfWeek === Carbon::SUNDAY) {
-//         $sundaysCount++;
-//     }
-// }
-// $totalHoliday = $saturdaysCount + $sundaysCount;
-
-// echo $totalHoliday;
-// die();
-
-
-
-
-
-        // Retrieve user inputs
         $start = '2023-08-20';
         $end = '2023-11-20';
-        // $workingDaysOption = $request->input('workingDaysOption'); // Options: 'mon-fri', 'mon-sat', 'mon-sun'
         $workingDaysOption = 'mon-fri';
         $startDate = Carbon::parse($start);
         $endDate = Carbon::parse($end);
-        
-        // $months = $startDate->month;
-        // echo $months;die(); 
-
-        // $year = 2023;
-        // $month = 2; 
-        // $daysInMonth = Carbon::create($year, $month)->daysInMonth;
-        // echo "Number of days in the specified month: $daysInMonth";die();
         $againDate = $startDate->copy();
-         //like 2023-06-20
         
         $processDate = Carbon::parse($againDate);
         
-        $MonthInNumber = $processDate->month; //  8 (august)
+        $MonthInNumber = $processDate->month;
        
-        $yearInNumber = $processDate->year; // 2023
-         $dayOfMonth = $processDate->day;  // 20 (starting month day)
-        // $daysInMonth = Carbon::create($yearInNumber,$MonthInNumber)->daysInMonth;
+        $yearInNumber = $processDate->year;
+         $dayOfMonth = $processDate->day;
         $daysInMonth = $processDate->daysInMonth;
-        $daysTotal = $daysInMonth - $dayOfMonth + 1; // 31 - 20 + 1 =11
+        $daysTotal = $daysInMonth - $dayOfMonth + 1; 
       
        
         if($processDate->month === $MonthInNumber)
@@ -2481,11 +1787,6 @@ die();
 
         }
         
-        
-
-        
-
-
 
         session_start();
         if (
@@ -2524,7 +1825,6 @@ die();
                 });
             }
 
-            // Calculate and store working days for each month
             $processingDate = $startDate->copy();
             while ($processingDate <= $endDate) {
                 $year = $processingDate->year;
@@ -2534,8 +1834,6 @@ die();
                 $holidays = $this->getHolidaysForMonths($dynamicDB, $year, $month);
 
                 $workingDaysCount = $this->calculateWorkingDayss($processingDate, $endDate, $workingDaysOption, $holidays);
-
-                // Store the calculated data in the dynamic table
                 $dynamicDB->table('workings')->insert([
                     'year' => $year,
                     'month' => $month,
@@ -2546,7 +1844,7 @@ die();
                     'updated_at' => now(),
                 ]);
 
-                $processingDate->addMonth(); // Move to the next month
+                $processingDate->addMonth(); 
             }
 
             return response()->json(['message' => 'Working days calculated and stored successfully']);
@@ -2559,17 +1857,14 @@ die();
 }
 
 }
-
-
-
 private function calculateWeekendDayss($workingDaysOption)
 {
     if ($workingDaysOption === 'mon-fri') {
-        return 2; // Saturday and Sunday are considered as weekend
+        return 2; 
     } elseif ($workingDaysOption === 'mon-sat') {
-        return 1; // Only Sunday is considered as weekend
+        return 1;
     } else {
-        return 0; // No weekends, all days are working days
+        return 0; 
     }
 }
 
@@ -2649,7 +1944,6 @@ public function addAnnouncement(Request $request)
                 });
             }
         $announcement ="this is for test";
-             // Store the calculated data in the dynamic table
              $dynamicDB->table('announcements')->insert([
                 'announcement' => $announcement,
                 'date' => now(),
@@ -2667,11 +1961,6 @@ public function addAnnouncement(Request $request)
     }
   
 }
-
-
-
-
-
 
 public function addProject(Request $request)
 {
@@ -2704,9 +1993,7 @@ public function addProject(Request $request)
 
         $dynamicDB = DB::connection('dynamic');
         
-                // Check if the 'projects' table exists in the dynamic database
         if (!Schema::connection('dynamic')->hasTable('projects')) {
-            // If the 'projects' table doesn't exist, create it
             Schema::connection('dynamic')->create('projects', function (Blueprint $table) {
                 $table->id();
                 $table->string('project_name');
@@ -2778,9 +2065,7 @@ public function addProfessionalTax(Request $request)
 
         $dynamicDB = DB::connection('dynamic');
 
-           // Check if the 'professionalTaxes' table exists in the dynamic database
            if (!Schema::connection('dynamic')->hasTable('professionalTaxes')) {
-            // If the 'professionalTaxes' table doesn't exist, create it
             Schema::connection('dynamic')->create('projects', function (Blueprint $table) {
                 $table->id();
                 $table->string('month');
@@ -2813,40 +2098,22 @@ public function addProfessionalTax(Request $request)
     return response()->json(['message' => 'pls login']);
 }
 
-
-
-
 public function calculateWeekend(Request $request)
 {
-    $year = 2023; // Year
-    $month = 9;   // Month (August)
-
-    // Create Carbon instances for the first day and last day of the month
+    $year = 2023;
+    $month = 9;  
     $firstDay = Carbon::create($year, $month)->startOfMonth();
-    
     $lastDay = Carbon::create($year, $month)->endOfMonth();
-
-    // Initialize a counter for weekend days
     $weekendDays = 0;
-
-    // Loop through each day in the month and count weekends
     $currentDay = clone $firstDay;
     while ($currentDay <= $lastDay) {
-        // Check if it's Saturday (6) or Sunday (0)
         if ($currentDay->dayOfWeek === 6 || $currentDay->dayOfWeek === 0) {
             $weekendDays++;
         }
-       
-        // Move to the next day
         $currentDay->addDay();
     }
-
-    // Return the total weekend days
     return response()->json(['weekendDays' => $weekendDays]);
 }
-
-
-
 
 
 public function taxInformation(Request $request)
@@ -2856,21 +2123,10 @@ public function taxInformation(Request $request)
 
 
 
-
-
-
-
-
-
-
 public function salaryStructure(Request $request)
 {
     $validatedData = $request->validate([
-    //     'basic salary' => 'required',
-    //     'house rent Allowence' => 'required',
-    //     'medical & conveyance' => 'required',
-    //     'statuory bonus' => 'required',
-    //     'tax deduction' => 'required'
+
            'date'    => 'required|date'
     ]);
     session_start();
@@ -2895,33 +2151,25 @@ public function salaryStructure(Request $request)
 
     $dynamicDB = DB::connection('dynamic');
 
-
-
-    // Check if the 'tax_information' table exists in the dynamic database
     if (!Schema::connection('dynamic')->hasTable('tax_information')) {
-        // If the 'tax_information' table doesn't exist, create it
         Schema::connection('dynamic')->create('tax_information', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id'); // Reference to employee
-            $table->string('tax_code'); // Tax code or identifier
-            $table->decimal('tax_rate', 5, 2); // Tax rate as a decimal (e.g., 25.00%)
+            $table->unsignedBigInteger('employee_id'); 
+            $table->string('tax_code'); 
+            $table->decimal('tax_rate', 5, 2); 
             $table->timestamps(); 
 
             $table->foreign('employee_id')->references('id')->on('employees');
               
         });
        
-    }
-
-
-        // Check if the 'deductions' table exists in the dynamic database
+    }  
         if (!Schema::connection('dynamic')->hasTable('deductions')) {
-            // If the 'deductions' table doesn't exist, create it
             Schema::connection('dynamic')->create('deductions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id'); // Reference to employee
-            $table->string('deduction_name'); // Name or description of the deduction
-            $table->decimal('deduction_amount', 10, 2); // Deduction amount
+            $table->unsignedBigInteger('employee_id');
+            $table->string('deduction_name'); 
+            $table->decimal('deduction_amount', 10, 2);
             $table->timestamps(); 
 
             $table->foreign('employee_id')->references('id')->on('employees');
@@ -2930,16 +2178,13 @@ public function salaryStructure(Request $request)
            
         }
 
-
-
-             // Check if the 'bonuses' table exists in the dynamic database
+             
              if (!Schema::connection('dynamic')->hasTable('bonuses')) {
-                // If the 'bonuses' table doesn't exist, create it
             Schema::connection('dynamic')->create('bonuses', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id'); // Reference to employee
-            $table->string('bonus_name'); // Name or description of the bonus
-            $table->decimal('bonus_amount', 10, 2); // Bonus amount
+            $table->unsignedBigInteger('employee_id');
+            $table->string('bonus_name'); 
+            $table->decimal('bonus_amount', 10, 2);
             $table->timestamps();
 
             $table->foreign('employee_id')->references('id')->on('employees');
@@ -2957,23 +2202,20 @@ public function salaryStructure(Request $request)
       if (!Schema::connection('dynamic')->hasTable('salaries')) {
         
         Schema::connection('dynamic')->create('salaries', function (Blueprint $table) {
-            $table->id(); // Auto-incrementing primary key column
-            $table->unsignedBigInteger('employee_id'); // Reference to employee
-            // $table->enum('isActive',['yes','no']);
-            $table->decimal('amount', 10, 2); // Salary amount with two decimal places
-            $table->enum('frequency', ['monthly', 'bi-weekly']); // Payment frequency
-            $table->string('payment_method'); // Payment method (e.g., direct deposit)
-            $table->string('bank_account_number')->nullable(); // Bank account number
-            $table->string('bank_name')->nullable(); // Add bank name column
-            $table->unsignedBigInteger('tax_information_id')->nullable(); // Reference to tax information
-            $table->unsignedBigInteger('deductions_id')->nullable(); // Reference to deductions
-            $table->unsignedBigInteger('bonuses_id')->nullable(); // Reference to bonuses
-            $table->date('payroll_period'); // Period for which the salary is paid
-            $table->date('date_of_payment'); // Date when the salary is paid
-            $table->decimal('net_salary', 10, 2); // Net salary after deductions
-            $table->timestamps(); // Created at and updated at timestamps
-            
-            // Foreign key constraints
+            $table->id();
+            $table->unsignedBigInteger('employee_id');
+            $table->decimal('amount', 10, 2); 
+            $table->enum('frequency', ['monthly', 'bi-weekly']); 
+            $table->string('payment_method');
+            $table->string('bank_account_number')->nullable(); 
+            $table->string('bank_name')->nullable(); 
+            $table->unsignedBigInteger('tax_information_id')->nullable();
+            $table->unsignedBigInteger('deductions_id')->nullable();
+            $table->unsignedBigInteger('bonuses_id')->nullable();
+            $table->date('payroll_period'); 
+            $table->date('date_of_payment'); 
+            $table->decimal('net_salary', 10, 2);
+            $table->timestamps(); 
             $table->foreign('employee_id')->references('id')->on('employees');
             $table->foreign('tax_information_id')->references('id')->on('tax_information');
             $table->foreign('deductions_id')->references('id')->on('deductions');
@@ -2984,13 +2226,8 @@ public function salaryStructure(Request $request)
     }
     $date = $validatedData['date'];
     $start = Carbon::parse($date);
-    // $end = $start->endOfMonth();
     $year = $start->year;
-    
-   
     $weekends = $this->calculateWeekends($start,$year);
-   
-    // return response()->json(['weekendDays' => $weekends]);
     return response()->json(['message' => 'created']);
 
 
@@ -3003,37 +2240,18 @@ public function salaryStructure(Request $request)
 
 private function calculateWeekends($start,$year)
 { 
-    // $year = 2023; // Year
-    // $month = 9;   // Month (August)
     $month = $start->format('n'); 
-    // $newYear = $year; 
-
-    // $monthNumber = $start->format('n');
-
-    // Create Carbon instances for the first day and last day of the month
     $firstDay = Carbon::create($year, $month)->startOfMonth();
     $lastDay = Carbon::create($year, $month)->endOfMonth();
-    
-   
-//    print($firstDay); 
-//    die();
-
-    // Initialize a counter for weekend days
     $weekendDays = 0;
 
-    // Loop through each day in the month and count weekends
     $currentDay = clone $firstDay;
     while ($currentDay <= $lastDay) {
-        // Check if it's Saturday (6) or Sunday (0)
         if ($currentDay->dayOfWeek === 6 || $currentDay->dayOfWeek === 0) {
             $weekendDays++;
         }
-        
-        // Move to the next day
         $currentDay->addDay();
     }
-
-    // Return the total weekend days
     return response()->json(['weekendDays' => $weekendDays]);
 }
 
@@ -3041,25 +2259,6 @@ private function calculateWeekends($start,$year)
 
 public function salaryComponent(Request $request)
 {
-    //  $validatedData = $request->validate([
-    //     //Allowances
-    //    'Dearness Allowance' => 'required',
-    //    'House Rent Allowance' => 'required',
-    //    'Leave Travel Allowance' => 'required',
-    //    'Conveyance allowance' => 'required',
-    //    'Medical allowance' => 'required',
-    //       //Other indirect components in your salary
-    //     'Overtime payment' => 'required',
-    //     'Bonus'  =>  'required',
-    //     'Performance-linked incentive' => 'required',
-    //     'Salary arrears' =>  'required',
-    //     'Travel and food reimbursements' => 'required',
-    //     'Gratuity' => 'required',
-    //     'Professional Tax' => 'required',
-    //     'Tax Deduction at Source (TDS)' => 'required',
-    //     'ESIC' => 'required',
-
-    // ]);
 
     session_start();
 
@@ -3128,11 +2327,6 @@ public function salaryComponent(Request $request)
 
 }
 
-
-
-
-
-
 public function salaryComponents(Request $request)
 {
       $validatedData = $request->validate([
@@ -3142,7 +2336,6 @@ public function salaryComponents(Request $request)
         'leave_travel_allowance' => 'nullable|boolean',
         'conveyance_allowance' => 'nullable|boolean',
         'medical_allowance' => 'nullable|boolean',
-           //Other indirect components in your salary
         'overtime_payment' => 'nullable|boolean',
         'bonus'  =>  'nullable|boolean',
         'performance_linked_incentive' => 'nullable|boolean',
@@ -3228,14 +2421,6 @@ public function salaryComponents(Request $request)
     return response()->json(['message' => 'session out,pls login']);
 
 }
-
-
-
-
-
-
-
-
 public function calculateSalary(Request $request)
 {
   session_start();
@@ -3267,24 +2452,6 @@ public function calculateSalary(Request $request)
   return response()->json(['message' => 'session logout,pls login']);
 
 }
-
-
-// public function showForm()
-// {
-//     return view('car.form');
-// }
-
-// public function processForm(Request $request)
-// {
-//     $abc = $request->has_car;
-//     // echo $abc;die();
-//     $hasCar = $request->input('has_car') == 'yes' ? 'Yes' : 'No';
-
-//     return "User has a car: $hasCar";
-// }
-
-
-
 
 public function empAllowance(Request $request)
 {
@@ -3318,7 +2485,7 @@ public function empAllowance(Request $request)
                 $table->id();
                 $table->unsignedBigInteger('employee_id');
                 $table->string('allowance_type');
-                $table->decimal('amount', 10, 2); // Example for a decimal field with 2 decimal places
+                $table->decimal('amount', 10, 2); 
                 $table->string('currency')->nullable();
                 $table->date('effective_date');
                 $table->date('end_date')->nullable();
@@ -3326,34 +2493,17 @@ public function empAllowance(Request $request)
                 $table->boolean('taxable')->default(false);
                 $table->text('comments')->nullable();
                 $table->timestamps();
-                
-                    // Define foreign key constraint
                 $table->foreign('employee_id')->references('id')->on('employees');
                
             });
         }
-        // $dynamicDB->table('emp_allowances')->insert([
-        //     'employee_id' => ,
-        //     'allowance_type' => ,
-        //     'amount' => ,
-        //     'currency' => ,
-        //     'effective_date' => ,
-        //     'end_date' =>,
-        //     'frequency' => ,
-        //     'taxable'  => ,
-        //     'comments' => ,
-        //     'created_at' => $date,
-        //     'updated_at' => $date,
-        // ]);
+
         return response()->json(['message' => 'successfully created']);
 
     }
     return response()->json(['message' => 'session out,pls login']);
 
 }
-
-
-
 
 public function companyAllowance(Request $request)
 { 
@@ -3457,12 +2607,7 @@ public function allEmpAttend(Request $request)
         ]);
     
      $dynamicDB = DB::connection('dynamic');
-        // Get today's date
     $today = Carbon::now()->toDateString();
-
-       
-    // $totalAttendanceToday = $dynamicDB->table('attendences')->whereDate('created_at', $today)->count();
-
         $todayAttend = $dynamicDB->table('attendences')
         ->whereDate('created_at', $today)
         ->count();
@@ -3496,16 +2641,12 @@ public function allEmpAbcent(Request $request)
     
      $dynamicDB = DB::connection('dynamic');
      $today = Carbon::now()->toDateString();
-         //total employee attend today
      $todayAttend = $dynamicDB->table('attendences')
      ->whereDate('created_at', $today)
      ->count();
-       // Query the "employees" table to count the total number of employees
     $totalEmployees = DB::connection('dynamic')
     ->table('employees')
     ->count();
-    
-      // Calculate the total absent employees by subtracting total present from total employees
     $totalAbsentToday = $totalEmployees - $todayAttend;
     return response()->json(['message' => 'total abcent ' . $totalAbsentToday]);
 
@@ -3561,20 +2702,14 @@ public function salaryStuct(Request $request)
     $validatedData = Validator::make($request->all(), [
         'ctc' => 'required',
         'basic%' => 'required',
-         'da%'   => 'nullable', //allowances
+         'da%'   => 'nullable', 
         'hra%'   => 'required',
         
         'leave travel allowance%' => 'nullable|default:0',
         'conveyance_allowance' => ['nullable','in:yes,no'],
         'medical'  =>  ['nullable','in:yes,no'],
-        
-        
-      
-
+       
     ]);
- 
-        ///  Net Salary = Basic Salary + Allowances – (Provident fund + Gratuity + TDS + Professional Tax)
-
    
   
 
@@ -3591,13 +2726,13 @@ public function salaryStuct(Request $request)
         $basic = $ctc*$basicInput/100;
       
         $basicSalary = $ctc *$request->input('basic%') / 100;
-        $da = $request->input('da%',0); //allowances
+        $da = $request->input('da%',0); 
         $hra = $basicSalary * $request->input('hra%')/100; 
         $lta = $request->input('leave travel allowance%');
         $ca = $request->input('conveyance_allowance');
-        $ca = ($ca == 'yes') ? 1600 : 0;   // 1600 per month
+        $ca = ($ca == 'yes') ? 1600 : 0;  
         $medical = $request->input('medical');
-        $medical = ($medical == 'yes') ? 1250 : 0; // 1250 per month
+        $medical = ($medical == 'yes') ? 1250 : 0; 
         $allowances = $da + $ca + $medical;
 
         
@@ -3731,9 +2866,6 @@ public function createIndianStates(Request $request)
         'Uttarakhand',
         'West Bengal'
     ];
-
-
-     // Insert the list of states into the 'indian_states' table
      foreach ($states as $state) {
         $dynamicDB->table('indian_states')->insert([
             'name' => $state,
@@ -3752,14 +2884,6 @@ public function createIndianStates(Request $request)
 
 
 }
-
-
-
-
-
-
-
-
 
 
 public function assetPurchase(Request $request)
@@ -3847,7 +2971,7 @@ public function assetPurchase(Request $request)
         'invoice_no' => $request->input('invoice_no'),
         'invoice_date' => $request->input('invoice_date'),
         'warranty_end_date' => $request->input('warranty_end_date'),
-        // 'allocation_date'  => 
+        
         'created_at' =>        $date,
         'updated_at' =>        $date,
 
@@ -3953,6 +3077,323 @@ public function allAssetRequest(Request $request)
 
 }
 
+
+
+
+
+public function assetApprove(Request $request)
+{
+    session_start();
+    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    {
+        $username = $_SESSION['username'];
+        $password = $_SESSION['password'];
+        $dbName   = $_SESSION['dbName'];
+        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+        $dynamicDB = DB::connection('dynamic');
+      
+      
+
+    }
+}
+
+
+
+
+
+public function newUser(Request $request)
+{
+    $validatedData = $request->validate([
+        'emp_id' => 'required',
+        'name' => 'required',
+        'email' => 'required',
+        'username' => 'required',
+        'password' => 'required',
+        'read' => 'nullable|boolean',
+        'create' => 'nullable|boolean',
+        'edit' => 'nullable|boolean',
+        'delete' => 'nullable|boolean',
+        'role' => 'required',
+        
+    ]);
+
+    session_start();
+    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    {
+        $username = $_SESSION['username'];
+        $password = $_SESSION['password'];
+        $dbName   = $_SESSION['dbName'];
+        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+
+
+        $dynamicDB = DB::connection('dynamic');
+        if (!$dynamicDB->getSchemaBuilder()->hasTable('permission')) {
+            $dynamicDB->getSchemaBuilder()->create('permission', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->unsignedBigInteger('emp_id');
+                $table->string('username');
+                $table->string('password');
+                $table->string('db_name');
+                $table->string('email');
+                $table->boolean('read');
+                $table->boolean('create');
+                $table->boolean('edit');
+                $table->boolean('delete');
+                $table->enum('role', ['admin', 'subadmin']);
+                $table->timestamps();
+
+                $table->foreign('emp_id')->references('id')->on('employees');
+            });
+        }
+
+        $dynamicDB->table('permission')->insert([
+            'name' => $request->name,
+            'emp_id' => $request->emp_id,
+            'username' => $request->username,
+            'password' => bcrypt($request->password),
+            'db_name'  => encrypt($dbName),
+            'email'   => $request->email,
+            'read' => $request->input('read', false),
+            'create' => $request->input('create', false),
+            'edit' => $request->input('edit', false),
+            'delete' => $request->input('delete', false),
+            'role' => $request->role,
+            'created_at' => $date,
+            'updated_at' => $date,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'user role created successfully']);
+    }
+
+    return response()->json(['success' => false, 'message' => 'session out! Please log in']);
+}
+
+
+
+
+
+
+
+public function editUser(Request $request,$id)
+{
+   session_start();
+   if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    {
+        $username = $_SESSION['username'];
+        $password = $_SESSION['password'];
+        $dbName   = $_SESSION['dbName'];
+        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+
+
+        $dynamicDB = DB::connection('dynamic');
+
+        $permission = $dynamicDB->table('permission')->find($id);
+        if(!$permission)
+        {
+            return response()->json(['message'=> 'record not found']);
+        }
+        else
+        {
+            $dynamicDB->table('permission')->where('id', $id)->update([
+
+                'name' => $request->name,
+                'emp_id' => $request->emp_id,
+                'username' => $request->username,
+                'password' => bcrypt($request->password),
+                'read' => $request->input('read'),
+                'create' => $request->input('create'),
+                'edit' => $request->input('edit'),
+                'delete' => $request->input('delete'),
+                'role' => $request->role,
+                'updated_at' => $date,
+              
+    
+            ]);
+    
+                
+    
+                return response()->json(['success' => true, 'message' => 'User updated successfully']);
+        }
+        
+   
+
+        
+
+
+
+    }
+
+    return response()->json(['success' => false,'message' => 'session out! pls login']);
+}
+
+
+
+
+public function delUser(Request $request,$id)
+{
+    session_start();
+    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    {
+        $username = $_SESSION['username'];
+        $password = $_SESSION['password'];
+        $dbName   = $_SESSION['dbName'];
+        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+
+        $dynamicDB = DB::connection('dynamic');
+       $delUser =  $dynamicDB->table('permission')->find($id);
+       if(!$delUser)
+       {
+        return response()->json(['success' => false, 'message'=> 'record not found']);
+
+       }
+       else
+       {
+        $dynamicDB->table('permission')->where('id',$id)->delete();
+        return response()->json(['success' => true, 'message' => 'User deleted successfully']);
+
+       }
+       
+
+    }
+
+    return response()->json(['success' =>false,'message'=>'session out! login again']);
+    
+}
+
+
+
+public function logUser(Request $request)
+{
+
+    try {
+        $validatedData = $request->validate([
+            'email' => 'required',
+            'username' => 'required',
+            'password' => 'required',
+        ]);
+
+        $user = User::where('username', $request->username)->first();
+
+        if ($user && Hash::check($request->password, $user->password)) {
+            $dbName = $user->dbName;
+
+     
+             //ini_set('session.cookie_lifetime', 60 * 10);
+
+            // ini_set('session.cookie_lifetime', 60 * 2);
+            session_start();
+            $_SESSION['username'] = $user->username;
+            $_SESSION['password'] = $request->password;
+            $_SESSION['dbName']   = $dbName;
+
+            $_SESSION['start'] = time();
+            $_SESSION['expire'] = $_SESSION['start'] + (5 * 60);
+           
+            Config::set('database.connections.dynamic', [
+                'driver' => 'mysql',
+                'host' => 'localhost',
+                'database' => $dbName,
+                'username' => $user->username,
+                'password' => $request->password,
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'strict' => true,
+                'engine' => null,
+            ]);
+
+            $dynamicDB = DB::connection('dynamic');
+
+          
+            $access = $dynamicDB->table('permission')->where('email', $request->email)->first();
+
+            if ($access) {
+                $_SESSION['read'] = $access->read;
+                $_SESSION['create'] = $access->create;
+                $_SESSION['edit'] = $access->edit;
+                $_SESSION['delete'] = $access->delete;
+
+                return response()->json(['success' => true, 'message' => 'Login successful']);
+            } else {
+               
+                // session_unset();
+                // session_destroy();
+                return response()->json(['success' => false, 'message' => 'Access denied']);
+            }
+        }
+
+  
+        return response()->json(['success' => false, 'message' => 'Invalid credentials']);
+    } catch (Exception $e) {
+       
+        return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+    }
+}
+
+
+
+public function allSession(Request $request)
+{
+    $allSessionData = Session::all();
+    return response()->json([$allSessionData]); 
+}
 
 
 

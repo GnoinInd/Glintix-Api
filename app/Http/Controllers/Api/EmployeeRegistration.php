@@ -168,16 +168,16 @@ else
 
     public function sessionShow(Request $request)
 {      session_start();
-    //   // Retrieve all session data
+         // Retrieve all session data
        //$sessionData = session()->all();
 
   
     
        $session = var_dump($_SESSION);
-    //   // Or, you can log the session data
+       //  log the session data
             //Log::info($sessionData);
   
-    //   // You can also return the session data as a JSON response
+         //  return the session data as a JSON response
        return response()->json($session);
 
  
@@ -189,110 +189,138 @@ else
 
 
 
+private function checkSession()
+{
+    session_start();
+    $now = time();
+
+    if (isset($_SESSION['expire']) && $now > $_SESSION['expire']) {
+        session_destroy();
+        return false;
+    } elseif (isset($_SESSION['expire']) && $now <= $_SESSION['expire']) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+private function checkSessionAndSetupConnection()
+{
+    if (!$this->checkSession()) {
+        return false;
+    }
+   
+
+    if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"])) {
+        $username = $_SESSION["username"];
+        $password = $_SESSION["password"];
+        $dbName = $_SESSION["dbName"];
+
+        $passcode = Hash::make($password);
+
+        $maxEmp = User::where('username', $username)->where('dbName', $dbName)->value('total');
+
+        Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+
+        return compact('maxEmp');
+    }
+
+    return false; 
+}
+
+
 
 
 
 
 public function employeeBasic(Request $request)
 {
-        
-    try
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    }
+    $dynamicDB = DB::connection('dynamic');
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    // $empCount = $dynamicDB->table('company_employee')->count();
+    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
     {
-          session_start();
-        if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+        if (!$dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
         {
-            $username = $_SESSION["username"];
-            $password = $_SESSION["password"];
-            $dbName = $_SESSION["dbName"];
-    
-            $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-    
-            Config::set('database.connections.dynamic', [
-                'driver' => 'mysql',
-                'host' => 'localhost',
-                'database' => $dbName,
-                'username' => $username,
-                'password' => $password,
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'strict' => true,
-                'engine' => null,
-            ]);
-        
-         $dynamicDB = DB::connection('dynamic');
-    
-         
-         if (!$dynamicDB->getSchemaBuilder()->hasTable('user')) {
-            $dynamicDB->getSchemaBuilder()->create('user', function (Blueprint $table) {
+            $dynamicDB->getSchemaBuilder()->create('company_employee', function (Blueprint $table)
+            {
                 $table->id();
-                $table->string('title')->nullable();
-                $table->string('first_name')->nullable();
-                $table->string('middle_name')->nullable();
-                $table->string('last_name')->nullable();
-                $table->string('preferred_name')->nullable();
-                $table->date('DOB')->nullable();
-                $table->enum('gender',['male','female','other'])->nullable();
-                $table->string('blood_group')->nullable();
-                $table->string('marital_status')->nullable();
-                $table->string('marital_doc')->nullable();
-                $table->string('nationality_one')->nullable();
-                $table->string('nationality_two')->nullable();
-                $table->string('nationality_doc')->nullable();
-                $table->string('country_code')->nullable();
-                $table->bigInteger('mobile_no')->nullable();
-                $table->string('home_phone_no')->nullable();
-                $table->string('work_phone_no')->nullable();
-                $table->string('whatsapp_no')->nullable();
-                //$table->string('emergency_phone_number')->nullable();
-                $table->string('email')->nullable();
-                $table->string('voter_id')->nullable();
-                $table->string('pan_no')->nullable();
-                $table->string('driving_licence')->nullable();
-                $table->string('passport_no')->nullable();
-                $table->date('passport_to')->nullable();
-                $table->date('passport_from')->nullable();
-                $table->string('eme_country_code')->nullable();
-                $table->string('eme_mobile')->nullable();
-                $table->string('eme_whatsapp_no')->nullable();
-                $table->string('eme_email')->nullable();
-                $table->enum('status',['pending','rejected'])->default('pending');
+                 $table->string('title')->nullable();
+                 $table->string('first_name')->nullable();
+                 $table->string('middle_name')->nullable();
+                 $table->string('last_name')->nullable();
+                 $table->string('preferred_name')->nullable();
+                 $table->date('DOB')->nullable();
+                 $table->enum('gender',['male','female','other'])->nullable();
+                 $table->string('blood_group')->nullable();
+                 $table->string('marital_status')->nullable();
+                 $table->string('marital_doc')->nullable();
+                 $table->string('nationality_one')->nullable();
+                 $table->string('nationality_two')->nullable();
+                 $table->string('nationality_doc')->nullable();
+                 $table->string('country_code')->nullable();
+                 $table->bigInteger('mobile_no')->nullable();
+                 $table->string('home_phone_no')->nullable();
+                 $table->string('work_phone_no')->nullable();
+                 $table->string('whatsapp_no')->nullable();
+                 //$table->string('emergency_phone_number')->nullable();
+                 $table->string('email')->nullable();
+                 $table->string('voter_id')->nullable();
+                 $table->string('pan_no')->nullable();
+                 $table->string('driving_licence')->nullable();
+                 $table->string('passport_no')->nullable();
+                 $table->date('passport_to')->nullable();
+                 $table->date('passport_from')->nullable();
+                 $table->string('eme_country_code')->nullable();
+                 $table->string('eme_mobile')->nullable();
+                 $table->string('eme_whatsapp_no')->nullable();
+                 $table->string('eme_email')->nullable();
+                 $table->enum('status',['pending','rejected'])->default('pending');
               
-                $table->timestamps();
-            });
+                 $table->timestamps();
+            }); 
         }
-    
-    
-        
-        $dynamicDB->table('user')->insert([
-            'title' =>     $request->input('title'),
-            'first_name' => $request->input('first_name'),
-            'middle_name' => $request->input('middle_name'),
-            'last_name'  => $request->input('last_name'),
-            'preferred_name'  =>  $request->input('preferred_name'),
-            'DOB' => $request->input('DOB'),
-            'blood_group' => $request->input('blood_group'),
+        $empCount = $dynamicDB->table('company_employee')->count();
+        if($maxEmp > $empCount)
+        {
+             $dynamicDB->table('company_employee')->insert([
+             'title' =>     $request->input('title'),
+             'first_name' => $request->input('first_name'),
+             'middle_name' => $request->input('middle_name'),
+             'last_name'  => $request->input('last_name'),
+             'preferred_name'  =>  $request->input('preferred_name'),
+             'DOB' => $request->input('DOB'),
+             'blood_group' => $request->input('blood_group'),
            
     
-            'created_at' =>        $date,
-            'updated_at' =>        $date,
+             'created_at' =>      $date,
+             'updated_at' =>      $date,
     
     
-        ]);
-        return response()->json(['message' => 'employee basic details stored successfully']);
-     
-    
+         ]);
+         return response()->json(['message' => 'employee basic details stored successfully']);
         }
-        return response()->json(['success' => false,'message' => 'session out! pls login']);
-    
+        return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
 
     }
-    catch(\Exception $e)
-    {
-        return response()->json(['success' => false, 'error'=> $e->getMessage()],500);
-    }
-   
 
+    return response()->json(['message' => 'you have no permission'],400);
 
 }
 
@@ -303,58 +331,52 @@ public function employeeBasic(Request $request)
 public function employeeMarital(Request $request)
 {
     $validatedData = $request->validate([
-        'user_id' => 'required',
+        'emp_id' => 'required',
         'marital_status' => 'required',
-        'marital_doc' => 'required|file', 
+        'marital_doc' => 'file|mimes:jpeg,png,pdf',
     ]);
 
-    session_start();
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
 
-    if (isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName'])) {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        $dynamicDB = DB::connection('dynamic');
-        $user_id = $request->input('user_id');
-
-        $maritalDocPath = ''; 
-
-        if ($request->hasFile('marital_doc')) {
-            $file = $request->file('marital_doc');
-
-            $uniqueFolderName = $user_id . '_' . time();
-
-            $filePath = $file->store('marital_docs/' . $uniqueFolderName);
-
-            $maritalDocPath = $filePath;
-        }
-
-        $dynamicDB->table('user')->where('id', $user_id)->update([
-            'marital_status' => $request->input('marital_status'),
-            'marital_doc' => $maritalDocPath, // Store the file path
-            'updated_at' => $date,
-        ]);
-
-        return response()->json(['message' => 'Employee marital details stored successfully']);
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
     }
 
-    return response()->json(['message' => 'Session out! Login, please.']);
+    $dynamicDB = DB::connection('dynamic');
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+    $emp_id = $request->input('emp_id');
+    $empCount = $dynamicDB->table('company_employee')->count();
+    $maritalDocPath = '';
+
+    if (isset($_SESSION['create']) && $_SESSION['create'] == 1) {
+        if ($maxEmp > $empCount) {
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) {
+                if ($request->hasFile('marital_doc')) {
+                    $file = $request->file('marital_doc');
+                    $uniqueFolderName = $emp_id . '_' . time();
+                    $filePath = $file->store('marital_docs/' . $uniqueFolderName);
+                    $maritalDocPath = $filePath;
+                    $dynamicDB->table('company_employee')->where('id', $emp_id)->update([
+                        'marital_status' => $request->input('marital_status'),
+                        'marital_doc' => $maritalDocPath,
+                        'updated_at' => $date,
+                    ]);
+                    return response()->json(['message' => 'Employee marital details stored successfully']);
+                } 
+                    return response()->json(['message' => 'Please add a valid image file for marital_doc'], 400);
+                
+            } 
+                return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+            
+        } 
+            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+        
+    } 
+        return response()->json(['message' => 'You have no permission'], 403);
+    
 }
+
 
 
 
@@ -362,283 +384,259 @@ public function employeeMarital(Request $request)
 public function employeeNationality(Request $request)
 {
     $validatedData = $request->validate([
-        'user_id'  =>  'required',
-        'nationality_one' => 'required',
-        'nationality_two'  =>  'nullable',
-        'nationality_doc' => 'required|file',
-    ]);
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-       
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+                 'emp_id'  =>  'required',
+                 'nationality_one' => 'required',
+                 'nationality_two'  =>  'nullable',
+                 'nationality_doc' => 'required|file|mimes:jpeg,png,pdf',
+             ]);
 
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        $dynamicDB = DB::connection('dynamic');
-        $user_id = $request->input('user_id');
-        
-        $nationalityDocPath ='';
-
-        if($request->hasFile('nationality_doc'))
-        {
-            $file = $request->file('nationality_doc');
-            $uniqueFolderName = $user_id . '_' . time();
-            //$fileName = $file->getClientOriginalName();
-            $filePath = $file->store('nationality_docs/' . $uniqueFolderName);
-            $nationalityDocPath = $filePath;     
-
-        }
-
-        $dynamicDB->table('user')->where('id',$user_id)->update([
-            'nationality_one' => $request->input('nationality_one'),
-            'nationality_two' => $request->input('nationality_two'),
-            'nationality_doc' => $nationalityDocPath,
-            'updated_at'   =>   $date,
-          ]);
-          return response()->json(['success'=> true,'message' => 'nationality data stored successfully']);
-
-    }
-
-    return response()->json(['success'=> false,'message' => 'session out! pls login']);
+             $sessionCheckResult = $this->checkSessionAndSetupConnection();
+             if (!$sessionCheckResult) {
+                 return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+             }
+             $dynamicDB = DB::connection('dynamic');
+             $maxEmp = $sessionCheckResult['maxEmp'];
+             $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+             $emp_id = $request->input('emp_id');
+             $empCount = $dynamicDB->table('company_employee')->count();
+             $nationalityDocPath  = '';
+         if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
+         {
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+            {
+                if($request->hasFile('nationality_doc'))
+             {
+                 $file = $request->file('nationality_doc');
+                 $uniqueFolderName = $emp_id . '_' . time();
+                 //$fileName = $file->getClientOriginalName();
+                 $filePath = $file->store('nationality_docs/' . $uniqueFolderName);
+                 $nationalityDocPath = $filePath;   
+                 $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+                  'nationality_one' => $request->input('nationality_one'),
+                  'nationality_two' => $request->input('nationality_two'),
+                  'nationality_doc' => $nationalityDocPath,
+                  'updated_at'   =>   $date,
+                ]);
+                return response()->json(['success'=> true,'message' => 'nationality data stored successfully'],200);                       
+                
+             }
+             else 
+             {
+                return response()->json(['message' => 'Please add a valid image file for mnationality doc'], 400);
+             }         
+            }
+            else 
+            {
+                return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+            }
+         }
+         else 
+         {
+            return response()->json(['message' => 'You have no permission'], 403);
+         }
 }
-
 
 
 
 
 public function employeeCommunication(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'   =>  'required',
-        'country_code' => 'required',
-        'mobile_number' => 'required',
-        'home_phone_number' => 'nullable',
-        'work_phone_number' => 'nullable',
-        'whatsapp_number'   =>  'nullable',
-       // 'emergency_phone_number'  => 'nullable',
-        'email'       =>   'required',
-        'void'        =>  'nullable',
+         'emp_id'   =>  'required',
+         'country_code' => 'required',
+         'mobile_number' => 'required',
+         'home_phone_number' => 'nullable',
+         'work_phone_number' => 'nullable',
+         'whatsapp_number'   =>  'nullable',
+        // 'emergency_phone_number'  => 'nullable',
+         'email'       =>   'required',
+         'void'        =>  'nullable',
+        
+     ]);
 
-    ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     
+     if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+        {
+            $empCount = $dynamicDB->table('company_employee')->count();
+            $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+                    'country_code' => $request->input('country_code'),
+                    'mobile_no'   =>  $request->input('mobile_number'),
+                    'home_phone_no'  => $request->input('home_phone_number'),
+                    'work_phone_no'   =>  $request->input('work_phone_number'),
+                    'whatsapp_no'     =>  $request->input('whatsapp_number'),
+                    'email'       =>   $request->input('email'),
+                    'voter_id'     =>  $request->input('void'),
+                 ]);
+                 return response()->json(['success'=>true,'message' => 'emergency details stored successfully']);
+        }
+        else 
+        {
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+        }
+     }
+     else 
+     {
+        return response()->json(['message' => 'You have no permission'], 403);
+     }
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-        $dynamicDB->table('user')->where('id',$userId)->update([
-           'country_code' => $request->input('country_code'),
-           'mobile_no'   =>  $request->input('mobile_number'),
-           'home_phone_no'  => $request->input('home_phone_number'),
-           'work_phone_no'   =>  $request->input('work_phone_number'),
-           'whatsapp_no'     =>   $request->input('whatsapp_number'),
-           //'emergency_phone_number' => Request->input('emergency_phone_number'),
-           'email'       =>   $request->input('email'),
-           'voter_id'     =>  $request->input('void'),
-        ]);
-        return response()->json(['success'=>true,'message' => 'emergency details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+    
 }
+
 
 
 
 public function employeeEducation(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'   =>  'required',
-        'board/university' => 'required',
-        'specification' => 'required',
-        'course_type' => 'nullable',
-        'quali_start_date' => 'nullable',
-        'quali_end_date' => 'nullable',
-        'grade_type'   =>  'nullable',
-        'total_marks'  => 'nullable',
-        'grade'       =>   'required',
-
-    ]);
-
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
+         'emp_id'   =>  'required',
+         'board/university' => 'required',
+         'specification' => 'required',
+         'course_type' => 'nullable',
+         'quali_start_date' => 'nullable',
+         'quali_end_date' => 'nullable',
+         'grade_type'   =>  'nullable',
+         'total_marks'  => 'nullable',
+         'grade'       =>   'required',
         
+     ]);
 
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+         if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification'))
+         {
+             $dynamicDB->getSchemaBuilder()->create('qualification', function (Blueprint $table)
+             {
+                 $table->id();
+                 $table->bigInteger('emp_id')->unsigned()->nullable();
+                 $table->string('course')->nullable();
+                 $table->string('board')->nullable();
+                 $table->string('specialization')->nullable();
+                 $table->string('course_type')->nullable();
+                 $table->string('qua_st_date')->nullable();
+                 $table->string('qua_end_date')->nullable();
+                 $table->string('grade_type')->nullable();
+                 $table->string('grade')->nullable();
+                 $table->string('total_marks')->nullable(); 
+                 $table->string('document_type')->nullable();
+                 $table->string('document_path')->nullable();
+                 $table->timestamps();
+                
+                 $table->foreign('emp_id')->references('id')->on('company_employee')->onDelete('cascade');
+             }); 
+         }
+         $empCount = $dynamicDB->table('qualification')->count();
 
+         if(!$dynamicDB->table('company_employee')->where('id',$emp_id)->exists())
+         {
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+         }
 
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification')) {
-            $dynamicDB->getSchemaBuilder()->create('qualification', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('course')->nullable();
-                $table->string('board')->nullable();
-                $table->string('specialization')->nullable();
-                $table->string('course_type')->nullable();
-                $table->string('qua_st_date')->nullable();
-                $table->string('qua_end_date')->nullable();
-                $table->string('grade_type')->nullable();
-                $table->string('grade')->nullable();
-                $table->string('total_marks')->nullable(); 
-                $table->string('document_type')->nullable();
-                $table->string('document_path')->nullable();
-                $table->timestamps();
+         if($maxEmp > $empCount)
+         {
+            $dynamicDB->table('qualification')->insert([
+                 'emp_id' => $emp_id,
+                 'course' => $request->input('course'),
+                 'board' => $request->input('board'),
+                 'specialization' => $request->input('specialization'),
+                 'course_type' => $request->input('course_type'),
+                 'qua_st_date' => $request->input('quali_start_date'),
+                 'qua_end_date' => $request->input('quali_end_date'),
+                 'grade_type' => $request->input('grade_type'),
+                 'grade' => $request->input('grade'),
+                 'total_marks' => $request->input('total_marks'),
+                 'created_at' => $date,
+                 'updated_at' => $date,
+             ]);
+                        
+             return response()->json(['success'=>true,'message' => 'qualification details stored successfully']);
+         }
+         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
+ 
+     }
+ 
+     return response()->json(['message' => 'you have no permission'],400);
 
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
-        }
-
-        
-        $dynamicDB->table('qualification')->insert([
-            'user_id' => $userId,
-            'course' => $request->input('course'),
-            'board' => $request->input('board'),
-            'specialization' => $request->input('specialization'),
-            'course_type' => $request->input('course_type'),
-            'qua_st_date' => $request->input('quali_start_date'),
-            'qua_end_date' => $request->input('quali_end_date'),
-            'grade_type' => $request->input('grade_type'),
-            'grade' => $request->input('grade'),
-            'total_marks' => $request->input('total_marks'),
-            'created_at' => $date,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'qualification details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
 }
+
 
 
 
 
 public function employeeEducationDoc(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'   =>  'required',
-        'document_type' => 'required',
-        'document_path' => 'file',
-    ]);
+         'emp_id'   =>  'required',
+         'document_type' => 'required',
+         'document_path' => 'file|mimes:jpeg,png,pdf',
+     ]);
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-       
-        $documentPath = '';
-        if($request->hasFile('document_path'))
-        {
-            $file = $request->file('document_path');
-            //$fileName = $file->getClientOriginalName();
-            $uniqueFolder = $userId . '_' . time();
-            $filePath = $file->store('qualification_docs/' . $uniqueFolder);
-            $documentPath = $filePath;
-        }
-
-        
-        $dynamicDB->table('qualification')->where('user_id',$userId)->update([
-            'document_type' => $request->input('document_type'),
-            'document_path' => $documentPath,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'qualification document stored successfully']);
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
     }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+    $dynamicDB = DB::connection('dynamic');
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+    $emp_id = $request->input('emp_id');
+    $documentPath = '';
+
+    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+    {
+     if ($dynamicDB->getSchemaBuilder()->hasTable('qualification')) 
+     {
+        $empCount = $dynamicDB->table('qualification')->count();
+
+        if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+        {
+            if ($maxEmp > $empCount)
+            {
+                if($request->hasFile('document_path'))
+                     {
+                         $file = $request->file('document_path');
+                         //$fileName = $file->getClientOriginalName();
+                         $uniqueFolder = $emp_id . '_' . time();
+                         $filePath = $file->store('qualification_docs/' . $uniqueFolder);
+                         $documentPath = $filePath;
+
+                         $dynamicDB->table('qualification')->where('emp_id',$emp_id)->update([
+                                 'document_type' => $request->input('document_type'),
+                                 'document_path' => $documentPath,
+                                 'updated_at' => $date,
+                                 ]);
+                                return response()->json(['success'=>true,'message' => 'qualification document stored successfully']);
+                                    
+                     }
+                     return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
+                    }
+            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+        }
+        return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+     }
+     return response()->json(['message' => 'table not found.'], 404);
+    }
+    return response()->json(['message' => 'You have no permission'], 403);
+
+    
 }
-
-
-
-
-
-
-
 
 
 
@@ -646,149 +644,133 @@ public function employeeEducationDoc(Request $request)
 
 public function employeeExperience(Request $request)
 {
+    try{
 
+   
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'is_current_emp' =>  'required',
-        'company_name'   =>  'required',
-        'project_name'   =>  'required',
-        'designation'    =>  'required',
-        'start_date'     =>  'required',
-        'end_date'       =>  'required',
-    ]);
+         'emp_id'        =>  'required',
+         'is_current_emp' =>  'required',
+         'company_name'   =>  'required',
+         'project_name'   =>  'required',
+         'designation'    =>  'required',
+         'start_date'     =>  'required',
+         'end_date'       =>  'required',
+     ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+         if (!$dynamicDB->getSchemaBuilder()->hasTable('experience')) {
+             $dynamicDB->getSchemaBuilder()->create('experience', function (Blueprint $table) {
+                 $table->id();
+                 $table->bigInteger('emp_id')->unsigned()->nullable();
+                 $table->enum('is_current_emp', ['yes', 'no'])->nullable();
+                 $table->string('comp_name')->nullable();
+                 $table->string('proj_name')->nullable();
+                 $table->string('designation')->nullable();
+                 $table->string('start_date')->nullable();
+                 $table->string('end_date')->nullable();
+                 $table->string('total_year_exp')->nullable();
+                 $table->string('total_month_exp')->nullable();
+                 $table->string('document_type')->nullable();
+                 $table->string('exp_doc')->nullable();
+                 $table->timestamps();
+            
+                 $table->foreign('emp_id')->references('id')->on('company_employee');
+                
+             });
+         }
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
+         $empCount = $dynamicDB->table('experience')->count();
+         if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+         {
+            if ($maxEmp > $empCount)
+            {
+                 $dynamicDB->table('experience')->insert([
+                     'emp_id'   =>  $emp_id,
+                     'is_current_emp' => $request->input('is_current_emp'),
+                     'comp_name' => $request->input('company_name'),
+                     'proj_name' => $request->input('project_name'),
+                     'designation' => $request->input('designation'),
+                     'start_date'   =>$request->input('start_date'),
+                     'end_date'   =>  $request->input('end_date'),
+                     'created_at'  => $date,
+                     'updated_at' => $date,
+                 ]);
+           
+                 return response()->json(['success'=>true,'message' => 'Experience details stored successfully']);
+            }
+            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+         }
 
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
+         return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
 
 
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('experience')) {
-            $dynamicDB->getSchemaBuilder()->create('experience', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->enum('is_current_emp', ['yes', 'no'])->nullable();
-                $table->string('comp_name')->nullable();
-                $table->string('proj_name')->nullable();
-                $table->string('designation')->nullable();
-                $table->string('start_date')->nullable();
-                $table->string('end_date')->nullable();
-                $table->string('total_year_exp')->nullable();
-                $table->string('total_month_exp')->nullable();
-                $table->string('document_type')->nullable();
-                $table->string('exp_doc')->nullable();
-                $table->timestamps();
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
+ }
+ catch(\Exception $e)
+ {
+    Log::error($e);
+    return response()->json(['message' => 'An error occurred. Please try again.'], 500);
+ }
 
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
-        }
-       
-        
-        $dynamicDB->table('experience')->insert([
-            'user_id'   =>  $userId,
-            'is_current_emp' => $request->input('is_current_emp'),
-            'comp_name' => $request->input('company_name'),
-            'proj_name' => $request->input('project_name'),
-            'designation' => $request->input('designation'),
-            'start_date'   =>$request->input('start_date'),
-            'end_date'   =>  $request->input('end_date'),
-            'created_at'  => $date,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'Experience details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
 }
-
-
-
 
 
 
 
 public function employeeExpTime(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'total_year' =>  'required',
-        'total_month'   =>  'required',
-        //'exp_certificate' => 'file',
-    ]);
-
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
+         'emp_id'        =>  'required',
+         'total_year' =>  'required',
+         'total_month'   =>  'required',
+         //'exp_certificate' => 'file',
+     ]);
         
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-     
-   
-       
-        
-        $dynamicDB->table('experience')->where('user_id',$userId)->update([
-            'total_year_exp' => $request->input('total_year'),
-            'total_month_exp' => $request->input('total_month'),
-            //'exp_doc' => $filePath,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'experience document stored successfully']);
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
     }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+    $dynamicDB = DB::connection('dynamic');
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+    $emp_id = $request->input('emp_id');
+    
+    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+    {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('experience'))   
+        {
+            $empCount = $dynamicDB->table('qualification')->count();
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+            {
+                if ($maxEmp > $empCount)
+                {
+                    $dynamicDB->table('experience')->where('emp_id',$emp_id)->update([
+                         'total_year_exp' => $request->input('total_year'),
+                         'total_month_exp' => $request->input('total_month'),
+                         //'exp_doc' => $filePath,
+                         'updated_at' => $date,
+                     ]);
+                                
+                     return response()->json(['success'=>true,'message' => 'experience document stored successfully']);
+                }  
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);  
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+        }
+        return response()->json(['message' => 'table not found.'], 404);
+    } 
+    return response()->json(['message' => 'You have no permission'], 403);
 }
-
-
-
 
 
 
@@ -796,166 +778,154 @@ public function employeeExpTime(Request $request)
 
 public function employeeExpDoc(Request $request)
 {
+    try{
 
+    
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'document_type' =>  'required',
-        'exp_certificate' => 'file',
-    ]);
+         'emp_id'        =>  'required',
+         'document_type' =>  'required',
+         'exp_certificate' => 'file|mimes:jpeg,png,pdf',
+     ]);
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-     
-        $experiencePath = '';
-        if($request->hasFile('exp_certificate'))
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     $experiencePath = '';
+ 
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee')) 
         {
-            $file = $request->file('exp_certificate');
-            //$fileName = $file->getClientOriginalName();
-            $uniqueFolder = $userId . '_' . time();
-            $filePath = $file->store('experience_docs/' . $uniqueFolder);
-            $experiencePath = $filePath;
+             
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())  
+            {
+                $empCount = $dynamicDB->table('experience')->count();
+                if ($maxEmp > $empCount)
+                {
+                  if($request->hasFile('exp_certificate'))
+                  {
+                      $file = $request->file('exp_certificate');
+                      //$fileName = $file->getClientOriginalName();
+                      $uniqueFolder = $emp_id . '_' . time();
+                      $filePath = $file->store('experience_docs/' . $uniqueFolder);
+                      $experiencePath = $filePath;
 
+                      $dynamicDB->table('experience')->where('emp_id',$emp_id)->update([
+                                   'document_type' => $request->input('document_type'),
+                                   //'exp_doc' => $filePath,
+                                   'exp_doc'  =>  $experiencePath,
+                                   'updated_at' => $date,
+                               ]);
+                                
+                               return response()->json(['success'=>true,'message' => 'experience document stored successfully']);
+
+                  }
+                  return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
+                }  
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
         }
-
-
-       
-        
-        $dynamicDB->table('experience')->where('user_id',$userId)->update([
-            'document_type' => $request->input('document_type'),
-            //'exp_doc' => $filePath,
-            'exp_doc'  =>  $experiencePath,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'experience document stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+        return response()->json(['message' => 'table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
+   }   
+   catch(\Exception $e)  
+   {
+   // Log::error($e);
+    return response()->json(['message' => 'An error occurred. Please try again.'], 500);
+   }
 }
-
-
-
-
 
 
 
 
 public function employeeBank(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'acc_holder_name' =>  'required',
-        'acc_type'        =>  'required',
-        //'acc_nature'   =>  'nullable',
-        'acc_number'      => 'required',
-        'bank_name'      =>  'required',
-        'ifsc'           =>  'required',
-        'branch'         =>  'required',
-        'location'       =>  'required',
-        'city'           =>  'required',
-    ]);
+         'emp_id'        =>  'required',
+         'acc_holder_name' =>  'required',
+         'acc_type'        =>  'required',
+         //'acc_nature'   =>  'nullable',
+         'acc_number'      => 'required',
+         'bank_name'      =>  'required',
+         'ifsc'           =>  'required',
+         'branch'         =>  'required',
+         'location'       =>  'required',
+         'city'           =>  'required',
+     ]);
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+    
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+         if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee')) 
+         {
+           if (!$dynamicDB->getSchemaBuilder()->hasTable('bank')) {
+                 $dynamicDB->getSchemaBuilder()->create('bank', function (Blueprint $table) {
+                 $table->id();
+                 $table->bigInteger('emp_id')->unsigned()->nullable();
+                 $table->string('ac_holder_name')->nullable();
+                 $table->string('ac_type')->nullable();
+               //  $table->string('ac_nature')->nullable();
+                 $table->string('ac_number')->nullable();
+                 $table->string('bank_name')->nullable();
+                 $table->string('ifsc')->nullable();
+                 $table->string('branch')->nullable();
+                 $table->string('location')->nullable();
+                 $table->string('city')->nullable();
+                 $table->string('document_type')->nullable();
+                 $table->string('doc_path')->nullable();
+                 $table->timestamps();
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
+                 $table->foreign('emp_id')->references('id')->on('company_employee');
 
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('bank')) {
-            $dynamicDB->getSchemaBuilder()->create('bank', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('ac_holder_name')->nullable();
-                $table->string('ac_type')->nullable();
-              //  $table->string('ac_nature')->nullable();
-                $table->string('ac_number')->nullable();
-                $table->string('bank_name')->nullable();
-                $table->string('ifsc')->nullable();
-                $table->string('branch')->nullable();
-                $table->string('location')->nullable();
-                $table->string('city')->nullable();
-                $table->string('document_type')->nullable();
-                $table->string('doc_path')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
-        }
-       
-        
-        $dynamicDB->table('bank')->insert([
-            'user_id'   =>  $userId,
-            'ac_holder_name' => $request->input('acc_holder_name'),
-            'ac_type' => $request->input('acc_type'),
-           // 'ac_nature' => $request->input('acc_nature'),
-            'ac_number' => $request->input('acc_number'),
-            'bank_name'   =>$request->input('bank_name'),
-            'ifsc'       =>  $request->input('ifsc'),
-            'branch'     =>  $request->input('branch'),
-            'location'   =>  $request->input('location'),
-            'city'       =>  $request->input('city'),
-            'created_at'   =>  $date,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'bank details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+             });
+         }
+              $empCount = $dynamicDB->table('bank')->count();
+          if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())
+             {
+               if ($maxEmp > $empCount)
+               {
+                $dynamicDB->table('bank')->insert([
+                 'emp_id'   =>  $emp_id,
+                 'ac_holder_name' => $request->input('acc_holder_name'),
+                 'ac_type' => $request->input('acc_type'),
+                // 'ac_nature' => $request->input('acc_nature'),
+                 'ac_number' => $request->input('acc_number'),
+                 'bank_name'   =>$request->input('bank_name'),
+                 'ifsc'       =>  $request->input('ifsc'),
+                 'branch'     =>  $request->input('branch'),
+                 'location'   =>  $request->input('location'),
+                 'city'       =>  $request->input('city'),
+                 'created_at'   =>  $date,
+                 'updated_at' => $date,
+             ]);
+                            
+             return response()->json(['success'=>true,'message' => 'bank details stored successfully']);
+               }
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+              
+             }
+              return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404); 
+             
+            
+         } 
+          return response()->json(['message' => 'Main table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
 }
-
-
 
 
 
@@ -963,71 +933,66 @@ public function employeeBank(Request $request)
 
 public function employeeCheque(Request $request)
 {
-
+    try
+    {
+    
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'document_type' =>  'required',
-        'doc_path' => 'file',
-    ]);
-
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-     
-        $chequePath = '';
-        if($request->hasFile('doc_path'))
+         'emp_id'        =>  'required',
+         'document_type' =>  'required',
+         'doc_path' => 'file|mimes:jpeg,png,pdf',
+     ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     $chequePath = '';
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('bank')) 
         {
-            $file = $request->file('doc_path');
-            //$fileName = $file->getClientOriginalName();
-            $uniqueFolder = $userId . '_' . time();
-            $filePath = $file->store('cheque_docs/' . $uniqueFolder);
-            $chequePath = $filePath;
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())  
+            {
+             $empCount = $dynamicDB->table('bank')->count();
+               if ($maxEmp > $empCount)
+               {
+                if($request->hasFile('doc_path'))
+                 {
+                     $file = $request->file('doc_path');
+                     //$fileName = $file->getClientOriginalName();
+                     $uniqueFolder = $emp_id . '_' . time();
+                     $filePath = $file->store('cheque_docs/' . $uniqueFolder);
+                     $chequePath = $filePath;
+                    $dynamicDB->table('bank')->where('emp_id',$emp_id)->update([
+                    'document_type' => $request->input('document_type'),
+                    'doc_path' => $chequePath,
+                    'updated_at' => $date,
+                ]);
+                return response()->json(['success'=>true,'message' => 'bank cheque stored successfully']);
 
+                 }
+                 
+              return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
+                            
+
+               }
+               return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
         }
-
-
-       
-        
-        $dynamicDB->table('bank')->where('user_id',$userId)->update([
-            'document_type' => $request->input('document_type'),
-            'doc_path' => $chequePath,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'bank cheque stored successfully']);
+        return response()->json(['message' => 'main table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
     }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+catch(\Exception $e)
+{
+    return response()->json(['message' => 'An error occurred. Please try again.'], 500);  
 }
 
-
-
-
+}
 
 
 
@@ -1035,246 +1000,205 @@ public function employeeCheque(Request $request)
 
 public function employeeFamily(Request $request)
 {
+   
 
     $validatedData = $request->validate([
-        'user_id'        =>  'required',
-        'relation_type' =>  'required',
-        'name'        =>  'required',
-        'qualification'   =>  'nullable',
-        'country_code'      => 'required',
-        'contact'      =>  'required',
-        'occupation'           =>  'required',
-        'uid'         =>  'required',
-        'company_employee'       =>  'required',
-       
-    ]);
+         'emp_id'        =>  'required',
+         'relation_type' =>  'required',
+         'name'        =>  'required',
+         'qualification'   =>  'nullable',
+         'country_code'      => 'required',
+         'contact'      =>  'required',
+         'occupation'           =>  'required',
+         'uid'         =>  'required',
+         'company_employee'       =>  'required',
+               
+     ]);
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
+        {
+            if (!$dynamicDB->getSchemaBuilder()->hasTable('family')) {
+                 $dynamicDB->getSchemaBuilder()->create('family', function (Blueprint $table) {
+                     $table->id();
+                     $table->bigInteger('emp_id')->unsigned()->nullable();
+                     $table->string('relation_type')->nullable();
+                     $table->string('name')->nullable();
+                     $table->string('qualification')->nullable();
+                     $table->string('country_code')->nullable();
+                     $table->string('contact')->nullable();
+                     $table->string('occupation')->nullable();
+                     $table->string('uid')->nullable();
+                     $table->string('comp_emp')->nullable();
+                     $table->timestamps();
+                
+                     $table->foreign('emp_id')->references('id')->on('company_employee');
+                
+                 });
+             }
 
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+             $empCount = $dynamicDB->table('family')->count();
+          if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())
+          {
+            if ($maxEmp > $empCount)
+            {
+                $dynamicDB->table('family')->insert([
+                 'emp_id'   =>    $emp_id,
+                 'relation_type'=> $request->input('relation_type' ),
+                 'name'         => $request->input('name'),
+                 'qualification'=> $request->input('qualification'),
+                 'country_code' => $request->input('country_code'),
+                 'contact'      => $request->input('contact'),
+                 'occupation'   => $request->input('occupation'),
+                 'uid'          => $request->input('uid'),
+                 'comp_emp'     => $request->input('company_employee'),
+                 'created_at'   => $date,
+                 'updated_at'   => $date,
+             ]);
+                            
+             return response()->json(['success'=>true,'message' => 'Family details stored successfully']);
+            }
+            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            
+          }
+          return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
 
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('family')) {
-            $dynamicDB->getSchemaBuilder()->create('family', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('relation_type')->nullable();
-                $table->string('name')->nullable();
-                $table->string('qualification')->nullable();
-                $table->string('country_code')->nullable();
-                $table->string('contact')->nullable();
-                $table->string('occupation')->nullable();
-                $table->string('uid')->nullable();
-                $table->string('comp_emp')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
         }
-       
-        
-        $dynamicDB->table('family')->insert([
-            'user_id'   =>    $userId,
-            'relation_type'=> $request->input('relation_type' ),
-            'name'         => $request->input('name'),
-            'qualification'=> $request->input('qualification'),
-            'country_code' => $request->input('country_code'),
-            'contact'      => $request->input('contact'),
-            'occupation'   => $request->input('occupation'),
-            'uid'          => $request->input('uid'),
-            'comp_emp'     => $request->input('company_employee'),
-            'created_at'   => $date,
-            'updated_at'   => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'Family details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
-}
-
-
-
-
-
-
-
-
-
-
-public function employeeDocument(Request $request)
-{
-
-    $validatedData = $request->validate([
-        'user_id'             =>  'required',
-        'pan_number'           =>  'required',
-       // 'adhar_number'         =>  'required',
-        'voter_id'             =>  'required',
-        'driving_licence'      =>  'nullable',
+        return response()->json(['message' => 'table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
  
-        'passport_number'      =>  'nullable',
-        'passport_to'          =>  'nullable|date',
-        'passport_from'        =>  'nullable|date',
-       
-    ]);
+ 
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    { 
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName = $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-      
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-
-       
-        
-        $dynamicDB->table('user')->where('id', $userId)->update([
-            'pan_no' => $request->input('pan_number'),
-            //'adhar_no' => $request->input('adhar_number'),
-            'voter_id' => $request->input('voter_id'),
-            'driving_licence' => $request->input('driving_licence'),
-            'passport_no'   =>$request->input('passport_number'),
-            'passport_to'       =>  $request->input('passport_to'),
-            'passport_from'     =>  $request->input('passport_from'),
-            'created_at'   =>  $date,
-            'updated_at' => $date,
-        ]);
-        
-        return response()->json(['success'=>true,'message' => 'Family details stored successfully']);
-    }
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
 }
 
 
 
 
+
+ public function employeeDocument(Request $request)
+ {
+    $validatedData = $request->validate([
+         'emp_id'             =>  'required',
+         'pan_number'           =>  'required',
+        // 'adhar_number'         =>  'required',
+         'voter_id'             =>  'required',
+         'driving_licence'      =>  'nullable',
+         
+         'passport_number'      =>  'nullable',
+         'passport_to'          =>  'nullable|date',
+         'passport_from'        =>  'nullable|date',
+               
+     ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+          {
+            $dynamicDB->table('company_employee')->where('id', $emp_id)->update([
+                 'pan_no' => $request->input('pan_number'),
+                 //'adhar_no' => $request->input('adhar_number'),
+                 'voter_id' => $request->input('voter_id'),
+                 'driving_licence' => $request->input('driving_licence'),
+                 'passport_no'   =>$request->input('passport_number'),
+                 'passport_to'       =>  $request->input('passport_to'),
+                 'passport_from'     =>  $request->input('passport_from'),
+                 'created_at'   =>  $date,
+                 'updated_at' => $date,
+             ]);
+                        
+             return response()->json(['success'=>true,'message' => 'Family details stored successfully']);
+          }
+          return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
+
+ }
+ 
 
 
 
 public function employeeAddressProof(Request $request)
 {
-
     $validatedData = $request->validate([
-        'user_id'        =>  'required', 
-        'document_type'  =>  'required',
-        'document_path'  =>  'file',  
-    ]);
+         'emp_id'        =>  'required', 
+         'document_type'  =>  'required',
+         'document_path'  =>  'file|mimes:jpeg,png,pdf',  
+     ]);
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName   =  $_SESSION['dbName'];
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-        $addressPath = '';
-        if($request->hasFile('document_path'))
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
+ 
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee')) 
         {
-            $file = $request->file('document_path');
-            //$filaName = $file->getClientOriginalName();
-            $uniqueFolder = $userId . '_' . time();
-            $filePath = $file->store('addressProof/' . $uniqueFolder);
-            $addressPath = $filePath;
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())  
+            {
+                if (!$dynamicDB->getSchemaBuilder()->hasTable('documents')) {
+                     $dynamicDB->getSchemaBuilder()->create('documents', function (Blueprint $table) {
+                         $table->id();
+                         $table->bigInteger('emp_id')->unsigned()->nullable();
+                         $table->string('doc_type')->nullable();
+                         $table->string('doc_path')->nullable();
+                         $table->timestamps();
+                    
+                         $table->foreign('emp_id')->references('id')->on('company_employee');
+                    
+                     });
+                 }
+                 $empCount = $dynamicDB->table('documents')->count();
+                if ($maxEmp > $empCount)
+                {
+                 if($request->hasFile('document_path'))
+                  {
+                      $file = $request->file('document_path');
+                      //$filaName = $file->getClientOriginalName();
+                      $uniqueFolder = $emp_id . '_' . time();
+                      $filePath = $file->store('addressProof/' . $uniqueFolder);
+                      $addressPath = $filePath;
+                      $dynamicDB->table('documents')->insert([
+                             'emp_id'   =>  $emp_id,
+                             'doc_type' => $request->input('document_type'),
+                             'doc_path' => $addressPath,
+                             'created_at'   =>  $date,
+                             'updated_at' => $date,
+                         ]);
+                         return response()->json(['success'=> true, 'message' => 'document uplodad successfully']);
+
+                  }
+                  return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
+                }
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
         }
-
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('documents')) {
-            $dynamicDB->getSchemaBuilder()->create('documents', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('doc_type')->nullable();
-                $table->string('doc_path')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
-        }
-       
-        
-        $dynamicDB->table('documents')->insert([
-            'user_id'   =>  $userId,
-            'doc_type' => $request->input('document_type'),
-            'doc_path' => $addressPath,
-            'created_at'   =>  $date,
-            'updated_at' => $date,
-        ]);
-        return response()->json(['success'=> true, 'message' => 'document uploda successfully']);
-        
-
-
-    }
-
-    return response()->json(['success' => false,'message' => 'session out! login pls']);
+        return response()->json(['message' => 'main table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
 }
-
-
 
 
 
@@ -1283,65 +1207,58 @@ public function employeeAddressProof(Request $request)
 public function employeeSkill(Request $request)
 {
     $validatedData = $request->validate([
-        'user_id'      =>  'required',
-        'skill_name'   =>  'nullable',
-        'passing_year' =>  'nullable|date',   
-    ]);
+         'emp_id'      =>  'required',
+         'skill_name'   =>  'nullable',
+         'passing_year' =>  'nullable|date',   
+     ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName   = $_SESSION['dbName'];
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-        
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
+        {
+            if ($dynamicDB->table('experience')->where('id', $emp_id)->exists())  
+            {
+              if (!$dynamicDB->getSchemaBuilder()->hasTable('skill')) {
+                   $dynamicDB->getSchemaBuilder()->create('skill', function (Blueprint $table) {
+                       $table->id();
+                       $table->bigInteger('emp_id')->unsigned()->nullable();
+                       $table->string('skill_name')->nullable();
+                       $table->date('pass_year')->nullable();
+                       $table->timestamps();
 
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
+                       $table->foreign('emp_id')->references('id')->on('company_employee');
 
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-        
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('skill')) {
-            $dynamicDB->getSchemaBuilder()->create('skill', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('skill_name')->nullable();
-                $table->date('pass_year')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
+                   });
+               } 
+               
+               $empCount = $dynamicDB->table('skill')->count();
+                if ($maxEmp > $empCount)
+                {
+                   $dynamicDB->table('skill')->insert([
+                        'emp_id'     =>   $emp_id,
+                        'skill_name'  =>   $request->input('skill_name'),
+                        'pass_year'   =>   $request->input('passing_year'),
+                        'created_at'  =>   $date,
+                        'updated_at'  =>   $date,
+                    ]);
+                    return response()->json(['success' => true, 'message' => 'skill details upload successfully']);
+                }
+               return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
         }
-       
-        
-        $dynamicDB->table('skill')->insert([
-            'user_id'     =>   $userId,
-            'skill_name'  =>   $request->input('skill_name'),
-            'pass_year'   =>   $request->input('passing_year'),
-            'created_at'  =>   $date,
-            'updated_at'  =>   $date,
-        ]);
-        return response()->json(['success' => true, 'message' => 'skill details upload successfully']);
-        
-        
-    }
- 
-    return response()->json(['success' => false, 'message' => 'session out! login pls']);
+        return response()->json(['message' => 'main table not create yet.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
+     
 
 }
 
@@ -1352,58 +1269,48 @@ public function employeeSkill(Request $request)
 public function employeeEmergencyDetails(Request $request)
 {
     $validatedData = $request->validate([
-        'user_id'      =>  'required',
-        'eme_country_code'   =>  'nullable',
-        'eme_mobile_no' =>  'nullable|',
-        'eme_whatsapp_no' => 'nullable',
-        'eme_email'    =>  'nullable',   
-    ]);
-
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName   = $_SESSION['dbName'];
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-        
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
+         'emp_id'      =>  'required',
+         'eme_country_code'   =>  'nullable',
+         'eme_mobile_no' =>  'nullable|',
+         'eme_whatsapp_no' => 'nullable',
+         'eme_email'    =>  'nullable',   
         ]);
-
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-       
-        
-        $dynamicDB->table('user')->where('id', $userId)->update([
-            'eme_country_code'  =>   $request->input('eme_country_code'),
-            'eme_mobile'   =>   $request->input('eme_mobile_no'),
-            'eme_whatsapp_no' => $request->input('eme_whatsapp_no'),
-            'eme_email'     =>   $request->input('eme_email'),
-            'created_at'  =>   $date,
-            'updated_at'  =>   $date,
-        ]);
-        return response()->json(['success' => true, 'message' => 'employee emergency details upload successfully']);
-        
-        
+    $sessionCheckResult = $this->checkSessionAndSetupConnection();
+    if (!$sessionCheckResult) {
+        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
     }
- 
-    return response()->json(['success' => false, 'message' => 'session out! login pls']);
+    $dynamicDB = DB::connection('dynamic');
+    $maxEmp = $sessionCheckResult['maxEmp'];
+    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+    $emp_id = $request->input('emp_id');
 
+    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+    {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee')) 
+        {
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+            {
+                $empCount = $dynamicDB->table('experience')->count();
+                if ($maxEmp > $empCount)
+                {
+                    $dynamicDB->table('company_employee')->where('id', $emp_id)->update([
+                         'eme_country_code'  =>   $request->input('eme_country_code'),
+                         'eme_mobile'   =>   $request->input('eme_mobile_no'),
+                         'eme_whatsapp_no' => $request->input('eme_whatsapp_no'),
+                         'eme_email'     =>   $request->input('eme_email'),
+                         'created_at'  =>   $date,
+                         'updated_at'  =>   $date,
+                     ]);
+                     return response()->json(['success' => true, 'message' => 'employee emergency details upload successfully']);
+                }
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+        }
+        return response()->json(['message' => 'main table not found.'], 404);
+    }  
+    return response()->json(['message' => 'You have no permission'], 403);
 }
-
 
 
 
@@ -1414,78 +1321,70 @@ public function employeeEmergencyDetails(Request $request)
 public function employeeAddressDetails(Request $request)
 {
     $validatedData = $request->validate([
-        'user_id'      =>  'required',
-        'country'   =>  'required',
-        'state' =>  'required',   
-        'city'  =>  'required',
-        'pin_code' => 'required',
-        'house_no'  => 'nullable',
-        'address_line_one' => 'required',
-    ]);
-
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName   = $_SESSION['dbName'];
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-        
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-
-        $dynamicDB = DB::connection('dynamic');
-        $userId = $request->input('user_id');
-
-        
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('address')) {
-            $dynamicDB->getSchemaBuilder()->create('address', function (Blueprint $table) {
-                $table->id();
-                $table->bigInteger('user_id')->unsigned()->nullable();
-                $table->string('country');
-                $table->string('state' );
-                $table->string('city')->nullable();
-                $table->integer('pin')->nullable();
-                $table->string('house_no')->nullable();
-                $table->string('add_line_one')->nullable();
-                $table->timestamps();
-
-                $table->foreign('user_id')->references('id')->on('user');
-
-            });
-        }
-       
-        
-        $dynamicDB->table('address')->insert([
-            'user_id'     =>   $userId,
-            'country'  =>   $request->input('country'),
-            'state'   =>   $request->input('state'),
-            'city'    =>  $request->input('city'),
-            'pin' => $request->input('pin_code'),
-            'house_no' => $request->input('house_no'),
-            'add_line_one' => $request->input('address_line_one'),
-            'created_at'  =>   $date,
-            'updated_at'  =>   $date,
-        ]);
-        return response()->json(['success' => true, 'message' => 'address details upload successfully']);
-        
-        
-    }
+         'emp_id'      =>  'required',
+         'country'   =>  'required',
+         'state' =>  'required',   
+         'city'  =>  'required',
+         'pin_code' => 'required',
+         'house_no'  => 'nullable',
+         'address_line_one' => 'required',
+     ]);
+     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+     if (!$sessionCheckResult) {
+         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+     }
+     $dynamicDB = DB::connection('dynamic');
+     $maxEmp = $sessionCheckResult['maxEmp'];
+     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+     $emp_id = $request->input('emp_id');
  
-    return response()->json(['success' => false, 'message' => 'session out! login pls']);
+     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+     {
+        if ($dynamicDB->getSchemaBuilder()->hasTable('company_employee')) 
+        {
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())  
+            {
+                if (!$dynamicDB->getSchemaBuilder()->hasTable('address')) {
+                     $dynamicDB->getSchemaBuilder()->create('address', function (Blueprint $table) {
+                         $table->id();
+                         $table->bigInteger('emp_id')->unsigned()->nullable();
+                         $table->string('country');
+                         $table->string('state' );
+                         $table->string('city')->nullable();
+                         $table->integer('pin')->nullable();
+                         $table->string('house_no')->nullable();
+                         $table->string('add_line_one')->nullable();
+                         $table->timestamps();
+                    
+                         $table->foreign('emp_id')->references('id')->on('company_employee');
+                    
+                     });
+                 }
+                 $empCount = $dynamicDB->table('address')->count();
+                 if ($maxEmp > $empCount)
+                 {
+                    $dynamicDB->table('address')->insert([
+                       'emp_id'     =>   $emp_id,
+                       'country'  =>   $request->input('country'),
+                       'state'   =>   $request->input('state'),
+                       'city'    =>  $request->input('city'),
+                       'pin' => $request->input('pin_code'),
+                       'house_no' => $request->input('house_no'),
+                       'add_line_one' => $request->input('address_line_one'),
+                       'created_at'  =>   $date,
+                       'updated_at'  =>   $date,
+                   ]);
+                   return response()->json(['success' => true, 'message' => 'address details upload successfully']);
+                                
+                 }
+                 return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400); 
 
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+        }
+        return response()->json(['message' => 'main table not found.'], 404);
+     }
+     return response()->json(['message' => 'You have no permission'], 403);
 }
 
 

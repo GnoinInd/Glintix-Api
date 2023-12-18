@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\AssetController;
 
  use App\Http\Controllers\Api\LoanController;
 
+ use Illuminate\Support\Facades\Session;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -199,6 +201,7 @@ Route::post('create-states',[AdminController::class,'createIndianStates']);
 
     //to check session variable
 Route::post('session-check',[EmployeeRegistration::class,'sessionShow']);
+Route::post('all-session',[AdminController::class,'allSession']);
 
 
          
@@ -300,9 +303,17 @@ Route::post('emp_search_yearly',[EmployeeRegistration::class,'empSearchByYear'])
 
   Route::post('emp-asset-request',[AssetController::class,'requestAsset']);
   Route::post('all-asset-request',[AdminController::class,'allAssetRequest']);
+  Route::post('asset-request-approve',[AdminController::class,'assetApprove']);
+  Route::post('emp-asset-req/{$id}',[AdminController::class,'']);
 
 
 
+
+      //  set permission 
+Route::post('create-user',[AdminController::class,'newUser']);
+Route::post('edit-user/{id}',[AdminController::class,'editUser']);
+Route::post('delete-user/{id}',[AdminController::class,'delUser']);
+Route::post('login-user',[AdminController::class,'logUser']);
 
 
 

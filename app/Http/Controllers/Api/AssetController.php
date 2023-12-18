@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-// use Illuminate\Mail\Mailable;
+
 use Illuminate\Support\Facades\Mail;
 use App\Mail\LeaveMail;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
-//use Illuminate\Http\Response;
+
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 
@@ -183,7 +183,7 @@ public function requestAsset(Request $request)
         $dynamicDB = DB::connection('dynamic');
 
         try {
-            // $dynamicDB->beginTransaction();
+            
 
             if (!$dynamicDB->getSchemaBuilder()->hasTable('asset_request')) {
                 $dynamicDB->getSchemaBuilder()->create('asset_request', function (Blueprint $table) {
@@ -199,14 +199,12 @@ public function requestAsset(Request $request)
                     $table->timestamps();
                     
                     $table->foreign('emp_id')->references('id')->on('employees');
-                    // $table->foreign('emp_id')->references('id')->on('employees')->onDelete('cascade');
+                   
                 });
             }
 
             $empId = $dynamicDB->table('employees')->where('email', $empEmail)->value('id');
             $empName = $dynamicDB->table('employees')->where('email', $empEmail)->value('name');
-
-            
 
             $dynamicDB->table('asset_request')->insert([
                 'emp_id' => $empId,
@@ -224,15 +222,16 @@ public function requestAsset(Request $request)
          
 
             return response()->json(['status' => true, 'message' => 'Asset request sent successfully']);
-            // $dynamicDB->commit();
+           
         } catch (\Exception $e) {
-            // $dynamicDB->rollback();
+           
             return response()->json(['status'=> false,'message'=>'Error processing the request','error'=>$e->getMessage()], 500);
         }
     }
 
     return response()->json(['status' => false, 'message' => 'Session out! Please login']);
 }
+
 
 
 
