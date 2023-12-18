@@ -149,7 +149,24 @@ public function logout()
                 'company_code' => 'required',
                 'role' => 'required',
                 'total' => 'required',
+                'contact_person' =>'required',
+                'address' => 'required',
+                'country'  => 'required',
+                'state'  =>  'required',
+                'postal_code'  => 'required',
+                'mobile_number' => 'required',
+                'fax'  =>  'nullable',
+                'website_url' => 'nullable',
+                'company_logo' => 'file',
             ]);
+            if ($request->hasFile('company_logo')) {
+                $file = $request->file('company_logo');
+                $uniqueFolder = 'logo' . '_' . time();
+                $filePath = $file->store('companyLogo/' . $uniqueFolder);
+                $logoPath = $filePath;
+            } else {
+                $logoPath = null;
+            }
 
             $user = new User;
             $user->name = $validatedData['name'];
@@ -159,6 +176,15 @@ public function logout()
             $user->dbName = $validatedData['dbName'];
             $user->username = $validatedData['username'];
             $user->total   = $validatedData['total'];
+            $user->contact_person = $validatedData['contact_person'];
+            $user->address  = $validatedData['address'];
+            $user->country  = $validatedData['country'];
+            $user->state    = $validatedData['state'];
+            $user->postal_code = $validatedData['postal_code'];
+            $user->mobile_number = $validatedData['mobile_number'];
+            $user->fax     = $validatedData['fax'];
+            $user->website_url = $validatedData['website_url'];
+            $user->company_logo = $logoPath;
             $user->save();
             
             $dbName = $validatedData['dbName'];
@@ -189,11 +215,20 @@ public function logout()
                 'name'    => $request->input('name'),
                 'email'   => $request->input('email'),
                 'username'=> $request->input('username'),
-                'password'=>$request->input('password'),
+                'password'=> $request->input('password'),
                 'phone'   => $request->input('phone'),
                 'dbName'  => $request->input('dbName'),
-                'company_code'    => $request->input('company_code'), 
-                'role'     =>  $request->input('role'),
+                'company_code' => $request->input('company_code'), 
+                'role'       =>  $request->input('role'),
+                'contact_person' =>$request->input('contact_person'),
+                'address'      => $request->input('address'),
+                'country'   => $request->input('country'),
+                'state'   => $request->input('state'),
+                'postal_code' => $request->input('postal_code'),
+                'mobile_number' => $request->input('mobile_number'),
+                'fax'      =>  $request->input('fax'),
+                'website_url'  =>  $request->input('website_url'),
+                'company_logo' => $logoPath, 
                 'created_at' => $date,
                 'updated_at' => $date,
             ];
@@ -231,6 +266,15 @@ public function logout()
             $connection->getSchemaBuilder()->create('clients', function (Blueprint $table) {
                 $table->id();
                 $table->string('Name', 255);
+                $table->string('contact_person' ,255)->nullable();
+                $table->string('address' ,255)->nullable();
+                $table->string('country' ,255)->nullable();
+                $table->string('state' ,255)->nullable();
+                $table->string('postal_code' ,255)->nullable();
+                $table->string('mobile_number' ,255)->nullable();
+                $table->string('fax' ,255)->nullable();
+                $table->string('website_url' ,255)->nullable();
+                $table->string('company_logo' ,255)->nullable();
                 $table->string('email', 255);
                 $table->string('username', 255);
                 $table->string('password', 255);

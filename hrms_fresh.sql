@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 25, 2023 at 06:27 AM
+-- Generation Time: Dec 18, 2023 at 11:03 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -245,6 +245,15 @@ CREATE TABLE `personal_access_tokens` (
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
+  `contact_person` varchar(255) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `country` varchar(255) DEFAULT NULL,
+  `state` varchar(255) DEFAULT NULL,
+  `postal_code` varchar(255) DEFAULT NULL,
+  `mobile_number` varchar(255) DEFAULT NULL,
+  `fax` varchar(255) DEFAULT NULL,
+  `website_url` varchar(255) DEFAULT NULL,
+  `company_logo` varchar(255) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `username` varchar(255) DEFAULT NULL,
@@ -252,6 +261,7 @@ CREATE TABLE `users` (
   `dbName` varchar(255) DEFAULT NULL,
   `role` enum('Super Admin','Admin','User') NOT NULL DEFAULT 'Super Admin',
   `status` enum('Inactive','Active') NOT NULL DEFAULT 'Active',
+  `total` varchar(255) DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -261,33 +271,25 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `username`, `password`, `dbName`, `role`, `status`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Golam Gous', 'golam@gmail.com', NULL, 'abcdef', '$2y$10$GtoTPgK9gN8.6gRoP/jbIuWlmZMkPxYxTdagfFv3QlTkUVmf/Pvre', '', '', '', NULL, '2023-07-24 03:54:47', '2023-08-11 04:53:10'),
-(2, 'Koushik', 'kousik@gmail.com', NULL, NULL, '123456', '', '', '', NULL, '2023-07-24 04:22:13', '2023-07-24 04:22:13'),
-(3, 'Aniruddha', 'ani@gmail.com', NULL, NULL, '$2y$10$d9Rbwj6AUxLTF/YwYasE9ehx6VF9JAzTU4Np0mXpxg4eoHDp9ffta', '', '', '', NULL, '2023-07-24 05:01:39', '2023-07-24 05:01:39'),
-(4, 'Sonu Sudh', 'sonu@gmail.com', NULL, NULL, '$2y$10$Uthke3/x8nS2Va3SfKuvZuDK1vkCyGFmqW3RwbaOjVCbppUCcwBim', '', '', '', NULL, '2023-07-24 05:47:40', '2023-07-24 05:47:40'),
-(6, 'Tritho', 'tirtho@gmail.com', NULL, NULL, '$2y$10$Sf5.y60Ll2EIVG5xQBHRF.3d4xVRpkDvBpVnFnaLGrF4MubmY20y2', '', '', '', NULL, '2023-07-24 23:19:19', '2023-07-24 23:19:19'),
-(7, 'Rishi Raj', 'rishi@gmail.com', NULL, NULL, '$2y$10$iHwx5RdQSt9E5MjtKjmOeeUrBv.2o6pVA8Z3flfGf3D0og3xZXFUC', '', '', '', NULL, '2023-07-24 23:36:58', '2023-07-24 23:36:58'),
-(8, 'Sonu Raj', 'sonuraj@gmail.com', NULL, NULL, '$2y$10$keG2ziEqEP6ofD2ozbp/ge4sfp2xMEGLjNFmO0SJviXyDfkep9RxS', '', '', '', NULL, '2023-07-25 04:01:42', '2023-07-25 04:01:42'),
-(9, 'Satish Raj', 'satishj@gmail.com', NULL, NULL, '$2y$10$Yhevtqn1A4Ldh2dvt.TsTOt7MSzqqG15lJG0gfD5rkOwyZmU7Kpa6', '', '', '', NULL, '2023-07-25 07:00:49', '2023-07-25 07:00:49'),
-(10, 'santanu', 'san@gmail.com', NULL, NULL, '$2y$10$gkkt9gplU8lub36i.N32hOoMEdpxMb3QFJD5DbwMGa8AwX8G8a/Ty', '', '', '', NULL, '2023-07-27 00:21:17', '2023-07-27 00:21:17'),
-(29, 'wipro pvt.ltd', 'wipro@gmail.com', NULL, NULL, '$2y$10$0Kav2gm8KXl6mZYAx1oN3eJNmV3QHs5STypBWFeboV3wFycSCIVri', '', '', '', NULL, '2023-07-27 02:17:34', '2023-07-27 02:17:34'),
-(30, 'Infosis software', 'info@gmail.com', NULL, NULL, '$2y$10$TaqZI5Erv2n3b9Vu4ooyoep/WUwdKDGow55KSmgKQdZJ0BZaw9b8.', '', '', '', NULL, '2023-07-27 02:56:05', '2023-07-27 02:56:05'),
-(35, 'Tcs software', 'tcs@gmail.com', NULL, NULL, '$2y$10$34C.WbOvbRwvbVwcUkLeyubcOiV1jkEykqKDjM49Mcn46Cjq7L1He', 'tcs_CDTC31X7', 'Super Admin', 'Active', NULL, '2023-07-27 04:52:26', '2023-07-27 04:52:26'),
-(36, 'Redcat', 'red@gmail.com', NULL, NULL, '$2y$10$oapXkj1.90dIforPaLxkPOAeRgZA0q1WbeK6CUBBJvx2YcvEXuUmG', 'redcat_ZPXHgnj0', 'Super Admin', 'Active', NULL, '2023-07-27 05:47:06', '2023-07-27 05:47:06'),
-(37, 'cognigent', 'cogni@gmail.com', NULL, NULL, '$2y$10$5edsZLJxqa6AjjwMpBrpAuFLAbLHtSBng8e/K41k1LztONr4dwjWK', 'cts_4OGhvx0g', 'Super Admin', 'Active', NULL, '2023-07-28 05:24:22', '2023-07-28 05:24:22'),
-(54, 'Gnoin pvt.ltd', 'gnon@gmail.com', NULL, NULL, '$2y$10$vn7rKVUSuLIylU2QTxaAqeUWLRBY2pecgho.4XcWsauZUXbK5v2Xi', 'gnoin', 'Super Admin', 'Active', NULL, '2023-08-01 06:27:09', '2023-08-01 06:27:09'),
-(63, 'Tcs Software', 'tcs123@gmail.com', NULL, 'tcsemployee', '$2y$10$Zusnrcf40WxOGAw47tJPEOxSEU7C6kIOzzIbWk7CzcZh9Uk6m1Xla', 'tcs_1234', 'Super Admin', 'Active', NULL, '2023-08-02 06:41:04', '2023-08-02 06:41:04'),
-(66, 'wipro Software', 'wipro123@gmail.com', NULL, 'wiproemployee', '$2y$10$HAA2LUVfVucOIaZWT4bc3.Von/8EdeGoyavc/W4bahEYXvNjY6wLC', 'wipro_1234', 'Super Admin', 'Active', NULL, '2023-08-04 02:05:02', '2023-08-04 02:05:02'),
-(78, 'infosys Software', 'info123@gmail.com', NULL, 'infoemployee', '$2y$10$kutsOAXZ4k7aCePOIyKX4ei3Ac2kN97nFM0cj0Mkp4oMMNwhZpMCG', 'infosys_1234', 'Super Admin', 'Active', NULL, '2023-08-04 04:49:10', '2023-08-04 04:49:10'),
-(91, 'accenture Software', 'accenture@gmail.com', NULL, 'accemployee', '$2y$10$WiYv9Z6kO.OwMOhpQrKKQemj3ISEfGvCEhT6dmwQStguMlExYlHXm', 'accenture_123', 'Super Admin', 'Active', NULL, '2023-08-07 02:11:35', '2023-08-07 02:11:35'),
-(92, 'RedhatSoftware', 'redhat@gmail.com', NULL, 'redhatemp', '$2y$10$oqMJ6aGEzScRqGCuYXuU5.VBr9ZTGF/xN1aZyFBIyarEHFqapJeBW', 'redhat_1234', 'Super Admin', 'Active', NULL, '2023-08-08 01:35:55', '2023-08-08 01:35:55'),
-(93, 'Softcode Software', 'soft@gmail.com', NULL, 'softcode', '$2y$10$7ie7dWLqHazZU5PdQhtFlOnLbiDUF9DSYYuoEgTMP7FC5Ru7Y9hxO', 'softcode_123', 'Super Admin', 'Active', NULL, '2023-08-08 23:58:51', '2023-08-08 23:58:51'),
-(94, 'Softcode Software', 'soft123@gmail.com', NULL, 'softcode', '$2y$10$E45CIq/Hdp33Vxvt24WBQegSXIDcyUvHczmDNhseWYKtbjdJKTqC6', 'softcode_123', 'Super Admin', 'Active', NULL, '2023-08-09 00:02:22', '2023-08-09 00:02:22'),
-(95, 'it worldSoftware', 'it@gmail.com', NULL, 'itworld', '$2y$10$QY2J0TCHjc7RE69fNWUxre1InULrF68580jLoUhepGa3NNldxNvdK', 'Itworld_123', 'Super Admin', 'Active', NULL, '2023-08-09 00:08:31', '2023-08-09 00:08:31'),
-(96, 'infinity software', 'gemsfiem@gmail.com', NULL, 'infinityemp', '$2y$10$blgi4IDRGEVo8gD5azNI1OHha3l0g7Yh.jud0ygx8MqQpBrvCQhQO', 'Infinity_1234', 'Super Admin', 'Active', NULL, '2023-08-10 05:36:11', '2023-08-14 01:34:36'),
-(100, 'goodrej Company', 'goodrej@gmail.com', NULL, 'goodrej', '$2y$10$tADrnYe29w1vkZi6G4by2e/oUiIIKmfH/.llZCOL/E17nK6P.XJoO', 'goodrej_123', 'Super Admin', 'Active', NULL, '2023-10-31 08:17:34', '2023-10-31 08:17:34'),
-(101, 'dearCompany', 'dear@gmail.com', NULL, 'dear', '$2y$10$kg2UDabLY1Oia6tUZSgucuiNb62MC1amGaPfZ/tZsaGZ3HKDdEQEq', 'dear', 'Super Admin', 'Active', NULL, '2023-11-18 04:11:36', '2023-11-18 04:11:36');
+INSERT INTO `users` (`id`, `name`, `contact_person`, `address`, `country`, `state`, `postal_code`, `mobile_number`, `fax`, `website_url`, `company_logo`, `email`, `email_verified_at`, `username`, `password`, `dbName`, `role`, `status`, `total`, `remember_token`, `created_at`, `updated_at`) VALUES
+(1, 'Golam Gous', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'golam@gmail.com', NULL, 'abcdef', '$2y$10$GtoTPgK9gN8.6gRoP/jbIuWlmZMkPxYxTdagfFv3QlTkUVmf/Pvre', '', '', '', NULL, NULL, '2023-07-24 03:54:47', '2023-08-11 04:53:10'),
+(35, 'Tcs software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs@gmail.com', NULL, NULL, '$2y$10$34C.WbOvbRwvbVwcUkLeyubcOiV1jkEykqKDjM49Mcn46Cjq7L1He', 'tcs_CDTC31X7', 'Super Admin', 'Active', '50', NULL, '2023-07-27 04:52:26', '2023-07-27 04:52:26'),
+(36, 'Redcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'red@gmail.com', NULL, NULL, '$2y$10$oapXkj1.90dIforPaLxkPOAeRgZA0q1WbeK6CUBBJvx2YcvEXuUmG', 'redcat_ZPXHgnj0', 'Super Admin', 'Active', '50', NULL, '2023-07-27 05:47:06', '2023-07-27 05:47:06'),
+(37, 'cognigent', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'cogni@gmail.com', NULL, NULL, '$2y$10$5edsZLJxqa6AjjwMpBrpAuFLAbLHtSBng8e/K41k1LztONr4dwjWK', 'cts_4OGhvx0g', 'Super Admin', 'Active', '50', NULL, '2023-07-28 05:24:22', '2023-07-28 05:24:22'),
+(54, 'Gnoin pvt.ltd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gnon@gmail.com', NULL, NULL, '$2y$10$vn7rKVUSuLIylU2QTxaAqeUWLRBY2pecgho.4XcWsauZUXbK5v2Xi', 'gnoin', 'Super Admin', 'Active', '50', NULL, '2023-08-01 06:27:09', '2023-08-01 06:27:09'),
+(63, 'Tcs Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs123@gmail.com', NULL, 'tcsemployee', '$2y$10$Zusnrcf40WxOGAw47tJPEOxSEU7C6kIOzzIbWk7CzcZh9Uk6m1Xla', 'tcs_1234', 'Super Admin', 'Active', '50', NULL, '2023-08-02 06:41:04', '2023-08-02 06:41:04'),
+(66, 'wipro Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'wipro123@gmail.com', NULL, 'wiproemployee', '$2y$10$HAA2LUVfVucOIaZWT4bc3.Von/8EdeGoyavc/W4bahEYXvNjY6wLC', 'wipro_1234', 'Super Admin', 'Active', '50', NULL, '2023-08-04 02:05:02', '2023-08-04 02:05:02'),
+(78, 'infosys Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'info123@gmail.com', NULL, 'infoemployee', '$2y$10$kutsOAXZ4k7aCePOIyKX4ei3Ac2kN97nFM0cj0Mkp4oMMNwhZpMCG', 'infosys_1234', 'Super Admin', 'Active', '50', NULL, '2023-08-04 04:49:10', '2023-08-04 04:49:10'),
+(91, 'accenture Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'accenture@gmail.com', NULL, 'accemployee', '$2y$10$WiYv9Z6kO.OwMOhpQrKKQemj3ISEfGvCEhT6dmwQStguMlExYlHXm', 'accenture_123', 'Super Admin', 'Active', '50', NULL, '2023-08-07 02:11:35', '2023-08-07 02:11:35'),
+(92, 'RedhatSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'redhat@gmail.com', NULL, 'redhatemp', '$2y$10$oqMJ6aGEzScRqGCuYXuU5.VBr9ZTGF/xN1aZyFBIyarEHFqapJeBW', 'redhat_1234', 'Super Admin', 'Active', '50', NULL, '2023-08-08 01:35:55', '2023-08-08 01:35:55'),
+(93, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft@gmail.com', NULL, 'softcode', '$2y$10$7ie7dWLqHazZU5PdQhtFlOnLbiDUF9DSYYuoEgTMP7FC5Ru7Y9hxO', 'softcode_123', 'Super Admin', 'Active', '50', NULL, '2023-08-08 23:58:51', '2023-08-08 23:58:51'),
+(94, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft123@gmail.com', NULL, 'softcode', '$2y$10$E45CIq/Hdp33Vxvt24WBQegSXIDcyUvHczmDNhseWYKtbjdJKTqC6', 'softcode_123', 'Super Admin', 'Active', '50', NULL, '2023-08-09 00:02:22', '2023-08-09 00:02:22'),
+(95, 'it worldSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'it@gmail.com', NULL, 'itworld', '$2y$10$QY2J0TCHjc7RE69fNWUxre1InULrF68580jLoUhepGa3NNldxNvdK', 'Itworld_123', 'Super Admin', 'Active', '50', NULL, '2023-08-09 00:08:31', '2023-08-09 00:08:31'),
+(96, 'infinity software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gemsfiem@gmail.com', NULL, 'infinityemp', '$2y$10$blgi4IDRGEVo8gD5azNI1OHha3l0g7Yh.jud0ygx8MqQpBrvCQhQO', 'Infinity_1234', 'Super Admin', 'Active', '50', NULL, '2023-08-10 05:36:11', '2023-08-14 01:34:36'),
+(100, 'goodrej Company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'goodrej@gmail.com', NULL, 'goodrej', '$2y$10$tADrnYe29w1vkZi6G4by2e/oUiIIKmfH/.llZCOL/E17nK6P.XJoO', 'goodrej_123', 'Super Admin', 'Active', '50', NULL, '2023-10-31 08:17:34', '2023-10-31 08:17:34'),
+(101, 'dearCompany', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dear@gmail.com', NULL, 'dear', '$2y$10$kg2UDabLY1Oia6tUZSgucuiNb62MC1amGaPfZ/tZsaGZ3HKDdEQEq', 'dear', 'Super Admin', 'Active', '50', NULL, '2023-11-18 04:11:36', '2023-11-18 04:11:36'),
+(119, 'boat company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'boat@gmail.com', NULL, 'boat', '$2y$10$hcGHUgkDocOofGLDs35lm.CCfxsP.qzIV4nFYzajdxnFU3IdXhQd6', 'boat_123', 'Super Admin', 'Active', '50', NULL, '2023-12-04 23:59:49', '2023-12-04 23:59:49'),
+(124, 'maruti company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'maruti@gmail.com', NULL, 'maruti', '$2y$10$1cHDY2ftJbVKfI7XeC7LHexX9IyHEATnPjHNChaOV4Rhd3ac/OzVO', 'maruti_123', 'Super Admin', 'Active', '50', NULL, '2023-12-05 00:45:42', '2023-12-05 00:45:42');
 
 --
 -- Indexes for dumped tables
@@ -411,7 +413,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
