@@ -26,6 +26,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 use App\Models\PasswordReset;
+use App\Models\SuperUser;
 
 
 
@@ -125,6 +126,58 @@ public function logout()
     }
 
 
+    public function registerRoot(Request $request)
+    {
+        try
+        {
+
+            $validatedData = $request->validate([
+                'name' =>'required',
+                'username' => 'required',
+                'password' => 'required',
+                'email'   => 'required',
+                'phone'   => 'required', 
+            ]);
+            $superUser = new SuperUser;
+            $superUser->name = $validatedData['name'];
+            $superUser->username = $validatedData['username'];
+            $superUser->password = bcrypt($validatedData['password']);
+            $superUser->email = $validatedData['email'];
+            $superUser->phone = $validatedData['phone'];
+            $superUser->save();
+            return response()->json(['status'=>true,'message' => 'root registration done successfully']);
+
+        }
+        catch(\Exception $e)
+        {
+            return response()->json(['status' => false,'error' => $e->getMessage()]);
+        }
+     
+    }
+
+
+
+
+
+
+    public function rootLogin(Request $request)
+    {
+        $validatedData = $request->validate([
+            'username' => 'required',
+            'password' => 'required|string|min:6',
+        ]);
+        $root = SuperUser::where('username', $validatedData['username'])->first();
+    if ($root && Hash::check($validatedData['password'], $root->password))
+    {
+        $role = $root->role;
+        session_start(); 
+           $_SESSION['role'] = $role;
+           return response()->json(['status' => true, 'message' => 'Login successful']);
+
+    }
+    return response()->json(['status' => false, 'message' => 'Username or password is incorrect']);
+
+    }
 
 
 
@@ -146,7 +199,7 @@ public function logout()
                 'username' => 'required|string|max:255',
                 'password' => 'required|string|min:6',
                 'phone' => 'required|string|max:20',
-                'company_code' => 'required',
+                //'company_code' => 'required',
                 'role' => 'required',
                 'total' => 'required',
                 'contact_person' =>'required',
@@ -157,85 +210,102 @@ public function logout()
                 'mobile_number' => 'required',
                 'fax'  =>  'nullable',
                 'website_url' => 'nullable',
-                'company_logo' => 'file',
+                'company_logo' => 'file|nullable',
             ]);
-            if ($request->hasFile('company_logo')) {
-                $file = $request->file('company_logo');
-                $uniqueFolder = 'logo' . '_' . time();
-                $filePath = $file->store('companyLogo/' . $uniqueFolder);
-                $logoPath = $filePath;
-            } else {
-                $logoPath = null;
+            session_start();
+            if(isset($_SESSION['role']) && $_SESSION['role'] == 'root')
+            {
+
+
+                if ($request->hasFile('company_logo')) {
+                    $file = $request->file('company_logo');
+                    $uniqueFolder = 'logo' . '_' . time();
+                    $filePath = $file->store('companyLogo/' . $uniqueFolder);
+                    $logoPath = $filePath;
+                } else {
+                    $logoPath = null;
+                }
+          
+                $companyCode =$this->generateUniqueCompanyCode();
+                $user = new User;
+                $user->name = $validatedData['name'];
+                $user->email = $validatedData['email'];
+                $user->password = bcrypt($validatedData['password']);
+                // $user->password = $validatedData['password'];
+                $user->dbName = $validatedData['dbName'];
+                $user->username = $validatedData['username'];
+                $user->total   = $validatedData['total'];
+                $company_code = $companyCode;
+                $user->contact_person = $validatedData['contact_person'];
+                $user->address  = $validatedData['address'];
+                $user->country  = $validatedData['country'];
+                $user->state    = $validatedData['state'];
+                $user->postal_code = $validatedData['postal_code'];
+                $user->mobile_number = $validatedData['mobile_number'];
+                $user->fax     = isset($validatedData['fax']) ? $validatedData['fax'] : null;
+                $user->website_url = isset($validatedData['website_url']) ? $validatedData['website_url'] : null;
+                $user->company_logo = $logoPath;
+                $user->save();
+                
+                $dbName = $validatedData['dbName'];
+                $dbUsername = $validatedData['username'];
+                $dbPassword = $validatedData['password'];
+    
+                $this->createDynamicDatabase($dbName, $dbUsername, $dbPassword);
+    
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $dbUsername,
+                    'password' => $dbPassword,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
+                ]);
+    
+                $dynamicDB = DB::connection('dynamic');
+                if (!$this->tableExists($dynamicDB, 'clients')) {
+                    $this->createClientsTable($dynamicDB);
+                }
+                $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+                $clientData = [
+                    'name'    => $request->input('name'),
+                    'email'   => $request->input('email'),
+                    'username'=> $request->input('username'),
+                    'password'=> $request->input('password'),
+                    'phone'   => $request->input('phone'),
+                    'dbName'  => $request->input('dbName'),
+                    'company_code' => $companyCode, 
+                    'role'       =>  $request->input('role'),
+                    'contact_person' =>$request->input('contact_person'),
+                    'address'      => $request->input('address'),
+                    'country'   => $request->input('country'),
+                    'state'   => $request->input('state'),
+                    'postal_code' => $request->input('postal_code'),
+                    'mobile_number' => $request->input('mobile_number'),
+                    'fax'      =>  $request->input('fax'),
+                    'website_url'  =>  $request->input('website_url'),
+                    'company_logo' => $logoPath, 
+                    'created_at' => $date,
+                    'updated_at' => $date,
+                ];
+                $dynamicDB->table('clients')->insert($clientData);
+    
+                return response()->json(['message' => 'Company registered successfully'], 201);
+
+
+            }
+            else
+            {
+                return response()->json(['status'=>false,'message'=>'access denied!']);
             }
 
-            $user = new User;
-            $user->name = $validatedData['name'];
-            $user->email = $validatedData['email'];
-            $user->password = bcrypt($validatedData['password']);
-            // $user->password = $validatedData['password'];
-            $user->dbName = $validatedData['dbName'];
-            $user->username = $validatedData['username'];
-            $user->total   = $validatedData['total'];
-            $user->contact_person = $validatedData['contact_person'];
-            $user->address  = $validatedData['address'];
-            $user->country  = $validatedData['country'];
-            $user->state    = $validatedData['state'];
-            $user->postal_code = $validatedData['postal_code'];
-            $user->mobile_number = $validatedData['mobile_number'];
-            $user->fax     = $validatedData['fax'];
-            $user->website_url = $validatedData['website_url'];
-            $user->company_logo = $logoPath;
-            $user->save();
-            
-            $dbName = $validatedData['dbName'];
-            $dbUsername = $validatedData['username'];
-            $dbPassword = $validatedData['password'];
 
-            $this->createDynamicDatabase($dbName, $dbUsername, $dbPassword);
-
-            Config::set('database.connections.dynamic', [
-                'driver' => 'mysql',
-                'host' => 'localhost',
-                'database' => $dbName,
-                'username' => $dbUsername,
-                'password' => $dbPassword,
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'strict' => true,
-                'engine' => null,
-            ]);
-
-            $dynamicDB = DB::connection('dynamic');
-            if (!$this->tableExists($dynamicDB, 'clients')) {
-                $this->createClientsTable($dynamicDB);
-            }
-            $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
-            $clientData = [
-                'name'    => $request->input('name'),
-                'email'   => $request->input('email'),
-                'username'=> $request->input('username'),
-                'password'=> $request->input('password'),
-                'phone'   => $request->input('phone'),
-                'dbName'  => $request->input('dbName'),
-                'company_code' => $request->input('company_code'), 
-                'role'       =>  $request->input('role'),
-                'contact_person' =>$request->input('contact_person'),
-                'address'      => $request->input('address'),
-                'country'   => $request->input('country'),
-                'state'   => $request->input('state'),
-                'postal_code' => $request->input('postal_code'),
-                'mobile_number' => $request->input('mobile_number'),
-                'fax'      =>  $request->input('fax'),
-                'website_url'  =>  $request->input('website_url'),
-                'company_logo' => $logoPath, 
-                'created_at' => $date,
-                'updated_at' => $date,
-            ];
-            $dynamicDB->table('clients')->insert($clientData);
-
-            return response()->json(['message' => 'Company registered successfully'], 201);
         } catch (Exception $e) {
+            Log::error('Company registration failed: ' . $e->getMessage());
             return response()->json(['message' => 'Company registration failed. Please try again.'], 500);
         }
     }
@@ -245,20 +315,22 @@ public function logout()
 
 
     private function createDynamicDatabase($dbName, $dbUsername, $dbPassword)
-    {
-       
+    {    
+
         $defaultDB = DB::getDefaultConnection();
         DB::statement("CREATE DATABASE IF NOT EXISTS $dbName");
+        DB::statement("CREATE USER '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
         DB::statement("GRANT ALL ON $dbName.* TO '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
         DB::statement("FLUSH PRIVILEGES");
         DB::setDefaultConnection($defaultDB);
+
     }
 
     private function tableExists($connection, $table)
     {
         return Schema::connection($connection->getConfig('name'))->hasTable($table);
     }
-
+ 
     private function createClientsTable($connection)
     {
     
@@ -288,6 +360,40 @@ public function logout()
 
 
     }
+
+
+
+//     private function generateUniqueCompanyCode()
+// {
+//     $code = strtoupper(Str::random(8));
+//     while (User::where('company_code', $code)->exists()) {
+//         $code = strtoupper(Str::random(8));
+//     }
+//     return $code;
+// }
+
+
+private function generateUniqueCompanyCode()
+{
+    $timestamp = time();
+    $randomString = substr(uniqid('',true),0,3);
+    $code = $randomString .'_' . $timestamp;
+    return $code;
+}
+
+
+public function rootLogout(Request $request)
+{
+    session_start();
+    session_unset();
+    session_destroy();
+
+   
+    return response()->json(['message' => 'Logged out successfully'], 200);
+}
+
+
+
 
 
 public function logoutSession(Request $request)
@@ -346,7 +452,8 @@ private function storeSessionCredentials($request, $username, $password, $dbName
 public function profile(Request $request)
 {
     session_start();
-    if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
+    // if(isset($_SESSION["role"]) && $_SESSION['role'] == 'root')
     {
         $username = $_SESSION["username"];
         $dbName = $_SESSION["dbName"];
