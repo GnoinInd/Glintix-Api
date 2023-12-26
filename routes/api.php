@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
    //root login
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root_login',[AdminController::class,'rootLogin']); 
+   Route::post('root_profile',[AdminController::class,'rootProfile']);
 
    
      

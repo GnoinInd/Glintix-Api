@@ -170,12 +170,14 @@ public function logout()
     if ($root && Hash::check($validatedData['password'], $root->password))
     {
         $role = $root->role;
+        $email = $root->email;
         session_start(); 
            $_SESSION['role'] = $role;
-           return response()->json(['status' => true, 'message' => 'Login successful']);
+           $_SESSION['email'] = $email;
+           return response()->json(['status' => true,'success'=>true, 'message' => 'Login successful'],200);
 
     }
-    return response()->json(['status' => false, 'message' => 'Username or password is incorrect']);
+    return response()->json(['status' => false, 'success'=> false, 'message' => 'Username or password is incorrect'],401);
 
     }
 
@@ -294,13 +296,13 @@ public function logout()
                 ];
                 $dynamicDB->table('clients')->insert($clientData);
     
-                return response()->json(['message' => 'Company registered successfully'], 201);
+                return response()->json(['status' => true,'success'=>true,'message' => 'Company registered successfully'], 201);
 
 
             }
             else
             {
-                return response()->json(['status'=>false,'message'=>'access denied!']);
+                return response()->json(['status'=>false,'success'=>false,'message'=>'access denied!'],403);
             }
 
 
@@ -382,14 +384,39 @@ private function generateUniqueCompanyCode()
 }
 
 
-public function rootLogout(Request $request)
+// public function rootLogout(Request $request)
+// {
+//     if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+//     {
+//         session_start();
+//         session_unset();
+//         session_destroy();
+    
+       
+//         return response()->json(['status'=>true,'success'=>true,'message' => 'Logged out successfully'], 200);
+//     }
+//     return response()->json(['status'=>false,'success'=>false,'message' => 'already Logged out'], 400);
+
+
+  
+// }
+
+
+public function rootProfile(request $request)
 {
     session_start();
-    session_unset();
-    session_destroy();
+    if($_SESSION['role'] && $_SESSION['email'])
+    {
+        $email = $_SESSION['email'];
+        $profile = SuperUser::where('email',$email)->first(); 
+        if($profile)
+        {
+            return response()->json(['status'=>true,'success' => true ,'message' => 'data found','data' => $profile],200);
 
-   
-    return response()->json(['message' => 'Logged out successfully'], 200);
+        }
+        return response()->json(['status'=>false,'success'=>false,'message'=>'data not found'],404);
+    }
+    return response()->json(['status'=>false,'success'=>false,'message'=>'session out!'],440);
 }
 
 
@@ -403,7 +430,7 @@ public function logoutSession(Request $request)
     session_destroy();
 
    
-    return response()->json(['message' => 'Logged out successfully'], 200);
+    return response()->json(['message' => 'Logged out successfully'],200);
 }
 
 public function logincompany(Request $request)
@@ -462,15 +489,15 @@ public function profile(Request $request)
         
         if($user)
         {
-           return response()->json(['success' => true ,'message' => 'data found','data' => $user]);
+           return response()->json(['status'=>true,'success' => true ,'message' => 'data found','data' => $user],200);
         }
         else{
-            return response()->json(['success' => false, 'message' => 'profile details not found']);
+            return response()->json(['status'=>false,'success' => false, 'message' => 'profile details not found'],404);
             }
     }
     else 
     {
-        return response()->json(['message' => 'Session out,pls login']);
+        return response()->json(['status'=>false,'success'=>false,'message' => 'Session out,pls login'],440);
     }
 }
 
