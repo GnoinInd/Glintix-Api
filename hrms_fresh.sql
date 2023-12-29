@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 26, 2023 at 06:42 AM
+-- Generation Time: Dec 29, 2023 at 02:41 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -83,7 +83,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (8, '2019_08_19_000000_create_failed_jobs_table', 1),
 (9, '2019_12_14_000001_create_personal_access_tokens_table', 1),
 (10, '2023_07_25_121147_create_clients_table', 2),
-(11, '2023_12_22_115919_create_super_users_table', 3);
+(11, '2023_12_22_115919_create_super_users_table', 3),
+(12, '2023_12_26_065008_create_super_users_table', 4),
+(13, '2023_12_27_114156_create_user_otps_table', 4);
 
 -- --------------------------------------------------------
 
@@ -260,7 +262,7 @@ CREATE TABLE `super_users` (
 --
 
 INSERT INTO `super_users` (`id`, `name`, `username`, `password`, `email`, `phone`, `role`, `created_at`, `updated_at`) VALUES
-(1, 'gnoin pvt. ltd.', 'gnoin', '$2y$10$UaP/uoURexzej8bPw7Wb3eXc8Mu4Eo3j.8x.D/6nBF7EMB5T4xhdq', 'gnoin@gmail.com', '7898789878', 'root', '2023-12-23 10:17:40', '2023-12-23 10:17:40');
+(1, 'Gnoin Pvt.Ltd', 'gnoin', '$2y$10$8p4J.BWC5DLn51HuP4rU4Oe4OZfNavD9jzGJPDY1utnQGMPeWxD1y', 'gemsfiem@gmail.com', '+917699456004', 'root', '2023-12-27 06:22:15', '2023-12-29 06:25:57');
 
 -- --------------------------------------------------------
 
@@ -289,6 +291,8 @@ CREATE TABLE `users` (
   `status` enum('Inactive','Active') NOT NULL DEFAULT 'Active',
   `total` varchar(255) DEFAULT NULL,
   `company_code` varchar(255) DEFAULT NULL,
+  `otp` varchar(255) DEFAULT NULL,
+  `expire_at` timestamp NULL DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -298,27 +302,58 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `contact_person`, `address`, `country`, `state`, `postal_code`, `mobile_number`, `fax`, `website_url`, `company_logo`, `email`, `email_verified_at`, `username`, `password`, `dbName`, `role`, `status`, `total`, `company_code`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Golam Gous', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'golam@gmail.com', NULL, 'abcdef', '$2y$10$GtoTPgK9gN8.6gRoP/jbIuWlmZMkPxYxTdagfFv3QlTkUVmf/Pvre', '', '', '', NULL, NULL, NULL, '2023-07-24 03:54:47', '2023-08-11 04:53:10'),
-(35, 'Tcs software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs@gmail.com', NULL, NULL, '$2y$10$34C.WbOvbRwvbVwcUkLeyubcOiV1jkEykqKDjM49Mcn46Cjq7L1He', 'tcs_CDTC31X7', 'Super Admin', 'Active', '50', NULL, NULL, '2023-07-27 04:52:26', '2023-07-27 04:52:26'),
-(36, 'Redcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'red@gmail.com', NULL, NULL, '$2y$10$oapXkj1.90dIforPaLxkPOAeRgZA0q1WbeK6CUBBJvx2YcvEXuUmG', 'redcat_ZPXHgnj0', 'Super Admin', 'Active', '50', NULL, NULL, '2023-07-27 05:47:06', '2023-07-27 05:47:06'),
-(37, 'cognigent', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'cogni@gmail.com', NULL, NULL, '$2y$10$5edsZLJxqa6AjjwMpBrpAuFLAbLHtSBng8e/K41k1LztONr4dwjWK', 'cts_4OGhvx0g', 'Super Admin', 'Active', '50', NULL, NULL, '2023-07-28 05:24:22', '2023-07-28 05:24:22'),
-(54, 'Gnoin pvt.ltd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gnon@gmail.com', NULL, NULL, '$2y$10$vn7rKVUSuLIylU2QTxaAqeUWLRBY2pecgho.4XcWsauZUXbK5v2Xi', 'gnoin', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-01 06:27:09', '2023-08-01 06:27:09'),
-(63, 'Tcs Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs123@gmail.com', NULL, 'tcsemployee', '$2y$10$Zusnrcf40WxOGAw47tJPEOxSEU7C6kIOzzIbWk7CzcZh9Uk6m1Xla', 'tcs_1234', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-02 06:41:04', '2023-08-02 06:41:04'),
-(66, 'wipro Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'wipro123@gmail.com', NULL, 'wiproemployee', '$2y$10$HAA2LUVfVucOIaZWT4bc3.Von/8EdeGoyavc/W4bahEYXvNjY6wLC', 'wipro_1234', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-04 02:05:02', '2023-08-04 02:05:02'),
-(78, 'infosys Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'info123@gmail.com', NULL, 'infoemployee', '$2y$10$kutsOAXZ4k7aCePOIyKX4ei3Ac2kN97nFM0cj0Mkp4oMMNwhZpMCG', 'infosys_1234', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-04 04:49:10', '2023-08-04 04:49:10'),
-(91, 'accenture Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'accenture@gmail.com', NULL, 'accemployee', '$2y$10$WiYv9Z6kO.OwMOhpQrKKQemj3ISEfGvCEhT6dmwQStguMlExYlHXm', 'accenture_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-07 02:11:35', '2023-08-07 02:11:35'),
-(92, 'RedhatSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'redhat@gmail.com', NULL, 'redhatemp', '$2y$10$oqMJ6aGEzScRqGCuYXuU5.VBr9ZTGF/xN1aZyFBIyarEHFqapJeBW', 'redhat_1234', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-08 01:35:55', '2023-08-08 01:35:55'),
-(93, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft@gmail.com', NULL, 'softcode', '$2y$10$7ie7dWLqHazZU5PdQhtFlOnLbiDUF9DSYYuoEgTMP7FC5Ru7Y9hxO', 'softcode_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-08 23:58:51', '2023-08-08 23:58:51'),
-(94, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft123@gmail.com', NULL, 'softcode', '$2y$10$E45CIq/Hdp33Vxvt24WBQegSXIDcyUvHczmDNhseWYKtbjdJKTqC6', 'softcode_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-09 00:02:22', '2023-08-09 00:02:22'),
-(95, 'it worldSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'it@gmail.com', NULL, 'itworld', '$2y$10$QY2J0TCHjc7RE69fNWUxre1InULrF68580jLoUhepGa3NNldxNvdK', 'Itworld_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-09 00:08:31', '2023-08-09 00:08:31'),
-(96, 'infinity software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gemsfiem@gmail.com', NULL, 'infinityemp', '$2y$10$blgi4IDRGEVo8gD5azNI1OHha3l0g7Yh.jud0ygx8MqQpBrvCQhQO', 'Infinity_1234', 'Super Admin', 'Active', '50', NULL, NULL, '2023-08-10 05:36:11', '2023-08-14 01:34:36'),
-(100, 'goodrej Company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'goodrej@gmail.com', NULL, 'goodrej', '$2y$10$tADrnYe29w1vkZi6G4by2e/oUiIIKmfH/.llZCOL/E17nK6P.XJoO', 'goodrej_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-10-31 08:17:34', '2023-10-31 08:17:34'),
-(101, 'dearCompany', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dear@gmail.com', NULL, 'dear', '$2y$10$kg2UDabLY1Oia6tUZSgucuiNb62MC1amGaPfZ/tZsaGZ3HKDdEQEq', 'dear', 'Super Admin', 'Active', '50', NULL, NULL, '2023-11-18 04:11:36', '2023-11-18 04:11:36'),
-(119, 'boat company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'boat@gmail.com', NULL, 'boat', '$2y$10$hcGHUgkDocOofGLDs35lm.CCfxsP.qzIV4nFYzajdxnFU3IdXhQd6', 'boat_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-12-04 23:59:49', '2023-12-04 23:59:49'),
-(124, 'maruti company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'maruti@gmail.com', NULL, 'maruti', '$2y$10$1cHDY2ftJbVKfI7XeC7LHexX9IyHEATnPjHNChaOV4Rhd3ac/OzVO', 'maruti_123', 'Super Admin', 'Active', '50', NULL, NULL, '2023-12-05 00:45:42', '2023-12-05 00:45:42'),
-(137, 'birla company', '7867564534', 'kolkata-100', 'india', 'west-bengal', '700100', '6765432123', 'fax100', 'www.birla.com', NULL, 'birla@gmail.com', NULL, 'birla', '$2y$10$Zqa9fpta8LjR9yELFyKUcuvN6EPA8G1TzjFSLhBu/ZmMoZahTGjZy', 'birla_123', 'Super Admin', 'Active', '25', NULL, NULL, '2023-12-24 11:02:10', '2023-12-24 11:02:10'),
-(138, 'godrej', '7867564534', 'kolkata-100', 'india', 'west-bengal', '700100', '6765432123', 'fax100', 'www.birla.com', NULL, 'godrej@gmail.com', NULL, 'godrej', '$2y$10$RGeSVWeRneY06IcvhPMfG.8.T7j6yQQEMbB39qXB3/LOuuOUeFJHG', 'godrej_123', 'Super Admin', 'Active', '25', NULL, NULL, '2023-12-24 11:21:12', '2023-12-24 11:21:12');
+INSERT INTO `users` (`id`, `name`, `contact_person`, `address`, `country`, `state`, `postal_code`, `mobile_number`, `fax`, `website_url`, `company_logo`, `email`, `email_verified_at`, `username`, `password`, `dbName`, `role`, `status`, `total`, `company_code`, `otp`, `expire_at`, `remember_token`, `created_at`, `updated_at`) VALUES
+(1, 'Golam Gous', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'golam@gmail.com', NULL, 'abcdef', '$2y$10$GtoTPgK9gN8.6gRoP/jbIuWlmZMkPxYxTdagfFv3QlTkUVmf/Pvre', '', '', '', NULL, NULL, NULL, NULL, NULL, '2023-07-24 03:54:47', '2023-08-11 04:53:10'),
+(35, 'Tcs software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs@gmail.com', NULL, NULL, '$2y$10$34C.WbOvbRwvbVwcUkLeyubcOiV1jkEykqKDjM49Mcn46Cjq7L1He', 'tcs_CDTC31X7', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-07-27 04:52:26', '2023-07-27 04:52:26'),
+(36, 'Redcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'red@gmail.com', NULL, NULL, '$2y$10$oapXkj1.90dIforPaLxkPOAeRgZA0q1WbeK6CUBBJvx2YcvEXuUmG', 'redcat_ZPXHgnj0', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-07-27 05:47:06', '2023-07-27 05:47:06'),
+(37, 'cognigent', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'cogni@gmail.com', NULL, NULL, '$2y$10$5edsZLJxqa6AjjwMpBrpAuFLAbLHtSBng8e/K41k1LztONr4dwjWK', 'cts_4OGhvx0g', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-07-28 05:24:22', '2023-07-28 05:24:22'),
+(54, 'Gnoin pvt.ltd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gnon@gmail.com', NULL, NULL, '$2y$10$vn7rKVUSuLIylU2QTxaAqeUWLRBY2pecgho.4XcWsauZUXbK5v2Xi', 'gnoin', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-01 06:27:09', '2023-08-01 06:27:09'),
+(63, 'Tcs Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'tcs123@gmail.com', NULL, 'tcsemployee', '$2y$10$Zusnrcf40WxOGAw47tJPEOxSEU7C6kIOzzIbWk7CzcZh9Uk6m1Xla', 'tcs_1234', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-02 06:41:04', '2023-08-02 06:41:04'),
+(66, 'wipro Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'wipro123@gmail.com', NULL, 'wiproemployee', '$2y$10$HAA2LUVfVucOIaZWT4bc3.Von/8EdeGoyavc/W4bahEYXvNjY6wLC', 'wipro_1234', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-04 02:05:02', '2023-08-04 02:05:02'),
+(78, 'infosys Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'info123@gmail.com', NULL, 'infoemployee', '$2y$10$kutsOAXZ4k7aCePOIyKX4ei3Ac2kN97nFM0cj0Mkp4oMMNwhZpMCG', 'infosys_1234', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-04 04:49:10', '2023-08-04 04:49:10'),
+(91, 'accenture Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'accenture@gmail.com', NULL, 'accemployee', '$2y$10$WiYv9Z6kO.OwMOhpQrKKQemj3ISEfGvCEhT6dmwQStguMlExYlHXm', 'accenture_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-07 02:11:35', '2023-08-07 02:11:35'),
+(92, 'RedhatSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'redhat@gmail.com', NULL, 'redhatemp', '$2y$10$oqMJ6aGEzScRqGCuYXuU5.VBr9ZTGF/xN1aZyFBIyarEHFqapJeBW', 'redhat_1234', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-08 01:35:55', '2023-08-08 01:35:55'),
+(93, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft@gmail.com', NULL, 'softcode', '$2y$10$7ie7dWLqHazZU5PdQhtFlOnLbiDUF9DSYYuoEgTMP7FC5Ru7Y9hxO', 'softcode_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-08 23:58:51', '2023-08-08 23:58:51'),
+(94, 'Softcode Software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'soft123@gmail.com', NULL, 'softcode', '$2y$10$E45CIq/Hdp33Vxvt24WBQegSXIDcyUvHczmDNhseWYKtbjdJKTqC6', 'softcode_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-09 00:02:22', '2023-08-09 00:02:22'),
+(95, 'it worldSoftware', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'it@gmail.com', NULL, 'itworld', '$2y$10$QY2J0TCHjc7RE69fNWUxre1InULrF68580jLoUhepGa3NNldxNvdK', 'Itworld_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-09 00:08:31', '2023-08-09 00:08:31'),
+(96, 'infinity software', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'gemsfiem@gmail.com', NULL, 'infinityemp', '$2y$10$blgi4IDRGEVo8gD5azNI1OHha3l0g7Yh.jud0ygx8MqQpBrvCQhQO', 'Infinity_1234', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-08-10 05:36:11', '2023-08-14 01:34:36'),
+(100, 'goodrej Company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'goodrej@gmail.com', NULL, 'goodrej', '$2y$10$tADrnYe29w1vkZi6G4by2e/oUiIIKmfH/.llZCOL/E17nK6P.XJoO', 'goodrej_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-10-31 08:17:34', '2023-10-31 08:17:34'),
+(101, 'dearCompany', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'dear@gmail.com', NULL, 'dear', '$2y$10$kg2UDabLY1Oia6tUZSgucuiNb62MC1amGaPfZ/tZsaGZ3HKDdEQEq', 'dear', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-11-18 04:11:36', '2023-11-18 04:11:36'),
+(119, 'boat company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'boat@gmail.com', NULL, 'boat', '$2y$10$hcGHUgkDocOofGLDs35lm.CCfxsP.qzIV4nFYzajdxnFU3IdXhQd6', 'boat_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-12-04 23:59:49', '2023-12-04 23:59:49'),
+(124, 'maruti company', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'maruti@gmail.com', NULL, 'maruti', '$2y$10$1cHDY2ftJbVKfI7XeC7LHexX9IyHEATnPjHNChaOV4Rhd3ac/OzVO', 'maruti_123', 'Super Admin', 'Active', '50', NULL, NULL, NULL, NULL, '2023-12-05 00:45:42', '2023-12-05 00:45:42'),
+(137, 'birla company', '7867564534', 'kolkata-100', 'india', 'west-bengal', '700100', '6765432123', 'fax100', 'www.birla.com', NULL, 'birla@gmail.com', NULL, 'birla', '$2y$10$Zqa9fpta8LjR9yELFyKUcuvN6EPA8G1TzjFSLhBu/ZmMoZahTGjZy', 'birla_123', 'Super Admin', 'Active', '25', NULL, NULL, NULL, NULL, '2023-12-24 11:02:10', '2023-12-24 11:02:10'),
+(138, 'godrej', '7867564534', 'kolkata-100', 'india', 'west-bengal', '700100', '6765432123', 'fax100', 'www.birla.com', NULL, 'godrej@gmail.com', NULL, 'godrej', '$2y$10$RGeSVWeRneY06IcvhPMfG.8.T7j6yQQEMbB39qXB3/LOuuOUeFJHG', 'godrej_123', 'Super Admin', 'Active', '25', NULL, NULL, NULL, NULL, '2023-12-24 11:21:12', '2023-12-24 11:21:12'),
+(139, 'zoho company', '7867564534', 'kolkata-100', 'india', 'west-bengal', '700100', '6765432123', 'fax100', 'www.zoho.com', NULL, 'zoho@gmail.com', NULL, 'zoho', '$2y$10$6cGnH.F7gHazS/ch6KGTruVPo66D2sUG/1Y1MxdcdOPYD5iq2Fv8G', 'zoho_123', 'Super Admin', 'Active', '25', NULL, NULL, NULL, NULL, '2023-12-26 01:28:57', '2023-12-26 01:28:57');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_otps`
+--
+
+CREATE TABLE `user_otps` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) NOT NULL,
+  `otp` varchar(255) NOT NULL,
+  `expire_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `user_otps`
+--
+
+INSERT INTO `user_otps` (`id`, `user_id`, `otp`, `expire_at`, `created_at`, `updated_at`) VALUES
+(1, 1, '484772', '2023-12-27 12:01:11', '2023-12-27 11:51:11', '2023-12-27 11:51:11'),
+(2, 1, '878856', '2023-12-27 21:34:37', '2023-12-27 21:24:37', '2023-12-27 21:24:37'),
+(3, 1, '468847', '2023-12-28 00:27:12', '2023-12-28 00:12:12', '2023-12-28 00:12:12'),
+(4, 1, '290601', '2023-12-28 01:01:25', '2023-12-28 00:46:25', '2023-12-28 00:46:25'),
+(5, 1, '981172', '2023-12-28 01:12:25', '2023-12-28 00:57:25', '2023-12-28 00:57:25'),
+(6, 1, '852048', '2023-12-28 01:30:21', '2023-12-28 01:15:21', '2023-12-28 01:15:21'),
+(7, 1, '788267', '2023-12-28 01:40:36', '2023-12-28 01:25:36', '2023-12-28 01:25:36'),
+(8, 1, '367808', '2023-12-28 04:53:34', '2023-12-28 04:38:34', '2023-12-28 04:38:34'),
+(9, 1, '779636', '2023-12-28 05:09:53', '2023-12-28 04:54:53', '2023-12-28 04:54:53');
 
 --
 -- Indexes for dumped tables
@@ -395,7 +430,8 @@ ALTER TABLE `personal_access_tokens`
 -- Indexes for table `super_users`
 --
 ALTER TABLE `super_users`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `super_users_email_unique` (`email`);
 
 --
 -- Indexes for table `users`
@@ -403,6 +439,12 @@ ALTER TABLE `super_users`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_unique` (`email`);
+
+--
+-- Indexes for table `user_otps`
+--
+ALTER TABLE `user_otps`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -424,7 +466,7 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `oauth_clients`
@@ -454,7 +496,13 @@ ALTER TABLE `super_users`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=139;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
+
+--
+-- AUTO_INCREMENT for table `user_otps`
+--
+ALTER TABLE `user_otps`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
