@@ -30,6 +30,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 
+Route::middleware(['web', \App\Http\Middleware\RootActivityMiddleware::class])->group(function () {
+ 
+});
+
+Route::post('root/logout', [AuthController::class, 'rootLogout']);
+
+
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root/login', [AdminController::class, 'adminLogin']);

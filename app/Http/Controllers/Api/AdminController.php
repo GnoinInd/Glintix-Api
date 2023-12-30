@@ -57,10 +57,10 @@ public function register(Request $request)
 
         if($user)
         {
-            return response()->json(['status'=>'success','message'=>'User registration successfully','data'=>$data]);
+            return response()->json(['success'=>'success','message'=>'User registration successfully','data'=>$data]);
         }
         else{
-            return response()->json(['status'=>'Fail','message'=>'User registration Fail']);
+            return response()->json(['success'=>'Fail','message'=>'User registration Fail']);
         }
  
     }
@@ -97,13 +97,13 @@ public function getuser($id)
 //                 ->first();
    if(is_null($user))
    {
-    return response()->json(['status' =>'fail','message' =>'User not Found'],403);
+    return response()->json(['success' =>'fail','message' =>'User not Found'],403);
    }
    else{
         return response()->json([
             'user'=>$user,
             'message' => 'User Found',
-            'status' =>1
+            'success' =>1
         ]);
        }
 }
@@ -148,18 +148,18 @@ public function logout()
             $superUser->email = $validatedData['email'];
             $superUser->phone = $validatedData['phone'];
             $superUser->save();
-            return response()->json(['status'=>true,'message' => 'root registration done successfully']);
+            return response()->json(['success'=>true,'message' => 'root registration done successfully']);
 
         }
         catch(\Exception $e)
         {
-            return response()->json(['status' => false,'error' => $e->getMessage()]);
+            return response()->json(['success' => false,'error' => $e->getMessage()]);
         }
      
     }
 
  
-    
+
 
     public function adminLogin(Request $request)
     {
@@ -180,13 +180,13 @@ public function logout()
                 // $_SESSION['role'] = $role;
                 // $_SESSION['email'] = $email;
 
-                return response()->json(['status' => true, 'message' => 'otp send successfully ']);
+                return response()->json(['success' => true,'userId' => $root->id,'message' => 'otp send successfully']);
             } else {
-                return response()->json(['status' => false, 'message' => $otpResult['error']]);
+                return response()->json(['success' => false, 'message' => $otpResult['error']]);
             }
         }
 
-        return response()->json(['status' => false, 'message' => 'Username or password is incorrect']);
+        return response()->json(['success' => false, 'message' => 'Username or password is incorrect']);
     }
 
     private function generateAndSendOtp($userId, $phone)
@@ -243,11 +243,10 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-            'user_id' => 'required|exists:super_users,id',
             'otp' => 'required|string|digits:6',
         ]);
 
-        $userId = $validatedData['user_id'];
+        $userId = $request->userId;
         $otp = $validatedData['otp'];
         $userOtp = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
@@ -264,19 +263,25 @@ public function logout()
             $_SESSION['email'] = $email;
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
 
-            return response()->json(['status' => true, 'message' => 'OTP verification successful']);
+            return response()->json(['success' => true, 'message' => 'OTP verification successful']);
         } else {
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
             ->delete();
             if ($deleted) {
-                return response()->json(['status' => false, 'message' => 'Invalid OTP']);
+                return response()->json(['success' => false, 'message' => 'Invalid OTP']);
             } else {
-                return response()->json(['status' => false, 'message' => 'Invalid OTP and no expired OTP found']);
+                return response()->json(['success' => false, 'message' => 'Invalid OTP and no expired OTP found']);
             }
            
         }
     }
+
+
+
+          
+
+
 
 
 
@@ -290,16 +295,16 @@ public function logout()
             $otpResult = $this->generateAndSendOtp($root->id, $root->phone);
             if ($otpResult['success'])
              {
-                return response()->json(['status' => true, 'message' => 'OTP sent successfully']);
+                return response()->json(['success' => true, 'message' => 'OTP sent successfully']);
              } 
             else 
             {
-                return response()->json(['status' => false, 'message' => $otpResult['error']]);
+                return response()->json(['success' => false, 'message' => $otpResult['error']]);
             }
         } 
         else
          {
-            return response()->json(['status' => false, 'message' => 'User not found']);
+            return response()->json(['success' => false, 'message' => 'User not found']);
          }
 
 
@@ -325,16 +330,16 @@ public function logout()
             session_start();
             $_SESSION['setTime'] = time() + (10*60); 
             $_SESSION['phone'] = $phone;
-            return response()->json(['status' => true,'success'=>true,'message' => 'OTP verification successful']);
+            return response()->json(['success' => true,'success'=>true,'message' => 'OTP verification successful']);
 
          }
          else
          {
-          return response()->json(['status' => false,'success'=>false,'message' => 'Invalid OTP or mobile number']);
+          return response()->json(['success' => false,'success'=>false,'message' => 'Invalid OTP or mobile number']);
          }
 
        }
-       return response()->json(['status' => false,'success'=>false,'message' => 'user not found']);
+       return response()->json(['success' => false,'success'=>false,'message' => 'user not found']);
 
 
     }
@@ -360,16 +365,27 @@ public function logout()
                     unset($_SESSION['setTime']);
                     unset($_SESSION['phone']);
     
-                    return response()->json(['status' => true, 'message' => 'Password updated successfully']);
+                    return response()->json(['success' => true, 'message' => 'Password updated successfully']);
                 } else {
-                    return response()->json(['status' => false, 'message' => 'User not found']);
+                    return response()->json(['success' => false, 'message' => 'User not found']);
                 }
             } else {
-                return response()->json(['status' => false, 'message' => 'Session timeout']);
+                return response()->json(['success' => false, 'message' => 'Session timeout']);
             }
         } else {
-            return response()->json(['status' => false, 'message' => 'Invalid session']);
+            return response()->json(['success' => false, 'message' => 'Invalid session']);
         }
+    }
+
+
+
+    public function rootLogout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        Cache::forget('user-activity-' . Auth::id());
+
+        return response()->json(['success' => true, 'message' => 'Successfully logged out']);
     }
     
 
@@ -512,13 +528,13 @@ public function logout()
                 ];
                 $dynamicDB->table('clients')->insert($clientData);
     
-                return response()->json(['status' => true,'success'=>true,'message' => 'Company registered successfully'], 201);
+                return response()->json(['success'=>true,'message' => 'Company registered successfully'], 201);
 
 
             }
             else
             {
-                return response()->json(['status'=>false,'success'=>false,'message'=>'access denied!'],403);
+                return response()->json(['success'=>false,'message'=>'access denied!'],403);
             }
 
 
@@ -632,12 +648,12 @@ public function rootProfile(request $request)
         $profile = SuperUser::where('email',$email)->first(); 
         if($profile)
         {
-            return response()->json(['status'=>true,'success' => true,'message' => 'data found','data' => $profile],200);
+            return response()->json(['success' => true,'message' => 'data found','data' => $profile],200);
 
         }
-        return response()->json(['status'=>false,'success'=>false,'message'=>'data not found'],404);
+        return response()->json(['success'=>false,'message'=>'data not found'],404);
     }
-    return response()->json(['status'=>false,'success'=>false,'message'=>'session out!'],440);
+    return response()->json(['success'=>false,'message'=>'session out!'],440);
 }
 
 
