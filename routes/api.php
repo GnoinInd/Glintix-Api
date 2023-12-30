@@ -31,21 +31,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 
-
-   //root login
    Route::post('root_register',[AdminController::class,'registerRoot']);    
-   Route::post('root_login',[AdminController::class,'rootLogin']); 
+   Route::post('root/login', [AdminController::class, 'adminLogin']);
+   Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
+   Route::post('root/forget-password', [AdminController::class, 'rootForgetPass']);
+   Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+ 
    Route::post('root_profile',[AdminController::class,'rootProfile']);
-
-   
-     
-
-
-       // Register Company
-
-  Route::post('registercompany',[AdminController::class,'registerCompany']);
-
-        //login
+   Route::post('registercompany',[AdminController::class,'registerCompany']);
 
    Route::post('logincompany',[AdminController::class,'loginCompany']);
 

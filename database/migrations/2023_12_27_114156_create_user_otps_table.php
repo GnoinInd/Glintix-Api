@@ -13,14 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('super_users', function (Blueprint $table) {
+        Schema::create('user_otps', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('username');   
-            $table->string('password');
-            $table->string('email')->unique();
-            $table->string('phone')->nullable();
-            $table->enum('role',['root','super user'])->default('root');
+            $table->bigInteger('user_id');
+            // $table->string('user_name');
+            $table->string('otp');
+            $table->timestamp('expire_at')->nullable();
             $table->timestamps();
         });
     }
@@ -32,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('super_users');
+        Schema::dropIfExists('user_otps');
     }
 };

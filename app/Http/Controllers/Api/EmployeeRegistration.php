@@ -187,8 +187,6 @@ else
 
 
 
-
-
 private function checkSession()
 {
     session_start();

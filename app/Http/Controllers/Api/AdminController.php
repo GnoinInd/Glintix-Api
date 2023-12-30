@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Exports\ThreeMonthsRecordexport;
-use App\Models\Client;
+//use App\Models\Client;
  use Illuminate\Support\Facades\Mail;
  use App\Mail\LeaveMail;
 use Illuminate\Support\Facades\Hash;
@@ -27,7 +27,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 use App\Models\PasswordReset;
 use App\Models\SuperUser;
-
+use App\Models\UserOtp;
+use Exception;
+use Twilio\Rest\Client;
+use App\Mail\SuccessfulLoginNotification;
 
 
 class AdminController extends Controller
@@ -135,7 +138,7 @@ public function logout()
                 'name' =>'required',
                 'username' => 'required',
                 'password' => 'required',
-                'email'   => 'required',
+                'email'   => 'required|email|unique:super_users,email',
                 'phone'   => 'required', 
             ]);
             $superUser = new SuperUser;
@@ -155,31 +158,244 @@ public function logout()
      
     }
 
+ 
+    
 
-
-
-
-
-    public function rootLogin(Request $request)
+    public function adminLogin(Request $request)
     {
         $validatedData = $request->validate([
             'username' => 'required',
             'password' => 'required|string|min:6',
         ]);
+
         $root = SuperUser::where('username', $validatedData['username'])->first();
-    if ($root && Hash::check($validatedData['password'], $root->password))
+
+        if ($root && Hash::check($validatedData['password'], $root->password)) {
+            $otpResult = $this->generateAndSendOtp($root->id, $root->phone);
+
+            if ($otpResult['success']) {
+                // $role = $root->role;
+                // $email = $root->email;
+                // session_start();
+                // $_SESSION['role'] = $role;
+                // $_SESSION['email'] = $email;
+
+                return response()->json(['status' => true, 'message' => 'otp send successfully ']);
+            } else {
+                return response()->json(['status' => false, 'message' => $otpResult['error']]);
+            }
+        }
+
+        return response()->json(['status' => false, 'message' => 'Username or password is incorrect']);
+    }
+
+    private function generateAndSendOtp($userId, $phone)
     {
-        $role = $root->role;
-        $email = $root->email;
-        session_start(); 
-           $_SESSION['role'] = $role;
-           $_SESSION['email'] = $email;
-           return response()->json(['status' => true,'success'=>true, 'message' => 'Login successful'],200);
+        try {
+            $otp = rand(100000, 999999);
+
+            $expireAt = now()->addMinutes(2);
+            UserOtp::create([
+                'user_id' => $userId,
+                'otp' => $otp,
+                'expire_at' => $expireAt,
+            ]);
+
+            $this->sendOtpViaTwilio($phone, $otp);
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    private function sendOtpViaTwilio($phone, $otp)
+    {
+        try {
+            $accountSid = getenv("TWILIO_SID");
+            $authToken = getenv("TWILIO_TOKEN");
+            $twilioNumber = getenv("TWILIO_FROM");
+
+            $client = new Client($accountSid, $authToken);
+            $message = $client->messages->create($phone, [
+                'from' => $twilioNumber,
+                'body' => "Your OTP: $otp",
+            ]);
+
+            if ($message->sid) {
+                return ['success' => true];
+            } else {
+                return ['success' => false, 'error' => 'Failed to send OTP'];
+            }
+        } catch (\Twilio\Exceptions\RestException $e) {
+          //  \Log::error("Twilio Exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        } catch (\Exception $e) {
+          //  \Log::error("Exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+
+
+
+    
+    public function verifyOtp(Request $request)
+    {
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:super_users,id',
+            'otp' => 'required|string|digits:6',
+        ]);
+
+        $userId = $validatedData['user_id'];
+        $otp = $validatedData['otp'];
+        $userOtp = UserOtp::where('user_id', $userId)
+            ->where('otp', $otp)
+            ->where('expire_at', '>', now())
+            ->first();
+        if ($userOtp) {
+            $userOtp->delete();
+            $root = SuperUser::find($userId);
+            $role = $root->role;
+            $email = $root->email;
+    
+            session_start();
+            $_SESSION['role'] = $role;
+            $_SESSION['email'] = $email;
+             Mail::to($email)->send(new SuccessfulLoginNotification($root));
+
+            return response()->json(['status' => true, 'message' => 'OTP verification successful']);
+        } else {
+            $deleted = UserOtp::where('user_id', $userId)
+            ->where('otp', $otp)
+            ->delete();
+            if ($deleted) {
+                return response()->json(['status' => false, 'message' => 'Invalid OTP']);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Invalid OTP and no expired OTP found']);
+            }
+           
+        }
+    }
+
+
+
+    public function rootForgetPass(Request $request)
+    {
+        $validatedData = $request->validate([
+            'mobile_number' => 'required|exists:super_users,phone',
+        ]);
+        $root = SuperUser::where('phone', $validatedData['mobile_number'])->first();
+        if ($root) {
+            $otpResult = $this->generateAndSendOtp($root->id, $root->phone);
+            if ($otpResult['success'])
+             {
+                return response()->json(['status' => true, 'message' => 'OTP sent successfully']);
+             } 
+            else 
+            {
+                return response()->json(['status' => false, 'message' => $otpResult['error']]);
+            }
+        } 
+        else
+         {
+            return response()->json(['status' => false, 'message' => 'User not found']);
+         }
+
 
     }
-    return response()->json(['status' => false, 'success'=> false, 'message' => 'Username or password is incorrect'],401);
+
+
+    public function verifyRootForgetPass(Request $request)
+    {
+        $validatedData = $request->validate([
+            'mobile_number' => 'required',
+            'otp'  => 'required'
+        ]);
+        $phone = $validatedData['mobile_number'];
+        $user = SuperUser::where('phone',$phone)->first();
+        if($user)
+        {
+            $userId = $user->id; 
+            $userOtp = UserOtp::where('user_id',$userId)->where('expire_at', '>', now())->first();
+                
+         if($userOtp)
+         {
+            $userOtp->delete();
+            session_start();
+            $_SESSION['setTime'] = time() + (10*60); 
+            $_SESSION['phone'] = $phone;
+            return response()->json(['status' => true,'success'=>true,'message' => 'OTP verification successful']);
+
+         }
+         else
+         {
+          return response()->json(['status' => false,'success'=>false,'message' => 'Invalid OTP or mobile number']);
+         }
+
+       }
+       return response()->json(['status' => false,'success'=>false,'message' => 'user not found']);
+
 
     }
+
+
+    public function setNewPassword(Request $request)
+    {
+        $validatedData = $request->validate([
+            'new_password' => 'required|string|min:6',
+            'confirm_new_password' => 'required|string|same:new_password',
+        ]);
+         session_start();
+        if (isset($_SESSION['setTime']) && isset($_SESSION['phone'])) {
+            if (time() < $_SESSION['setTime']) {
+                $newPassword = $validatedData['new_password'];
+                $phone = $_SESSION['phone'];
+                $user = SuperUser::where('phone', $phone)->first();
+    
+                if ($user) {
+                    $user->password = Hash::make($newPassword);
+                    $user->save();
+    
+                    unset($_SESSION['setTime']);
+                    unset($_SESSION['phone']);
+    
+                    return response()->json(['status' => true, 'message' => 'Password updated successfully']);
+                } else {
+                    return response()->json(['status' => false, 'message' => 'User not found']);
+                }
+            } else {
+                return response()->json(['status' => false, 'message' => 'Session timeout']);
+            }
+        } else {
+            return response()->json(['status' => false, 'message' => 'Invalid session']);
+        }
+    }
+    
+
+
+
+
+
+
+
+    // private function generateOtp($mobile,$userId)
+    // {
+    //     //$user = SuperUser::where('phone',$mobile)->first();
+    //     $userOtp = UserOtp::where('user_id',$userId)->latest()->first();
+    //     $now = now();
+    //     if($userOtp && $now->isBefore($userOtp->expire_at)) 
+    //     {
+    //        return $userOtp; 
+    //     }
+
+    //    return UserOtp::create([
+    //         'user_id' => $userId,
+    //         'otp'     => rand(123456, 999999),
+    //         'expire_at' => $now->addMinutes(10),
+    //     ]);
+
+    // }
 
 
 
@@ -402,16 +618,21 @@ private function generateUniqueCompanyCode()
 // }
 
 
+
+
+
+
+
 public function rootProfile(request $request)
 {
     session_start();
-    if($_SESSION['role'] && $_SESSION['email'])
+    if(isset($_SESSION['role']) && isset($_SESSION['email']))
     {
         $email = $_SESSION['email'];
         $profile = SuperUser::where('email',$email)->first(); 
         if($profile)
         {
-            return response()->json(['status'=>true,'success' => true ,'message' => 'data found','data' => $profile],200);
+            return response()->json(['status'=>true,'success' => true,'message' => 'data found','data' => $profile],200);
 
         }
         return response()->json(['status'=>false,'success'=>false,'message'=>'data not found'],404);
