@@ -31,6 +31,8 @@ use App\Models\UserOtp;
 use Exception;
 use Twilio\Rest\Client;
 use App\Mail\SuccessfulLoginNotification;
+use App\Mail\OtpMail;
+use App\Mail\WelcomeMail;
 
 
 class AdminController extends Controller
@@ -171,7 +173,7 @@ public function logout()
         $root = SuperUser::where('username', $validatedData['username'])->first();
 
         if ($root && Hash::check($validatedData['password'], $root->password)) {
-            $otpResult = $this->generateAndSendOtp($root->id, $root->phone);
+            $otpResult = $this->generateAndSendOtp($root->id, $root->phone,$root->email);
 
             if ($otpResult['success']) {
                 // $role = $root->role;
@@ -189,7 +191,7 @@ public function logout()
         return response()->json(['success' => false, 'message' => 'Username or password is incorrect']);
     }
 
-    private function generateAndSendOtp($userId, $phone)
+    private function generateAndSendOtp($userId, $phone,$email)
     {
         try {
             $otp = rand(100000, 999999);
@@ -202,6 +204,7 @@ public function logout()
             ]);
 
             $this->sendOtpViaTwilio($phone, $otp);
+            $this->sendOtpViaEmail($email,$otp);
 
             return ['success' => true];
         } catch (\Exception $e) {
@@ -238,6 +241,20 @@ public function logout()
 
 
 
+    private function sendOtpViaEmail($email,$otp)
+    {
+        try{
+            Mail::to($email)->send(new OtpMail($otp));
+            return ['success'=>true];
+        }
+        catch(\Exception $e)
+        {
+           return ['success'=>false,'error'=>$e->getMessage()];
+        }
+    }
+
+
+
 
     
     public function verifyOtp(Request $request)
@@ -246,6 +263,7 @@ public function logout()
             'otp' => 'required|string|digits:6',
         ]);
 
+        
         $userId = $request->userId;
         $otp = $validatedData['otp'];
         $userOtp = UserOtp::where('user_id', $userId)
@@ -263,7 +281,7 @@ public function logout()
             $_SESSION['email'] = $email;
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
 
-            return response()->json(['success' => true, 'message' => 'OTP verification successful']);
+            return response()->json(['success' => true, 'user' => $root,'message' => 'OTP verification successful']);
         } else {
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
