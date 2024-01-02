@@ -204,7 +204,7 @@ public function logout()
                 'expire_at' => $expireAt,
             ]);
 
-            $this->sendOtpViaTwilio($phone, $otp);
+            // $this->sendOtpViaTwilio($phone, $otp);
             $this->sendOtpViaEmail($email,$otp);
 
             return ['success' => true];
@@ -261,13 +261,13 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-             'user_id' => 'required',
+            //  'userId' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
         
-        //$userId = $request->userId;
-        $userId = $validatedData['user_id'];
+        $userId = $request->userId;
+        // $userId = $validatedData['user_id'];
         $otp = $validatedData['otp'];
         $userOtp = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
@@ -282,6 +282,7 @@ public function logout()
             session_start();
             $_SESSION['role'] = $role;
             $_SESSION['email'] = $email;
+
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
              // Issue a Passport token
             $token = $root->createToken('access_token')->accessToken;
@@ -290,6 +291,7 @@ public function logout()
             return response()->json(['success' => true, 'user' => $root, 'access_token' => $token,
              'message' => 'OTP verification successful'], 200);
         
+
         } else {
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
