@@ -26,7 +26,10 @@ use App\Http\Controllers\Api\AssetController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+    
 });
+
+
 
 
 
@@ -357,6 +360,9 @@ Route::group(['middleware' => 'check.login'], function () {
 Route::middleware('auth:api')->group(function (){
  Route::get('/user/{id}',[AdminController::class,'getuser']);
  Route::get('/logout', [AdminController::class, 'logout']);
+ 
+ Route::post('root_profile', [AdminController::class, 'rootProfile']);
+
 });
 
 

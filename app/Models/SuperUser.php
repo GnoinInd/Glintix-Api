@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\HasApiTokens;
 
-class SuperUser extends Model
+class SuperUser extends Authenticatable
 {
-    use HasFactory;
-    protected $fillable = ['name','username','password','email','phone'];
+    use HasApiTokens, Notifiable;
+
+    protected $fillable = ['name', 'username', 'password', 'email', 'phone'];
 }

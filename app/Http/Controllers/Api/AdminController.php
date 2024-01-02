@@ -173,8 +173,7 @@ public function logout()
         $root = SuperUser::where('username', $validatedData['username'])->first();
 
         if ($root && Hash::check($validatedData['password'], $root->password)) {
-            
-        
+            session(['last_activity' => now()]);    
             $otpResult = $this->generateAndSendOtp($root->id, $root->phone,$root->email);
 
             if ($otpResult['success']) {
@@ -262,13 +261,13 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-            // 'user_id' => 'required',
+             'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
         
-         $userId = $request->userId;
-       // $userId = $validatedData['user_id'];
+        //$userId = $request->userId;
+        $userId = $validatedData['user_id'];
         $otp = $validatedData['otp'];
         $userOtp = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
@@ -284,8 +283,13 @@ public function logout()
             $_SESSION['role'] = $role;
             $_SESSION['email'] = $email;
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
+             // Issue a Passport token
+            $token = $root->createToken('access_token')->accessToken;
+        
 
-            return response()->json(['success' => true, 'user' => $root,'message' => 'OTP verification successful'],200);
+            return response()->json(['success' => true, 'user' => $root, 'access_token' => $token,
+             'message' => 'OTP verification successful'], 200);
+        
         } else {
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
