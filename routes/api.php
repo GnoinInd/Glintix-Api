@@ -31,6 +31,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 
+Route::group(['middleware' => ['checkInactivity']], function () {
+  Route::post('root_profile', [AdminController::class, 'rootProfile']);
+});
+
+
 
 Route::post('root/logout', [AuthController::class, 'rootLogout']);
 
@@ -43,7 +48,6 @@ Route::post('root/logout', [AuthController::class, 'rootLogout']);
    Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
    Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
  
-   Route::post('root_profile',[AdminController::class,'rootProfile']);
    Route::post('registercompany',[AdminController::class,'registerCompany']);
 
    Route::post('logincompany',[AdminController::class,'loginCompany']);
