@@ -205,7 +205,7 @@ public function logout()
                 'expire_at' => $expireAt,
             ]);
 
-            $this->sendOtpViaTwilio($phone, $otp);
+            // $this->sendOtpViaTwilio($phone, $otp);
             $this->sendOtpViaEmail($email,$otp);
 
             return ['success' => true];
@@ -283,9 +283,20 @@ public function logout()
             session_start();
             $_SESSION['role'] = $role;
             $_SESSION['email'] = $email;
-             Mail::to($email)->send(new SuccessfulLoginNotification($root));
+            // Store role and email in a cookie
+            // Generate a random string for the cookie value
+            $randomString = Str::random(32);
 
-            return response()->json(['success' => true, 'user' => $root,'message' => 'OTP verification successful'],200);
+            // Store the random string in a cookie named 'user_token'
+            $cookie = cookie('user_token', $randomString, $minutes = 60);
+            $response = response()->json(['success' => true, 'user' => $root, 'message' => 'OTP verification successful'], 200);
+            $response->withCookie($cookie);
+    
+            // Send email notification
+            Mail::to($email)->send(new SuccessfulLoginNotification($root));
+    
+            return $response;
+    
         } else {
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
