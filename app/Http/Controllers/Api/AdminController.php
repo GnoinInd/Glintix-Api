@@ -292,7 +292,7 @@ public function logout()
             $token = $root->createToken('access_token')->plainTextToken;
         
 
-            return response()->json(['success' => true, 'user' => $root, 'access_token' => $token,
+            return response()->json(['success' => true, 'data' => $root, 'access_token' => $token,
              'message' => 'OTP verification successful'], 200);
         
 
