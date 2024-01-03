@@ -24,23 +24,22 @@ use App\Http\Controllers\Api\AssetController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
     
-});
+// });
 
 
 
 
 
 
-Route::group(['middleware' => ['checkInactivity']], function () {
-  Route::post('root_profile', [AdminController::class, 'rootProfile']);
-});
+// Route::group(['middleware' => ['checkInactivity']], function () {
+//   Route::post('root_profile', [AdminController::class, 'rootProfile']);
+// });
 
 
 
-Route::post('root/logout', [AuthController::class, 'rootLogout']);
 
 
 
@@ -361,10 +360,16 @@ Route::middleware('auth:api')->group(function (){
  Route::get('/user/{id}',[AdminController::class,'getuser']);
  Route::get('/logout', [AdminController::class, 'logout']);
  
- Route::post('root_profile', [AdminController::class, 'rootProfile']);
-
 });
 
+
+Route::middleware('auth:sanctum')->group(function () {
+  Route::post('root_profile', [AdminController::class, 'rootProfile']);
+  Route::post('root/logout', [AdminController::class, 'rootLogout']);
+  Route::post('get-token',[AdminController::class,'getRootToken']);
+  // ... other authenticated routes
+});
+// Route::post('root_profile', [AdminController::class, 'rootProfile']);
 
 
 // Route::middleware('auth:api')->get('/user/{id)', function (Request $request) {

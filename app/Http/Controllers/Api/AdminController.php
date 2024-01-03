@@ -33,6 +33,8 @@ use Twilio\Rest\Client;
 use App\Mail\SuccessfulLoginNotification;
 use App\Mail\OtpMail;
 use App\Mail\WelcomeMail;
+use Laravel\Sanctum\PersonalAccessTokenFactory;
+use Cache;
 
 
 class AdminController extends Controller
@@ -284,8 +286,8 @@ public function logout()
             $_SESSION['email'] = $email;
 
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
-             // Issue a Passport token
-            $token = $root->createToken('access_token')->accessToken;
+             // Issue a SANCTUM token
+            $token = $root->createToken('access_token')->plainTextToken;
         
 
             return response()->json(['success' => true, 'user' => $root, 'access_token' => $token,
@@ -409,11 +411,20 @@ public function logout()
 
     public function rootLogout(Request $request)
     {
-        Auth::guard('web')->logout();
+     // Revoke the Sanctum token
+     $token = $request->user()->currentAccessToken();
 
-        Cache::forget('user-activity-' . Auth::id());
-
-        return response()->json(['success' => true, 'message' => 'Successfully logged out'],200);
+     if ($token) {
+         $token->delete();
+     }
+ 
+     // Logout the user from the web guard
+     Auth::guard('web')->logout();
+ 
+     // Clear user activity cache
+     Cache::forget('user-activity-' . $request->user()->id);
+ 
+     return response()->json(['success' => true, 'message' => 'Successfully logged out'], 200);
     }
     
 
@@ -3852,7 +3863,18 @@ public function allSession(Request $request)
     return response()->json([$allSessionData]); 
 }
 
+public function getRootToken(Request $request)
+{
+    $accessToken = $request->bearerToken();
+    if(isset($accessToken) && !empty($accessToken))
+    {
+        return response()->json(['success' => true,'message' => 'Token Found','data' => $accessToken],200);
 
+    }
+    else{
+        return response()->json(['success'=>false,'message'=>'Token not found'],404);
+    }
+}
 
 
 
