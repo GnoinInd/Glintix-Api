@@ -372,7 +372,7 @@ public function logout()
             // session_start();
             // $_SESSION['setTime'] = time() + (10*60); 
             // $_SESSION['phone'] = $phone;
-            Session::start();
+            // Session::start();
             Session::put('setTime', time() + (10 * 60));
             Session::put('phone', $phone);
             return response()->json(['success' => true,'success'=>true,'message' => 'OTP verification successful'],200);
@@ -396,7 +396,7 @@ public function logout()
             'new_password' => 'required|string|min:6',
             'confirm_new_password' => 'required|string|same:new_password',
         ]);
-         
+         Log::info(session()->all());
         if (Session::has('setTime') && Session::has('phone')) {
             if (time() < Session::get('setTime')) {
                 $newPassword = $validatedData['new_password'];
