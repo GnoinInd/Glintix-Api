@@ -369,9 +369,12 @@ public function logout()
          if($userOtp)
          {
             $userOtp->delete();
-            session_start();
-            $_SESSION['setTime'] = time() + (10*60); 
-            $_SESSION['phone'] = $phone;
+            // session_start();
+            // $_SESSION['setTime'] = time() + (10*60); 
+            // $_SESSION['phone'] = $phone;
+            Session::start();
+            Session::put('setTime', time() + (10 * 60));
+            Session::put('phone', $phone);
             return response()->json(['success' => true,'success'=>true,'message' => 'OTP verification successful'],200);
 
          }
@@ -393,19 +396,19 @@ public function logout()
             'new_password' => 'required|string|min:6',
             'confirm_new_password' => 'required|string|same:new_password',
         ]);
-         session_start();
-        if (isset($_SESSION['setTime']) && isset($_SESSION['phone'])) {
-            if (time() < $_SESSION['setTime']) {
+         
+        if (Session::has('setTime') && Session::has('phone')) {
+            if (time() < Session::get('setTime')) {
                 $newPassword = $validatedData['new_password'];
-                $phone = $_SESSION['phone'];
+                $phone = Session::get('phone');
                 $user = SuperUser::where('phone', $phone)->first();
     
                 if ($user) {
                     $user->password = Hash::make($newPassword);
                     $user->save();
     
-                    unset($_SESSION['setTime']);
-                    unset($_SESSION['phone']);
+                    Session::forget('setTime');
+                    Session::forget('phone');
     
                     return response()->json(['success' => true, 'message' => 'Password updated successfully'],200);
                 } else {
