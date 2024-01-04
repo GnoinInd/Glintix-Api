@@ -286,12 +286,14 @@ public function logout()
             $_SESSION['role'] = $role;
             $_SESSION['email'] = $email;
 
+            // print_r($_SESSION);die;
+
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
              // Issue a SANCTUM token
             $token = $root->createToken('access_token')->plainTextToken;
         
 
-            return response()->json(['success' => true, 'user' => $root, 'access_token' => $token,
+            return response()->json(['success' => true, 'data' => $root, 'access_token' => $token,
              'message' => 'OTP verification successful'], 200);
         
 
@@ -703,11 +705,12 @@ public function logout()
 
 public function rootProfile(request $request)
 {
-    session_start();
-    if(isset($_SESSION['role']) && isset($_SESSION['email']))
+     $token = $request->user()->currentAccessToken();
+
+     if ($token && isset($token['tokenable']['email']))
     {
-        $email = $_SESSION['email'];
-        $profile = SuperUser::where('email',$email)->first(); 
+         $email = $token['tokenable']['email'];
+         $profile = SuperUser::where('email',$email)->first(); 
         if($profile)
         {
             return response()->json(['success' => true,'message' => 'data found','data' => $profile],200);
