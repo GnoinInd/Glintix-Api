@@ -356,13 +356,12 @@ public function logout()
             'mobile_number' => 'required',
             'otp'  => 'required'
         ]);
-        $otp = $validatedData['otp'];
         $phone = $validatedData['mobile_number'];
         $user = SuperUser::where('phone',$phone)->first();
         if($user)
         {
             $userId = $user->id; 
-            $userOtp = UserOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
+            $userOtp = UserOtp::where('user_id',$userId)->where('expire_at', '>', now())->first();
                 
          if($userOtp)
          {
