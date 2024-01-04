@@ -40,15 +40,19 @@ use App\Http\Controllers\Api\AssetController;
 
 
 
-
+Route::middleware('api')->group(function () {
+  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+  // Add more API routes as needed
+});
 
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root/login', [AdminController::class, 'adminLogin']);
    Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
    Route::post('root/forget-password', [AdminController::class, 'rootForgetPass']);
-   Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
-   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+  //  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+  //  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
  
    Route::post('registercompany',[AdminController::class,'registerCompany']);
 
