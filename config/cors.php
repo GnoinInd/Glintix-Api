@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:3000', // Allow requests from the local development environment
+        'https://root.development.glintix.com/', // Allow requests from your React.js app's production domain
+    ],
 
     'allowed_origins_patterns' => [],
 
