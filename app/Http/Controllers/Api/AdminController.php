@@ -263,7 +263,7 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-            //  'userId' => 'required',
+              //'user_id' => 'required',T
              'otp' => 'required|string|digits:6',
         ]);
 
@@ -271,6 +271,7 @@ public function logout()
         $userId = $request->userId;
         // $userId = $validatedData['user_id'];
         $otp = $validatedData['otp'];
+      
         $userOtp = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
             ->where('expire_at', '>', now())
@@ -298,14 +299,22 @@ public function logout()
             $deleted = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
             ->delete();
+          
             if ($deleted) {
                 return response()->json(['success' => false, 'message' => 'Invalid OTP'],422);
             } else {
                 return response()->json(['success' => false, 'message' => 'Invalid OTP and no expired OTP found'],422);
             }
+            
            
         }
     }
+
+
+
+ 
+    
+    
 
 
 
@@ -347,12 +356,13 @@ public function logout()
             'mobile_number' => 'required',
             'otp'  => 'required'
         ]);
+        $otp = $validatedData['otp'];
         $phone = $validatedData['mobile_number'];
         $user = SuperUser::where('phone',$phone)->first();
         if($user)
         {
             $userId = $user->id; 
-            $userOtp = UserOtp::where('user_id',$userId)->where('expire_at', '>', now())->first();
+            $userOtp = UserOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
                 
          if($userOtp)
          {
