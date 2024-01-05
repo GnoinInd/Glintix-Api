@@ -42,10 +42,9 @@ use App\Http\Controllers\Api\AssetController;
 
 Route::middleware('api')->group(function () {
   Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
-  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+  
   // Add more API routes as needed
 });
-
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root/login', [AdminController::class, 'adminLogin']);
@@ -371,6 +370,8 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::post('root_profile', [AdminController::class, 'rootProfile']);
   Route::post('root/logout', [AdminController::class, 'rootLogout']);
   Route::post('get-token',[AdminController::class,'getRootToken']);
+  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+
   // ... other authenticated routes
 });
 // Route::post('root_profile', [AdminController::class, 'rootProfile']);
