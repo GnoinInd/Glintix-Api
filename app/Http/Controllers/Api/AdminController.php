@@ -375,7 +375,7 @@ public function logout()
             // $_SESSION['phone'] = $phone;
             // Session::start();
           
-            $user->time_expire = now()->addMinutes(2);
+            $user->time_expire = now()->addMinutes(10);
             $user->save();
             // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
             // $token->expires_at = now()->addDay(1);
@@ -479,6 +479,11 @@ public function logout()
 
     public function registerCompany(Request $request)
     {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'invalid token']);
+        }
         try {
            
             $validatedData = $request->validate([
@@ -501,8 +506,8 @@ public function logout()
                 'website_url' => 'nullable',
                 'company_logo' => 'file|nullable',
             ]);
-            session_start();
-            if(isset($_SESSION['role']) && $_SESSION['role'] == 'root')
+            $role = $token['tokenable']['role']; 
+            if(isset($role) && $role == 'root')
             {
 
 

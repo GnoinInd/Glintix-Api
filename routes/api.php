@@ -53,7 +53,7 @@ Route::middleware('api')->group(function () {
   //  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
   //  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
  
-   Route::post('registercompany',[AdminController::class,'registerCompany']);
+   
 
    Route::post('logincompany',[AdminController::class,'loginCompany']);
 
@@ -371,6 +371,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::post('root/logout', [AdminController::class, 'rootLogout']);
   Route::post('get-token',[AdminController::class,'getRootToken']);
   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+  Route::post('registercompany',[AdminController::class,'registerCompany']);
 
   // ... other authenticated routes
 });
