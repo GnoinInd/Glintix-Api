@@ -352,6 +352,41 @@ public function logout()
     }
 
 
+
+// public function verifyRootForgetPass(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'mobile_number' => 'required',
+//         'otp'  => 'required'
+//     ]);
+
+//     $otp = $validatedData['otp'];
+//     $phone = $validatedData['mobile_number'];
+//     $user = SuperUser::where('phone', $phone)->first();
+
+//     if ($user) {
+//         $userId = $user->id; 
+//         $userOtp = UserOtp::where('user_id', $userId)
+//             ->where('otp', $otp)
+//             ->where('expire_at', '>', now())
+//             ->first();
+                
+//         if ($userOtp) {
+//             $userOtp->delete();
+//                $token = $user->createToken('access-token')->expiresIn(60*10)->plainTextToken; 
+
+//             return response()->json([
+//                 'success' => true,'userId'=>$userId,'phone' => $phone ,'token' => $token,'message' => 'OTP verification successful'], 200);
+//         } else {
+//             return response()->json(['success' => false, 'success' => false, 'message' => 'Invalid OTP or mobile number'], 422);
+//         }
+//     }
+
+//     return response()->json(['success' => false, 'success' => false, 'message' => 'User not found'], 404);
+// }
+
+
+
     public function verifyRootForgetPass(Request $request)
     {
         $validatedData = $request->validate([
@@ -373,9 +408,13 @@ public function logout()
             // $_SESSION['setTime'] = time() + (10*60); 
             // $_SESSION['phone'] = $phone;
             // Session::start();
-            Session::put('setTime', time() + (10 * 60));
-            Session::put('phone', $phone);
-            return response()->json(['success' => true,'success'=>true,'message' => 'OTP verification successful'],200);
+          
+            $user->time_expire = now()->addMinutes(15);
+            $user->save();
+            // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
+            // $token->expires_at = now()->addDay(1);
+            // $token->save();
+            return response()->json(['success' => true,'success'=>true,'userId'=>$userId,'phone' => $phone ,'message' => 'OTP verification successful'],200);
 
          }
          else
@@ -390,37 +429,106 @@ public function logout()
     }
 
 
-    public function setNewPassword(Request $request)
-    {
-        $validatedData = $request->validate([
-            'new_password' => 'required|string|min:6',
-            'confirm_new_password' => 'required|string|same:new_password',
-        ]);
-         Log::info(session()->all());
-        if (Session::has('setTime') && Session::has('phone')) {
-            if (time() < Session::get('setTime')) {
-                $newPassword = $validatedData['new_password'];
-                $phone = Session::get('phone');
-                $user = SuperUser::where('phone', $phone)->first();
-    
-                if ($user) {
-                    $user->password = Hash::make($newPassword);
-                    $user->save();
-    
-                    Session::forget('setTime');
-                    Session::forget('phone');
-    
-                    return response()->json(['success' => true, 'message' => 'Password updated successfully'],200);
-                } else {
-                    return response()->json(['success' => false, 'message' => 'User not found'],404);
-                }
-            } else {
-                return response()->json(['success' => false, 'message' => 'Session timeout'],422);
-            }
-        } else {
-            return response()->json(['success' => false, 'message' => 'Invalid session'],422);
-        }
+    // public function setNewPassword(Request $request)
+    // {
+    //     $validatedData = $request->validate([
+    //         'new_password' => 'required|string|min:6',
+    //         'confirm_new_password' => 'required|string|same:new_password',
+    //     ]);
+    //     $mobile = $request->mobile;
+    //     $userId = $request->id;
+    //     //  Log::info(session()->all());
+    //     if ($user = $this->validateSuperUserTimeExpire($mobile, $userId)) {          
+    //             $newPassword = $validatedData['new_password'];
+              
+    //             $user = SuperUser::where('phone', $mobile)->first();
+    //             $user->password = Hash::make($newPassword);
+    //             $user->save();
+    //             return response()->json(['success' => true, 'message' => 'Password updated successfully'],200);
+               
+           
+    //     } else {
+    //         return response()->json(['success' => false, 'message' => 'Invalid session'],422);
+    //     }
+    // }
+
+
+
+//     public function setNewPassword(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'new_password' => 'required|string|min:6',
+//         'confirm_new_password' => 'required|string|same:new_password',
+//         'mobile'   => 'required',
+//         'id'    => 'required',
+//     ]);
+
+//     $mobile = $validatedData['mobile'] ?? null;
+//     $userId = $validatedData['id'] ?? null;
+
+//     if ($mobile === null || $userId === null) {
+//         return response()->json(['success' => false, 'message' => 'Mobile number or user ID not provided'], 422);
+//     }
+//     $user = Auth::user();
+
+//     if ($user && $user->id == $userId && $user->phone == $mobile) {
+//         $newPassword = $validatedData['new_password'];
+//         $user->password = Hash::make($newPassword);
+//         $user->save();
+
+//         return response()->json(['success' => true, 'message' => 'Password updated successfully'], 200);
+//     } else {
+//         return response()->json(['success' => false, 'message' => 'Invalid user or token'], 422);
+//     }
+// }
+
+
+
+
+  public function setNewPassword(Request $request)
+  {
+    $validatedData = $request->validate([
+        'new_password' => 'required|string|min:6',
+        'confirm_new_password' => 'required|string|same:new_password',
+        // 'phone'   => 'required',
+        // 'userId'    => 'required',
+    ]);
+
+    $mobile = $request->input('phone', null);
+    $userId = $request->input('userId', null);
+    // $mobile = $validatedData['phone'] ?? null;
+    // $userId = $validatedData['userId'] ?? null;
+
+    if ($mobile === null || $userId === null) {
+        return response()->json(['success' => false, 'message' => 'Mobile number or user ID not provided'], 422);
     }
+    if ($user = $this->validateSuperUserTimeExpire($mobile, $userId)) {
+        $newPassword = $validatedData['new_password'];
+        $user->password = Hash::make($newPassword);
+        $user->save();
+
+        return response()->json(['success' => true, 'message' => 'Password updated successfully'], 200);
+    } else {
+        return response()->json(['success' => false, 'message' => 'time expired!'], 422);
+    }
+  }
+
+
+   protected function validateSuperUserTimeExpire($mobile, $userId)
+   {
+      $user = SuperUser::where('phone', $mobile)->where('id', $userId)->first();
+
+      if ($user && Carbon::now()->lt($user->time_expire)) {
+          return $user;
+      }
+
+      return null;
+   }
+
+
+
+
+
 
 
 
