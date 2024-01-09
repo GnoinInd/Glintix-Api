@@ -494,25 +494,25 @@ public function logout()
             $validatedData = $request->validate([
                 // 'dbName' => 'required|string|max:255',
                 'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'username' => 'required|string|max:255',
-                'password' => 'required|string|min:6',
-                'phone' => 'required|string|max:20',
-                //'company_code' => 'required',
-                'role' => 'required',
-                'total' => 'required',
                 'contact_person' =>'required',
-                'address' => 'required',
                 'country'  => 'required',
                 'state'  =>  'required',
                 'postal_code'  => 'required',
-                'mobile_number' => 'required',
+                'address' => 'required',
+                'email' => 'required|email|unique:users,email',
                 'fax'  =>  'nullable',
+                'mobile_number' => 'required',
+                // 'username' => 'required|string|max:255',
+                // 'password' => 'required|string|min:6',
+                // 'phone' => 'required|string|max:20',
                 'website_url' => 'nullable',
                 'company_logo' => 'file|nullable',
+                //'company_code' => 'required',
+                // 'role' => 'required',
+                // 'total' => 'required',           
             ]);
             $generatedDbName = $this->generateUniqueDbName($request->input('name'));
-            $userpassword = $validatedData['password'];
+            // $userpassword = $validatedData['password'];
             $role = $token['tokenable']['role']; 
             // $user = PersonalAccessToken::findToken($token)->tokenable;
             if(isset($role) && $role == 'root')
@@ -527,17 +527,26 @@ public function logout()
                 } else {
                     $logoPath = null;
                 }
-          
-                $companyCode =$this->generateUniqueCompanyCode();
+                $usernameAlpha = Str::random(5, 'abcdefghijklmnopqrstuvwxyz');
+                $usernameNum = Str::random(5, '0123456789');
+                $generatedUsername = $usernameAlpha . $usernameNum;  
+                $passAlpha = Str::random(4, 'abcdefghijklmnopqrstuvwxyz');
+                $passSpecial = Str::random(1, '!@#$%^&*()_?');
+                $passNum = Str::random(5, '0123456789');      
+                $generatedPassword = $passAlpha . $passSpecial . $passNum;
+                $role = 'admin';
+                $total = 25;
+                        
+                $companyCode = $this->generateUniqueCompanyCode();
                 // print_r($companyCode);die;
                 $user = new User;
                 $user->name = $validatedData['name'];
                 $user->email = $validatedData['email'];
-                $user->password = bcrypt($validatedData['password']);
+                $user->password = bcrypt($generatedPassword);
                 // $user->password = $validatedData['password'];
                 $user->dbName = $generatedDbName;
-                $user->username = $validatedData['username'];
-                $user->total   = $validatedData['total'];
+                $user->username = $generatedUsername;
+                $user->total   = $total;
                 $user->company_code = $companyCode;
                 $user->contact_person = $validatedData['contact_person'];
                 $user->address  = $validatedData['address'];
@@ -551,8 +560,8 @@ public function logout()
                 $user->save();
                 
                 $dbName = $generatedDbName;
-                $dbUsername = $validatedData['username'];
-                $dbPassword = $validatedData['password'];
+                $dbUsername = $generatedUsername;
+                $dbPassword = $generatedPassword;
     
                 $this->createDynamicDatabase($dbName, $dbUsername, $dbPassword);
     
@@ -577,12 +586,12 @@ public function logout()
                 $clientData = [
                     'name'    => $request->input('name'),
                     'email'   => $request->input('email'),
-                    'username'=> $request->input('username'),
-                    'password'=> $request->input('password'),
-                    'phone'   => $request->input('phone'),
+                    'username'=> $generatedUsername,
+                    'password'=> $generatedPassword,
+                    // 'phone'   => $request->input('phone'),
                     'dbName'  => $generatedDbName,
                     'company_code' => $companyCode, 
-                    'role'       =>  $request->input('role'),
+                    'role'       =>  $role,
                     'contact_person' =>$request->input('contact_person'),
                     'address'      => $request->input('address'),
                     'country'   => $request->input('country'),
@@ -603,7 +612,7 @@ public function logout()
                     Log::error('User not found for email: ' . $email);
                 }
                 try {
-                    Mail::to($email)->send(new WelcomeMail($details,$userpassword));
+                    Mail::to($email)->send(new WelcomeMail($details,$generatedPassword));
                 } catch (\Exception $e) {
                     Log::error('Error sending welcome email: ' . $e->getMessage());
                 } 
@@ -613,7 +622,7 @@ public function logout()
                     Log::error('root email not found: ' . $rootEmail);
                 }
                 try {
-                    Mail::to($rootEmail)->send(new RootUserMail($details,$userpassword));
+                    Mail::to($rootEmail)->send(new RootUserMail($details,$generatedPassword));
                 } catch (\Exception $e) {
                     Log::error('Error sending welcome email: ' . $e->getMessage());
                 } 
@@ -693,7 +702,7 @@ public function logout()
                 $table->string('email', 255);
                 $table->string('username', 255);
                 $table->string('password', 255);
-                $table->string('phone', 20);
+                // $table->string('phone', 20);
                 $table->string('dbName', 255);
                 $table->string('company_code',255);
                 $table->enum('role',['admin','subadmin'])->default('admin');
