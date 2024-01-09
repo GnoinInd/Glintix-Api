@@ -35,6 +35,9 @@ use App\Mail\OtpMail;
 use App\Mail\WelcomeMail;
 use Laravel\Sanctum\PersonalAccessTokenFactory;
 use Cache;
+use Illuminate\Validation\ValidationException;
+use App\Models\CompanyModuleAccess;
+use App\Mail\RootUserMail;
 
 
 class AdminController extends Controller
@@ -175,7 +178,7 @@ public function logout()
         $root = SuperUser::where('username', $validatedData['username'])->first();
 
         if ($root && Hash::check($validatedData['password'], $root->password)) {
-            session(['last_activity' => now()]);    
+            // session(['last_activity' => now()]);    
             $otpResult = $this->generateAndSendOtp($root->id, $root->phone,$root->email);
 
             if ($otpResult['success']) {
@@ -206,7 +209,7 @@ public function logout()
                 'expire_at' => $expireAt,
             ]);
 
-            // $this->sendOtpViaTwilio($phone, $otp);
+            $this->sendOtpViaTwilio($phone, $otp);
             $this->sendOtpViaEmail($email,$otp);
 
             return ['success' => true];
@@ -263,7 +266,7 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-              //'user_id' => 'required',T
+            //   'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
@@ -282,9 +285,9 @@ public function logout()
             $role = $root->role;
             $email = $root->email;
     
-            session_start();
-            $_SESSION['role'] = $role;
-            $_SESSION['email'] = $email;
+            // session_start();
+            // $_SESSION['role'] = $role;
+            // $_SESSION['email'] = $email;
 
             // print_r($_SESSION);die;
 
@@ -336,7 +339,7 @@ public function logout()
             $otpResult = $this->generateAndSendOtp($root->id, $root->phone,$root->email);
             if ($otpResult['success'])
              {
-                return response()->json(['success' => true, 'message' => 'OTP sent successfully'],200);
+                return response()->json(['success' => true,'phone'=>$validatedData['mobile_number'], 'message' => 'OTP sent successfully'],200);
              } 
             else 
             {
@@ -361,6 +364,7 @@ public function logout()
         ]);
         $otp = $validatedData['otp'];
         $phone = $validatedData['mobile_number'];
+        // $phone = $request->mobile_number;
         $user = SuperUser::where('phone',$phone)->first();
         if($user)
         {
@@ -375,7 +379,7 @@ public function logout()
             // $_SESSION['phone'] = $phone;
             // Session::start();
           
-            $user->time_expire = now()->addMinutes(10);
+            $user->time_expire = now()->addMinutes(1440);
             $user->save();
             // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
             // $token->expires_at = now()->addDay(1);
@@ -480,6 +484,7 @@ public function logout()
     public function registerCompany(Request $request)
     {
         $token = $request->user()->currentAccessToken();
+        // $token = $request->bearerToken();
         if(!$token)
         {
             return response()->json(['success'=>false,'message'=>'invalid token']);
@@ -487,7 +492,7 @@ public function logout()
         try {
            
             $validatedData = $request->validate([
-                'dbName' => 'required|string|max:255',
+                // 'dbName' => 'required|string|max:255',
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'username' => 'required|string|max:255',
@@ -506,7 +511,10 @@ public function logout()
                 'website_url' => 'nullable',
                 'company_logo' => 'file|nullable',
             ]);
+            $generatedDbName = $this->generateUniqueDbName($request->input('name'));
+            $userpassword = $validatedData['password'];
             $role = $token['tokenable']['role']; 
+            // $user = PersonalAccessToken::findToken($token)->tokenable;
             if(isset($role) && $role == 'root')
             {
 
@@ -521,15 +529,16 @@ public function logout()
                 }
           
                 $companyCode =$this->generateUniqueCompanyCode();
+                // print_r($companyCode);die;
                 $user = new User;
                 $user->name = $validatedData['name'];
                 $user->email = $validatedData['email'];
                 $user->password = bcrypt($validatedData['password']);
                 // $user->password = $validatedData['password'];
-                $user->dbName = $validatedData['dbName'];
+                $user->dbName = $generatedDbName;
                 $user->username = $validatedData['username'];
                 $user->total   = $validatedData['total'];
-                $company_code = $companyCode;
+                $user->company_code = $companyCode;
                 $user->contact_person = $validatedData['contact_person'];
                 $user->address  = $validatedData['address'];
                 $user->country  = $validatedData['country'];
@@ -541,7 +550,7 @@ public function logout()
                 $user->company_logo = $logoPath;
                 $user->save();
                 
-                $dbName = $validatedData['dbName'];
+                $dbName = $generatedDbName;
                 $dbUsername = $validatedData['username'];
                 $dbPassword = $validatedData['password'];
     
@@ -571,7 +580,7 @@ public function logout()
                     'username'=> $request->input('username'),
                     'password'=> $request->input('password'),
                     'phone'   => $request->input('phone'),
-                    'dbName'  => $request->input('dbName'),
+                    'dbName'  => $generatedDbName,
                     'company_code' => $companyCode, 
                     'role'       =>  $request->input('role'),
                     'contact_person' =>$request->input('contact_person'),
@@ -594,14 +603,42 @@ public function logout()
                     Log::error('User not found for email: ' . $email);
                 }
                 try {
-                    Mail::to($email)->send(new WelcomeMail($details));
+                    Mail::to($email)->send(new WelcomeMail($details,$userpassword));
+                } catch (\Exception $e) {
+                    Log::error('Error sending welcome email: ' . $e->getMessage());
+                } 
+                $rootEmail = $token['tokenable']['email'] ?? null;
+                if(!$rootEmail)
+                {
+                    Log::error('root email not found: ' . $rootEmail);
+                }
+                try {
+                    Mail::to($rootEmail)->send(new RootUserMail($details,$userpassword));
                 } catch (\Exception $e) {
                     Log::error('Error sending welcome email: ' . $e->getMessage());
                 } 
               
     
-                return response()->json(['success'=>true,'message' => 'Company registered successfully'], 201);
+                // return response()->json(['success'=>true,'companyCode'=>$companyCode,'message' => 'Company registered successfully'], 201);
 
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Company registered successfully',
+                    'companyDetails' => [
+                        'name' => $details->name,
+                        'comtact person' => $details->contact_person,
+                        'address' => $details->address,
+                        'country' => $details->country,
+                        'state' => $details->state,
+                        'postal code' => $details-> postal_code,
+                        'dbName' => $generatedDbName,
+                        'companyCode' => $companyCode,
+                        'email' => $details->email,
+                        'fax' => $details->fax,
+                        'phone' => $details->mobile_number,
+                        'website url' => $details->website_url,
+                    ],
+                ], 201);
 
             }
             else
@@ -612,7 +649,7 @@ public function logout()
 
         } catch (Exception $e) {
             Log::error('Company registration failed: ' . $e->getMessage());
-            return response()->json(['message' => 'Company registration failed. Please try again.'], 500);
+            return response()->json(['message' => 'Company registration failed. Please try again.',$e->getMessage()], 500);
         }
     }
 
@@ -676,6 +713,13 @@ public function logout()
 }
 
 
+private function generateUniqueDbName($name)
+{
+    $randomString = substr(str_shuffle('0123456789'), 0, 3);
+    $code = substr($name, 0, 5) . '_' . $randomString;
+    return strtolower($code);
+}
+
 
 //     private function generateUniqueCompanyCode()
 // {
@@ -713,6 +757,84 @@ public function logout()
 
 
 
+
+public function selectModules(Request $request)
+{
+    $validatedData = $request->validate([
+        'modules' => 'required|array', 
+        // 'companyCode' => 'required',
+
+    ]);
+
+    // $companyCode = $validatedData['companyCode'];
+    $companyCode = $request->company_code;
+
+    if (!$companyCode) {
+        return response()->json(['success' => false, 'message' => 'Company code not found']);
+    }
+
+    CompanyModuleAccess::where('company_code', $companyCode)->delete();
+
+    try {
+        $modulesArray = $validatedData['modules'];
+
+        foreach ($modulesArray as $moduleId) {
+            CompanyModuleAccess::create([
+                'company_code' => $companyCode,
+                'module_id' => $moduleId,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Modules selected successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+
+
+
+
+
+
+
+// public function selectModules(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'modules' => 'required|json', 
+//         // 'companyCode' => 'required',
+//     ]);
+//     // $companyCode = $validatedData['companyCode'];
+//     $companyCode = $request->companyCode;
+
+//     if (!$companyCode) {
+//         return response()->json(['success' => false, 'message' => 'Company code not found']);
+//     }
+//     CompanyModuleAccess::where('company_code', $companyCode)->delete();
+
+//     try {
+//         $modulesArray = json_decode($validatedData['modules'], true);
+//         if (is_array($modulesArray)) {
+//             foreach ($modulesArray as $moduleId) {
+//                 CompanyModuleAccess::create([
+//                     'company_code' => $companyCode,
+//                     'module_id' => $moduleId,
+//                 ]);
+//             }
+//         } else {
+//             throw new \Exception('Invalid JSON format for the "modules" field.');
+//         }
+
+//         return response()->json(['success' => true, 'message' => 'Modules selected successfully']);
+//     } catch (\Exception $e) {
+//         return response()->json(['success' => false, 'message' => $e->getMessage()]);
+//     }
+// }
+
+
+
+
+
 public function rootProfile(request $request)
 {
      $token = $request->user()->currentAccessToken();
@@ -745,73 +867,112 @@ public function logoutSession(Request $request)
     return response()->json(['message' => 'Logged out successfully'],200);
 }
 
-public function logincompany(Request $request)
-    {
+
+
+
+// public function logincompany(Request $request)
+//     {
         
+//     $validatedData = $request->validate([
+//         'username' => 'required|string|max:255',
+//         'password' => 'required|string|min:6',           
+//     ]);
+
+//     $user = User::where('username', $validatedData['username'])->first();
+//     if ($user && Hash::check($validatedData['password'], $user->password)) {
+//         $dbName = $user->dbName;
+//         $this->storeSessionCredentials($request, $validatedData['username'], $validatedData['password'], $dbName);
+
+//         return response()->json(['success' => true, 'message' => 'Login Successfully' ], 200);
+//     } else {
+//         return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
+//     }
+// }
+
+// private function storeSessionCredentials($request, $username, $password, $dbName)
+// {
+//     Config::set('database.connections.dynamic', [
+//         'driver' => 'mysql',
+//         'host' => 'localhost',
+//         'database' => $dbName,
+//         'username' => $username,
+//         'password' => $password,
+//         'charset' => 'utf8mb4',
+//         'collation' => 'utf8mb4_unicode_ci',
+//         'prefix' => '',
+//         'strict' => true,
+//         'engine' => null,
+//     ]);
+//            session_start(); 
+//            $_SESSION["username"] = $username;
+//            $_SESSION["password"] = $password;
+//            $_SESSION["dbName"] = $dbName;
+
+// }
+
+
+
+
+
+public function loginCompany(Request $request)
+{
     $validatedData = $request->validate([
         'username' => 'required|string|max:255',
-        'password' => 'required|string|min:6',           
+        'password' => 'required|string|min:6',
     ]);
 
     $user = User::where('username', $validatedData['username'])->first();
+
     if ($user && Hash::check($validatedData['password'], $user->password)) {
         $dbName = $user->dbName;
-        $this->storeSessionCredentials($request, $validatedData['username'], $validatedData['password'], $dbName);
+        $token = $user->createToken('access_token')->plainTextToken;
+        // $token_array = $request->user()->currentAccessToken();
+        // $token_array = $token_array['tokenable'];
 
-        return response()->json(['success' => true, 'message' => 'Login Successfully' ], 200);
+        // Add custom values to the token payload
+    //  $tokenPayload = $user->tokens()->latest()->first(); // Retrieve the created token
+    //  $tokenPayload->forceFill([
+    //     'dbName' => 'value1',
+    //     'username' => 'value2',
+    //     // Add more custom values as needed
+    // ])->save();
+     
+
+        return response()->json(['success' => true, 'token' => $token, 'message' => 'Login Successfully'], 200);
     } else {
-        return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
+        return response()->json(['success' => false,'message' => 'token invalid'], 200);
     }
 }
 
-private function storeSessionCredentials($request, $username, $password, $dbName)
+
+
+
+
+
+public function companyProfile(Request $request)
 {
-    Config::set('database.connections.dynamic', [
-        'driver' => 'mysql',
-        'host' => 'localhost',
-        'database' => $dbName,
-        'username' => $username,
-        'password' => $password,
-        'charset' => 'utf8mb4',
-        'collation' => 'utf8mb4_unicode_ci',
-        'prefix' => '',
-        'strict' => true,
-        'engine' => null,
-    ]);
-           session_start(); 
-           $_SESSION["username"] = $username;
-           $_SESSION["password"] = $password;
-           $_SESSION["dbName"] = $dbName;
-
-
-
-
-}
-
-public function profile(Request $request)
-{
-    session_start();
-     if(isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]))
-    // if(isset($_SESSION["role"]) && $_SESSION['role'] == 'root')
+    $token_array = $request->user()->currentAccessToken();
+    // print_r($token_array->tokenable);die;
+    if ($token_array && is_object($token_array) && property_exists($token_array->tokenable, 'username') && property_exists($token_array->tokenable, 'dbName')) 
     {
-        $username = $_SESSION["username"];
-        $dbName = $_SESSION["dbName"];
-        $user = User::where('username',$username)
-        ->where('dbName',$dbName)->first();
-        
-        if($user)
-        {
-           return response()->json(['status'=>true,'success' => true ,'message' => 'data found','data' => $user],200);
+        $username = $token_array->tokenable->username;
+        $dbName = $token_array->tokenable->dbName;
+
+        $user = User::where('username', $username)
+            ->where('dbName', $dbName)
+            ->first();
+
+        if ($user) {
+            return response()->json(['status' => true, 'success' => true, 'message' => 'Data found', 'data' => $user], 200);
+        } else {
+            return response()->json(['status' => false, 'success' => false, 'message' => 'Profile details not found'], 404);
         }
-        else{
-            return response()->json(['status'=>false,'success' => false, 'message' => 'profile details not found'],404);
-            }
-    }
-    else 
-    {
-        return response()->json(['status'=>false,'success'=>false,'message' => 'Session out,pls login'],440);
-    }
+    } else
+     {
+        return response()->json(['status' => false, 'success' => false, 'message' => 'token not found!'], 404);
+     }
 }
+
 
 
 

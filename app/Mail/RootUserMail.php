@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeMail extends Mailable
+class RootUserMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -18,12 +18,11 @@ class WelcomeMail extends Mailable
      *
      * @return void
      */
-
-     public $userDetails;
-     public $password;
-    public function __construct($userDetails,$password)
+    public $companyDetails;
+    public $password;
+    public function __construct($companyDetails,$password)
     {
-        $this->userDetails = $userDetails;
+        $this->companyDetails = $companyDetails;
         $this->password = $password;
     }
 
@@ -35,7 +34,7 @@ class WelcomeMail extends Mailable
     public function envelope()
     {
         return new Envelope(
-            subject: 'Welcome Mail from Gnoin',
+            subject: 'Mail for company create successfully',
         );
     }
 
@@ -47,7 +46,7 @@ class WelcomeMail extends Mailable
     public function content()
     {
         return new Content(
-            view: 'Mails.welcomemail',
+            view: 'Mails.rootEmail',
         );
     }
 

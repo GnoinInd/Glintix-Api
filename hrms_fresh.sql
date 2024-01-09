@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 29, 2023 at 02:41 PM
+-- Generation Time: Jan 05, 2024 at 04:50 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -113,6 +113,7 @@ INSERT INTO `oauth_access_tokens` (`id`, `user_id`, `client_id`, `name`, `scopes
 ('09d42465b01c1410a283e80d8cc977ed51a6f8ea41eeb5ae5854e9108c4e7d92eb7f1db7b6ac2d5c', 1, 1, 'token_key', '[]', 0, '2023-07-24 05:45:21', '2023-07-24 05:45:21', '2024-07-24 11:15:21'),
 ('13e07e8080aa559223bf8a324968963bc0354fca89904ef000dcea6330b3d3923fa63dc8ab777174', 3, 1, 'token_key', '[]', 0, '2023-07-25 03:06:05', '2023-07-25 03:06:05', '2024-07-25 08:36:05'),
 ('1eefb84d159f4f7d5685407f031a5d37dbff7ece34a22a284e168038db2eb6d82c17eed21a2c83e2', 3, 1, 'token_key', '[]', 0, '2023-07-25 02:07:39', '2023-07-25 02:07:39', '2024-07-25 07:37:39'),
+('3e0162e0c64b7d4788540f18719162f29722a5b30191dbd75c37705e6e824fab3ec4f508bf9fcded', 1, 1, 'access_token', '[]', 0, '2024-01-02 08:41:52', '2024-01-02 08:41:52', '2025-01-02 14:11:52'),
 ('49879584ad3e1c2210fbf446c260b238cc96bae978091d1562e3b206f75738cc9b553b3f32974acd', 2, 1, 'token_key', '[]', 0, '2023-07-24 04:22:13', '2023-07-24 04:22:14', '2024-07-24 09:52:13'),
 ('4c92c807fef339806db1a4a60652c3bc8a929df45bd6d7c062526c88fd8c89a2e2dd44440f9efcc7', 6, 1, 'token_key', '[]', 0, '2023-07-24 23:24:27', '2023-07-24 23:24:27', '2024-07-25 04:54:27'),
 ('5794baab7c4462dc1a4eac04d7726cb328d446b96fd60efa596a84471f79122d166286e96d60679d', 3, 1, 'token_key', '[]', 0, '2023-07-25 01:04:46', '2023-07-25 01:04:47', '2024-07-25 06:34:46'),
@@ -239,6 +240,20 @@ CREATE TABLE `personal_access_tokens` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `personal_access_tokens`
+--
+
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `created_at`, `updated_at`) VALUES
+(1, 'App\\Models\\SuperUser', 1, 'access_token', '759bcefe0ebee7063090cb917c4ad9e69f64dc1447f3dba2ace1e8a71f111c53', '[\"*\"]', '2024-01-03 05:58:38', '2024-01-03 05:56:39', '2024-01-03 05:58:38'),
+(2, 'App\\Models\\SuperUser', 1, 'auth-token', '39975ce1b834879e318ed30e6c45f3291f7740a9efcce80c3d37c57efffbe87b', '[\"custom-scope\"]', NULL, '2024-01-04 06:11:33', '2024-01-04 06:11:33'),
+(3, 'App\\Models\\SuperUser', 1, 'auth-token', '585274de990151d6054c59d42b78e686c49a2011faea691ddfff83fc589789ef', '[\"custom-scope\"]', NULL, '2024-01-04 06:14:00', '2024-01-04 06:14:00'),
+(4, 'App\\Models\\SuperUser', 1, 'auth-token', 'be32104aaafb1c65038779ea4627f9133684b19bd4dae5d5e81a7bf2f157cb35', '[\"custom-scope\"]', NULL, '2024-01-04 06:15:19', '2024-01-04 06:15:19'),
+(5, 'App\\Models\\SuperUser', 1, 'access-token', 'e169ad0d6241cf8425161bbf161a782c45a6c8b44e45559e65304eb3e47e1958', '[\"*\"]', NULL, '2024-01-05 02:33:41', '2024-01-05 02:33:41'),
+(6, 'App\\Models\\SuperUser', 1, 'access-token', 'ad7b743503f78db4c6cac74b1034ccdff2d3593469dadf6d61e1e9de78956499', '[\"*\"]', '2024-01-05 02:52:11', '2024-01-05 02:34:48', '2024-01-05 02:52:11'),
+(8, 'App\\Models\\SuperUser', 1, 'access-token', 'c71d29e545a7f9385239bad86eca0514225975cdb75a3ba283c97b8d0a016072', '[\"*\"]', NULL, '2024-01-05 02:55:12', '2024-01-05 02:55:12'),
+(10, 'App\\Models\\SuperUser', 1, 'access-token', '59f51fdf7fe9571aaee59856127f1e804a2fbd02bc17cd94c0b8366b88bb9155', '[\"*\"]', '2024-01-05 04:21:36', '2024-01-05 04:18:53', '2024-01-05 04:21:36');
+
 -- --------------------------------------------------------
 
 --
@@ -253,6 +268,7 @@ CREATE TABLE `super_users` (
   `email` varchar(255) NOT NULL,
   `phone` varchar(255) DEFAULT NULL,
   `role` enum('root','super user') NOT NULL DEFAULT 'root',
+  `time_expire` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -261,8 +277,8 @@ CREATE TABLE `super_users` (
 -- Dumping data for table `super_users`
 --
 
-INSERT INTO `super_users` (`id`, `name`, `username`, `password`, `email`, `phone`, `role`, `created_at`, `updated_at`) VALUES
-(1, 'Gnoin Pvt.Ltd', 'gnoin', '$2y$10$8p4J.BWC5DLn51HuP4rU4Oe4OZfNavD9jzGJPDY1utnQGMPeWxD1y', 'gemsfiem@gmail.com', '+917699456004', 'root', '2023-12-27 06:22:15', '2023-12-29 06:25:57');
+INSERT INTO `super_users` (`id`, `name`, `username`, `password`, `email`, `phone`, `role`, `time_expire`, `created_at`, `updated_at`) VALUES
+(1, 'Gnoin Pvt.Ltd', 'gnoin', '$2y$10$pDeHauc1Gdq5W44lpBmL9O048HuntawFFm1vA3rvdXux26arJCdau', 'gemsfiem@gmail.com', '+917699456004', 'root', '2024-01-05 04:29:52', '2023-12-27 06:22:15', '2024-01-05 04:28:25');
 
 -- --------------------------------------------------------
 
@@ -339,21 +355,6 @@ CREATE TABLE `user_otps` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `user_otps`
---
-
-INSERT INTO `user_otps` (`id`, `user_id`, `otp`, `expire_at`, `created_at`, `updated_at`) VALUES
-(1, 1, '484772', '2023-12-27 12:01:11', '2023-12-27 11:51:11', '2023-12-27 11:51:11'),
-(2, 1, '878856', '2023-12-27 21:34:37', '2023-12-27 21:24:37', '2023-12-27 21:24:37'),
-(3, 1, '468847', '2023-12-28 00:27:12', '2023-12-28 00:12:12', '2023-12-28 00:12:12'),
-(4, 1, '290601', '2023-12-28 01:01:25', '2023-12-28 00:46:25', '2023-12-28 00:46:25'),
-(5, 1, '981172', '2023-12-28 01:12:25', '2023-12-28 00:57:25', '2023-12-28 00:57:25'),
-(6, 1, '852048', '2023-12-28 01:30:21', '2023-12-28 01:15:21', '2023-12-28 01:15:21'),
-(7, 1, '788267', '2023-12-28 01:40:36', '2023-12-28 01:25:36', '2023-12-28 01:25:36'),
-(8, 1, '367808', '2023-12-28 04:53:34', '2023-12-28 04:38:34', '2023-12-28 04:38:34'),
-(9, 1, '779636', '2023-12-28 05:09:53', '2023-12-28 04:54:53', '2023-12-28 04:54:53');
 
 --
 -- Indexes for dumped tables
@@ -484,7 +485,7 @@ ALTER TABLE `oauth_personal_access_clients`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `super_users`
@@ -502,7 +503,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_otps`
 --
 ALTER TABLE `user_otps`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

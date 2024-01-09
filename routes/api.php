@@ -46,6 +46,23 @@ Route::middleware('api')->group(function () {
   // Add more API routes as needed
 });
 
+
+       // sanctum api
+  Route::middleware('auth:sanctum')->group(function () {
+  Route::post('root_profile', [AdminController::class, 'rootProfile']);
+  Route::post('root/logout', [AdminController::class, 'rootLogout']);
+  Route::post('get-token',[AdminController::class,'getRootToken']);
+  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
+  Route::post('registercompany',[AdminController::class,'registerCompany']);
+  
+  Route::post('company_profile',[AdminController::class,'companyProfile']);
+  
+  // ... other authenticated routes
+});
+Route::post('select-modules', [AdminController::class, 'selectModules']);
+ 
+Route::post('logincompany',[AdminController::class,'loginCompany']);
+
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root/login', [AdminController::class, 'adminLogin']);
    Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
@@ -55,11 +72,11 @@ Route::middleware('api')->group(function () {
  
    
 
-   Route::post('logincompany',[AdminController::class,'loginCompany']);
+   
 
 
    Route::post('logoutuser', [AdminController::class, 'logoutSession']);
-   Route::post('profile',[AdminController::class,'profile']);
+   
    Route::post('forgetpass',[AdminController::class,'forgetpassword']);
 
   // Route::middleware('web')->post('logincompany',[AdminController::class,'loginCompany']);
@@ -366,15 +383,7 @@ Route::middleware('auth:api')->group(function (){
 });
 
 
-Route::middleware('auth:sanctum')->group(function () {
-  Route::post('root_profile', [AdminController::class, 'rootProfile']);
-  Route::post('root/logout', [AdminController::class, 'rootLogout']);
-  Route::post('get-token',[AdminController::class,'getRootToken']);
-  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
-  Route::post('registercompany',[AdminController::class,'registerCompany']);
 
-  // ... other authenticated routes
-});
 // Route::post('root_profile', [AdminController::class, 'rootProfile']);
 
 
