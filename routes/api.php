@@ -49,6 +49,7 @@ Route::middleware('api')->group(function () {
 
        // sanctum api
   Route::middleware('auth:sanctum')->group(function () {
+
   Route::post('root_profile', [AdminController::class, 'rootProfile']);
   Route::post('root/logout', [AdminController::class, 'rootLogout']);
   Route::post('get-token',[AdminController::class,'getRootToken']);
@@ -56,12 +57,28 @@ Route::middleware('api')->group(function () {
   Route::post('registercompany',[AdminController::class,'registerCompany']);
   
   Route::post('company_profile',[AdminController::class,'companyProfile']);
-  
+  Route::post('logincompany',[AdminController::class,'loginCompany']);
+
+      //  set permission 
+Route::post('create-user',[AdminController::class,'newUser']);
+Route::post('edit-user/{id}',[AdminController::class,'editUser']);
+Route::post('delete-user/{id}',[AdminController::class,'delUser']);
+Route::post('login-user',[AdminController::class,'logUser']);
+
+  Route::post('logoutcompany', [AdminController::class, 'logoutCompany']);
+
+     //Employee controlled by admin
+     Route::post('addemployee',[AdminController::class,'addEmployee']);
+     Route::post('editemployee/{employeeId}',[AdminController::class,'editEmployee']);
+     Route::post('allemployee',[AdminController::class,'allEmployee']);
+     Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
+     Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
+
   // ... other authenticated routes
 });
 // Route::post('select-modules', [AdminController::class, 'selectModules']);
  
-Route::post('logincompany',[AdminController::class,'loginCompany']);
+
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    
    Route::post('root/login', [AdminController::class, 'adminLogin']);
@@ -120,15 +137,6 @@ Route::post('logincompany',[AdminController::class,'loginCompany']);
 
      // annoucement
    Route::post('AddAnnouncement',[AdminController::class,'addAnnouncement']);  
-
-
-
-   //Employee controlled by admin
-   Route::post('addemployee',[AdminController::class,'addEmployee']);
-   Route::post('editemployee/{employeeId}',[AdminController::class,'editEmployee']);
-   Route::post('allemployee',[AdminController::class,'allEmployee']);
-   Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
-   Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
 
 
 
@@ -338,12 +346,6 @@ Route::post('emp_search_yearly',[EmployeeRegistration::class,'empSearchByYear'])
 
 
 
-
-      //  set permission 
-Route::post('create-user',[AdminController::class,'newUser']);
-Route::post('edit-user/{id}',[AdminController::class,'editUser']);
-Route::post('delete-user/{id}',[AdminController::class,'delUser']);
-Route::post('login-user',[AdminController::class,'logUser']);
 
 
 

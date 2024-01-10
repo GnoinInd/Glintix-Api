@@ -956,6 +956,19 @@ public function loginCompany(Request $request)
 
 
 
+public function logoutCompany(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    if ($token) {
+        $token->delete();
+    }
+    Auth::guard('web')->logout();
+    return response()->json(['success' => true, 'message' => 'Successfully logged out'], 200);
+}
+
+
+
+
 
 
 
@@ -1249,7 +1262,19 @@ private function checkSessionAndSetupConnection()
 }
 
 public function addEmployee(Request $request)
+
 {
+    $token = $request->user()->currentAccessToken();
+     $username = $token['tokenable']['total'];    
+    print_r($token);die;
+    if (!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'token not found!']);
+    }
+    $username = $token['tokenable']['username'];
+    $password = $token['tokenable']['dbPass'];
+    $dbName = $token['tokenable']['dbName'];
+
     $validatedData = $request->validate([
         'name' => 'required',
         'email' => 'required|email',
@@ -1258,12 +1283,6 @@ public function addEmployee(Request $request)
         'username' => 'required|string',
         'password' => 'required',
     ]);
-
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-
-    if (!$sessionCheckResult) {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
-    }
 
     $maxEmp = $sessionCheckResult['maxEmp'];
     $empCount = DB::connection('dynamic')->table('employees')->count();
@@ -3778,6 +3797,14 @@ public function assetApprove(Request $request)
 
 public function newUser(Request $request)
 {
+    $token = $request->user()->currentAccessToken();
+         $username = $token['tokenable']['username'];    
+         print_r($username);die;
+    if (!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'token not found!']);
+    }
+    
     $validatedData = $request->validate([
         'emp_id' => 'required',
         'name' => 'required',
@@ -3789,15 +3816,19 @@ public function newUser(Request $request)
         'edit' => 'nullable|boolean',
         'delete' => 'nullable|boolean',
         'role' => 'required',
+
+        // 'username' => 'required',
+        // 'password' => 'required',
+        // 'dbName'   =>  'required',
         
     ]);
 
-    session_start();
-    if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-    {
-        $username = $_SESSION['username'];
-        $password = $_SESSION['password'];
-        $dbName   = $_SESSION['dbName'];
+    // session_start();
+    // if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
+    // {}
+        $username = $token['tokenable']['username'];
+        $password = $token['tokenable']['dbPass'];
+        $dbName = $token['tokenable']['dbName'];
         $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
 
         Config::set('database.connections.dynamic', [
@@ -3853,9 +3884,7 @@ public function newUser(Request $request)
         ]);
 
         return response()->json(['success' => true, 'message' => 'user role created successfully']);
-    }
-
-    return response()->json(['success' => false, 'message' => 'session out! Please log in']);
+    
 }
 
 
