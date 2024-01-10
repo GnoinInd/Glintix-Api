@@ -359,12 +359,12 @@ public function logout()
     public function verifyRootForgetPass(Request $request)
     {
         $validatedData = $request->validate([
-            'mobile_number' => 'required',
+            // 'mobile_number' => 'required',
             'otp'  => 'required'
         ]);
         $otp = $validatedData['otp'];
-        $phone = $validatedData['mobile_number'];
-        // $phone = $request->mobile_number;
+        // $phone = $validatedData['mobile_number'];
+        $phone = $request->mobile_number;
         $user = SuperUser::where('phone',$phone)->first();
         if($user)
         {
@@ -629,10 +629,21 @@ public function logout()
               
     
                 // return response()->json(['success'=>true,'companyCode'=>$companyCode,'message' => 'Company registered successfully'], 201);
+                $modules = $request->input('modules',[]);
+                // if (!isset($modules) || !is_array($modules)) {
+                //     return response()->json(['success' => false, 'message' => 'Modules parameter is required and must be an array']);
+                // }
 
+                $moduleSelectionResult = $this->selectModules($companyCode, $modules);
+                if(!$moduleSelectionResult['success'])
+                {
+                    return response()->json(['success'=>false,'message'=>'some issue to select modules']);
+                }
+        
+                
                 return response()->json([
                     'success' => true,
-                    'message' => 'Company registered successfully',
+                    'message' => 'Company registered successfully and modules selected successfully',
                     'companyDetails' => [
                         'name' => $details->name,
                         'comtact person' => $details->contact_person,
@@ -767,38 +778,28 @@ private function generateUniqueDbName($name)
 
 
 
-public function selectModules(Request $request)
+private function selectModules($companyCode, $modules)
 {
-    $validatedData = $request->validate([
-        'modules' => 'required|array', 
-        // 'companyCode' => 'required',
-
-    ]);
-
-    // $companyCode = $validatedData['companyCode'];
-    $companyCode = $request->company_code;
-
     if (!$companyCode) {
-        return response()->json(['success' => false, 'message' => 'Company code not found']);
+        return ['success' => false, 'message' => 'Company code not found'];
     }
 
     CompanyModuleAccess::where('company_code', $companyCode)->delete();
 
     try {
-        $modulesArray = $validatedData['modules'];
-
-        foreach ($modulesArray as $moduleId) {
+        foreach ($modules as $moduleId) {
             CompanyModuleAccess::create([
                 'company_code' => $companyCode,
                 'module_id' => $moduleId,
             ]);
         }
 
-        return response()->json(['success' => true, 'message' => 'Modules selected successfully']);
+        return ['success' => true, 'message' => 'Modules selected successfully'];
     } catch (\Exception $e) {
-        return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        return ['success' => false, 'message' => $e->getMessage()];
     }
 }
+
 
 
 

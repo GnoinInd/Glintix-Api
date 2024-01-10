@@ -59,7 +59,7 @@ Route::middleware('api')->group(function () {
   
   // ... other authenticated routes
 });
-Route::post('select-modules', [AdminController::class, 'selectModules']);
+// Route::post('select-modules', [AdminController::class, 'selectModules']);
  
 Route::post('logincompany',[AdminController::class,'loginCompany']);
 
