@@ -682,12 +682,20 @@ public function logout()
     private function createDynamicDatabase($dbName, $dbUsername, $dbPassword)
     {    
 
+        // $defaultDB = DB::getDefaultConnection();
+        // DB::statement("CREATE DATABASE IF NOT EXISTS $dbName");
+        // DB::statement("CREATE USER '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
+        // DB::statement("GRANT ALL ON $dbName.* TO '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
+        // DB::statement("FLUSH PRIVILEGES");
+        // DB::setDefaultConnection($defaultDB);
+
         $defaultDB = DB::getDefaultConnection();
         DB::statement("CREATE DATABASE IF NOT EXISTS $dbName");
         DB::statement("CREATE USER '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
-        DB::statement("GRANT ALL ON $dbName.* TO '$dbUsername'@'localhost' IDENTIFIED BY '$dbPassword'");
+        DB::statement("GRANT ALL ON $dbName.* TO '$dbUsername'@'localhost'");
         DB::statement("FLUSH PRIVILEGES");
         DB::setDefaultConnection($defaultDB);
+    
 
     }
 
