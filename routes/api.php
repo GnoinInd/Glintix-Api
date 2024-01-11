@@ -186,7 +186,7 @@ Route::post('login',[AdminController::class,'login']);
 Route::post('month_weekend',[AdminController::class,'calculateWeekend']);
 
 
-Route::post('addemployee',[AdminController::class,'addEmployee']);
+// Route::post('addemployee',[AdminController::class,'addEmployee']);
 Route::post('getemployee',[EmployeeController::class,'getEmployee']);
 Route::post('getemployee/{id}',[EmployeeController::class,'specificEmployee']);
 

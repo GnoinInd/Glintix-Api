@@ -266,7 +266,7 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-            //   'user_id' => 'required',
+            //    'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
@@ -530,10 +530,12 @@ public function logout()
                 $usernameAlpha = Str::random(5, 'abcdefghijklmnopqrstuvwxyz');
                 $usernameNum = Str::random(5, '0123456789');
                 $generatedUsername = $usernameAlpha . $usernameNum;  
-                $passAlpha = Str::random(4, 'abcdefghijklmnopqrstuvwxyz');
-                $passSpecial = Str::random(1, '!@#$%^&*()_?');
-                $passNum = Str::random(5, '0123456789');      
+                $passAlpha = str_shuffle(Str::random(4, 'abcdefghijklmnopqrstuvwxyz'));
+                $passSpecial = '!@#$%^&*()_?';
+                $passSpecial = $passSpecial[rand(0, strlen($passSpecial) - 1)];
+                $passNum = str_shuffle(Str::random(5, '0123456789'));
                 $generatedPassword = $passAlpha . $passSpecial . $passNum;
+                // print_r($generatedPassword);die;
                 $role = 'admin';
                 $total = 25;
                         
@@ -1261,71 +1263,85 @@ private function checkSessionAndSetupConnection()
     return false; // Session data not set
 }
 
-public function addEmployee(Request $request)
 
+
+
+
+public function addEmployee(Request $request)
 {
     $token = $request->user()->currentAccessToken();
-     $username = $token['tokenable']['total'];    
-    print_r($token);die;
-    if (!$token)
-    {
-        return response()->json(['success'=>false,'message'=>'token not found!']);
+    //  $username = $token['tokenable']['company_code'];    
+    // print_r($username);die;
+    
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
+
     $username = $token['tokenable']['username'];
     $password = $token['tokenable']['dbPass'];
     $dbName = $token['tokenable']['dbName'];
+    $maxEmp = $token['tokenable']['total'];
+    //  print_r($maxEmp);die;
+
+    Config::set('database.connections.dynamic', [
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'database' => $dbName,
+        'username' => $username,
+        'password' => $password,
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'strict' => true,
+        'engine' => null,
+    ]);
+
+    $dynamicDB = DB::connection('dynamic');
 
     $validatedData = $request->validate([
         'name' => 'required',
         'email' => 'required|email',
-        'designation' => 'required|string|min:6',
+        'designation' => 'required|string',
         'address' => 'required',
         'username' => 'required|string',
         'password' => 'required',
     ]);
+    if (!$dynamicDB->getSchemaBuilder()->hasTable('employees')) {
+        $dynamicDB->getSchemaBuilder()->create('employees', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique()->index();
+            $table->string('username');
+            $table->string('password');
+            $table->string('designation');
+            $table->string('address')->nullable();
+            $table->timestamps();
+        });
+    }
 
-    $maxEmp = $sessionCheckResult['maxEmp'];
-    $empCount = DB::connection('dynamic')->table('employees')->count();
+    $empCount = $dynamicDB->table('employees')->count() ?? 0;
+  
 
-    if (isset($_SESSION['create']) && $_SESSION['create'] == 1) {
-        if ($empCount < $maxEmp) {
-            // Check if the "employees" table exists; if not, create it
-            if (!Schema::connection('dynamic')->hasTable('employees')) {
-                Schema::connection('dynamic')->create('employees', function (Blueprint $table) {
-                    $table->id();
-                    $table->string('name');
-                    $table->string('email')->unique()->index();
-                    $table->string('username');
-                    $table->string('password');
-                    $table->string('designation');
-                    $table->string('address')->nullable();
-                    $table->timestamps();
-                });
-            }
+    if ($empCount < $maxEmp) {
+        $username = $request->username;
+        $passcode = Hash::make($request->password);
 
-            $username = $request->username;
-            $passcode = Hash::make($request->password); 
+        $employee = $dynamicDB->table('employees')->insert([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'username' => $username,
+            'password' => $passcode,
+            'designation' => $validatedData['designation'],
+            'address' => $validatedData['address'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-            $employee = DB::connection('dynamic')->table('employees')->insert([
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
-                'username' => $username,
-                'password' => $passcode,
-                'designation' => $request->input('designation'),
-                'address' => $request->input('address'),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
-        } else {
-            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
-        }
+        return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
     } else {
-        return response()->json(['message' => 'You have no permission.'], 400);
+        return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
     }
 }
-
 
 
 
@@ -3798,8 +3814,8 @@ public function assetApprove(Request $request)
 public function newUser(Request $request)
 {
     $token = $request->user()->currentAccessToken();
-         $username = $token['tokenable']['username'];    
-         print_r($username);die;
+        //  $username = $token['tokenable']['username'];    
+        //  print_r($username);die;
     if (!$token)
     {
         return response()->json(['success'=>false,'message'=>'token not found!']);
@@ -3854,7 +3870,7 @@ public function newUser(Request $request)
                 $table->unsignedBigInteger('emp_id');
                 $table->string('username');
                 $table->string('password');
-                $table->string('db_name');
+                // $table->string('db_name');
                 $table->string('email');
                 $table->boolean('read');
                 $table->boolean('create');
@@ -3872,7 +3888,7 @@ public function newUser(Request $request)
             'emp_id' => $request->emp_id,
             'username' => $request->username,
             'password' => bcrypt($request->password),
-            'db_name'  => encrypt($dbName),
+            // 'db_name'  => $dbName,
             'email'   => $request->email,
             'read' => $request->input('read', false),
             'create' => $request->input('create', false),
