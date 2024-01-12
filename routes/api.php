@@ -55,9 +55,10 @@ Route::middleware('api')->group(function () {
   Route::post('get-token',[AdminController::class,'getRootToken']);
   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
   Route::post('registercompany',[AdminController::class,'registerCompany']);
-  
+        
+            //company
   Route::post('company_profile',[AdminController::class,'companyProfile']);
-  Route::post('logincompany',[AdminController::class,'loginCompany']);
+  Route::post('company-set-password', [AdminController::class, 'companysetNewPassword']);
 
       //  set permission 
 Route::post('create-user',[AdminController::class,'newUser']);
@@ -87,10 +88,14 @@ Route::post('login-user',[AdminController::class,'logUser']);
   //  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
   //  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
  
-   
+         
+       // company
+   Route::post('logincompany',[AdminController::class,'loginCompany']);
+   Route::post('company_verify_otp', [AdminController::class, 'verifyOtpCompany']); 
+   Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);    
 
    
-
+  
 
    Route::post('logoutuser', [AdminController::class, 'logoutSession']);
    

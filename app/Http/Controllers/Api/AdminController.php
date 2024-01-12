@@ -38,6 +38,7 @@ use Cache;
 use Illuminate\Validation\ValidationException;
 use App\Models\CompanyModuleAccess;
 use App\Mail\RootUserMail;
+use App\Models\CompanyOtp;
 
 
 class AdminController extends Controller
@@ -940,12 +941,25 @@ public function loginCompany(Request $request)
         'username' => 'required|string|max:255',
         'password' => 'required|string|min:6',
     ]);
-
+    
     $user = User::where('username', $validatedData['username'])->first();
-
+//    echo $user;die;
     if ($user && Hash::check($validatedData['password'], $user->password)) {
-        $dbName = $user->dbName;
-        $token = $user->createToken('access_token')->plainTextToken;
+       
+        // $dbName = $user->dbName;
+        // $token = $user->createToken('access_token')->plainTextToken;
+
+        $otpResult = $this->generateAndSendOtpCompany($user->id, $user->mobile_number,$user->email);
+
+        if ($otpResult['success']) {
+            // $role = $user->role;
+            // $email = $user->email;
+
+            return response()->json(['success' => true,'userId' => $user->id,'message' => 'otp send successfully'],200);
+        } else {
+            return response()->json(['success' => false, 'message' => $otpResult['error']],401);
+        }
+
         // $token_array = $request->user()->currentAccessToken();
         // $token_array = $token_array['tokenable'];
 
@@ -958,11 +972,262 @@ public function loginCompany(Request $request)
     // ])->save();
      
 
-        return response()->json(['success' => true, 'token' => $token, 'message' => 'Login Successfully'], 200);
+        return response()->json(['success' => true, 'message' => 'Login Successfully'], 200);
     } else {
-        return response()->json(['success' => false,'message' => 'token invalid'], 200);
+        return response()->json(['success' => false, 'message' => 'Username or password is incorrect'],401);
     }
 }
+
+
+   private function generateAndSendOtpCompany($userId, $phone,$email)
+    {
+        try {
+            $otp = rand(100000, 999999);
+
+            $expireAt = now()->addMinutes(1);
+            CompanyOtp::create([
+                'user_id' => $userId,
+                'otp' => $otp,
+                'expire_at' => $expireAt,
+            ]);
+
+            $this->sendOtpViaTwilioCompany($phone, $otp);
+            $this->sendOtpViaEmailCompany($email,$otp);
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    private function sendOtpViaTwilioCompany($phone, $otp)
+    {
+        try {
+            $accountSid = getenv("TWILIO_SID");
+            $authToken = getenv("TWILIO_TOKEN");
+            $twilioNumber = getenv("TWILIO_FROM");
+
+            $client = new Client($accountSid, $authToken);
+            $message = $client->messages->create($phone, [
+                'from' => $twilioNumber,
+                'body' => "Your OTP: $otp",
+            ]);
+
+            if ($message->sid) {
+                return ['success' => true];
+            } else {
+                return ['success' => false, 'error' => 'Failed to send OTP'];
+            }
+        } catch (\Twilio\Exceptions\RestException $e) {
+          //  \Log::error("Twilio Exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        } catch (\Exception $e) {
+          //  \Log::error("Exception: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+
+
+    private function sendOtpViaEmailCompany($email,$otp)
+    {
+        try{
+            Mail::to($email)->send(new OtpMail($otp));
+            return ['success'=>true];
+        }
+        catch(\Exception $e)
+        {
+           return ['success'=>false,'error'=>$e->getMessage()];
+        }
+    }
+
+
+
+     
+    public function verifyOtpCompany(Request $request)
+    {
+        $validatedData = $request->validate([
+            //    'user_id' => 'required',
+             'otp' => 'required|string|digits:6',
+        ]);
+
+        
+        $userId = $request->userId;
+        
+        // $userId = $validatedData['user_id'];
+        $otp = $validatedData['otp'];
+      
+        $companyOtp = CompanyOtp::where('user_id', $userId)
+            ->where('otp', $otp)
+            ->where('expire_at', '>', now())
+            ->first();
+        if ($companyOtp) {
+            $companyOtp->delete();
+            $root = User::find($userId);
+            $role = $root->role;
+            $email = $root->email;
+
+             Mail::to($email)->send(new SuccessfulLoginNotification($root));
+             // Issue a SANCTUM token
+             $token = $root->createToken('access_token')->plainTextToken;        
+            return response()->json(['success' => true, 'data' => $root, 'access_token' => $token,
+             'message' => 'OTP verification successful'], 200);
+        
+
+        } else {
+            $deleted = CompanyOtp::where('user_id', $userId)
+            ->where('otp', $otp)
+            ->delete();
+          
+            if ($deleted) {
+                return response()->json(['success' => false, 'message' => 'Invalid OTP'],422);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Invalid OTP and no expired OTP found'],422);
+            }
+            
+           
+        }
+    }
+
+
+
+
+
+    public function companyForgetPass(Request $request)
+    {
+        $validatedData = $request->validate([
+            'mobile_number' => 'required|exists:super_users,phone',
+        ]);
+        $root = User::where('phone', $validatedData['mobile_number'])->first();
+        if ($root) {
+            $otpResult = $this->generateAndSendOtp($root->id, $root->mobile_number,$root->email);
+            if ($otpResult['success'])
+             {
+                return response()->json(['success' => true,'phone'=>$validatedData['mobile_number'], 'message' => 'OTP sent successfully'],200);
+             } 
+            else 
+            {
+                return response()->json(['success' => false, 'message' => $otpResult['error']],500);
+            }
+        } 
+        else
+         {
+            return response()->json(['success' => false, 'message' => 'User not found'],404);
+         }
+
+
+    }
+
+
+
+    public function verifyRootForgetPassCompany(Request $request)
+    {
+        $validatedData = $request->validate([
+            // 'mobile_number' => 'required',
+            'otp'  => 'required'
+        ]);
+        $otp = $validatedData['otp'];
+        // $phone = $validatedData['mobile_number'];
+        $phone = $request->mobile_number;
+        $user = User::where('phone',$phone)->first();
+        if($user)
+        {
+            $userId = $user->id; 
+            $userOtp = CompanyOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
+                
+         if($userOtp)
+         {
+            $userOtp->delete();
+            // session_start();
+            // $_SESSION['setTime'] = time() + (10*60); 
+            // $_SESSION['phone'] = $phone;
+            // Session::start();
+          
+            $user->time_expire = now()->addMinutes(1440);
+            $user->save();
+            // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
+            // $token->expires_at = now()->addDay(1);
+            // $token->save();
+            $token = $user->createToken('access-token')->plainTextToken;
+            return response()->json(['success' => true,'token'=>$token,'message' => 'OTP verification successful'],200);
+
+         }
+         else
+         {
+          return response()->json(['success' => false,'success'=>false,'message' => 'Invalid OTP or mobile number'],422);
+         }
+
+       }
+       return response()->json(['success' => false,'success'=>false,'message' => 'user not found'],404);
+
+
+    }
+
+
+
+  public function setNewPasswordCompany(Request $request)
+  {
+    $validatedData = $request->validate([
+        'new_password' => 'required|string|min:6',
+        'confirm_new_password' => 'required|string|same:new_password',
+    ]);
+    
+    $token = $request->user()->currentAccessToken();
+    if($token)
+    {
+        $mobile = $token['tokenable']['phone']; 
+        $userId = $token['tokenable']['id'];    
+      
+    if ($user = $this->validateUserTimeExpire($mobile, $userId)) 
+     {
+        $newPassword = $validatedData['new_password'];
+        $user->password = Hash::make($newPassword);
+        $user->save();
+        $token->delete();  
+
+        return response()->json(['success' => true, 'message' => 'Password updated successfully'], 200);
+     }
+    else 
+     {
+        return response()->json(['success' => false, 'message' => 'time expired!'], 422);
+     }
+    }
+    return response()->json(['success'=> false,'message'=>'Invalid Token'],422);
+  
+  }
+
+
+   protected function validateUserTimeExpire($mobile, $userId)
+   {
+      $user = SuperUser::where('phone', $mobile)->where('id', $userId)->first();
+
+      if ($user && Carbon::now()->lt($user->time_expire)) {
+          return $user;
+      }
+      elseif ($user)
+      {
+        $token = $user->currentAccessToken();
+        if($token)
+        {
+          $token->delete();
+        }
+        return null;
+      }
+
+      return null;
+   }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
