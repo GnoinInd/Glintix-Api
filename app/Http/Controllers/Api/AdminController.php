@@ -39,7 +39,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\CompanyModuleAccess;
 use App\Mail\RootUserMail;
 use App\Models\CompanyOtp;
-
+use Laravel\Sanctum\PersonalAccessToken;
+use App\Models\DynamicPermission;
 
 class AdminController extends Controller
 {
@@ -267,13 +268,13 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-            //    'user_id' => 'required',
+               'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
         
-        $userId = $request->userId;
-        // $userId = $validatedData['user_id'];
+        // $userId = $request->userId;
+        $userId = $validatedData['user_id'];
         $otp = $validatedData['otp'];
       
         $userOtp = UserOtp::where('user_id', $userId)
@@ -560,6 +561,7 @@ public function logout()
                 $user->fax     = isset($validatedData['fax']) ? $validatedData['fax'] : null;
                 $user->website_url = isset($validatedData['website_url']) ? $validatedData['website_url'] : null;
                 $user->company_logo = $logoPath;
+                $user->dbPass = $generatedPassword;
                 $user->save();
                 
                 $dbName = $generatedDbName;
@@ -609,6 +611,11 @@ public function logout()
                 ];
                 $dynamicDB->table('clients')->insert($clientData);
 
+                if (!$this->tableExists($dynamicDB, 'personal_access_tokens')) {
+                    $this->createTokenTable($dynamicDB);
+                }
+            
+                
                 $email = $request->input('email');
                 $details = User::where('email',$email)->first();
                 if (!$details) {
@@ -735,6 +742,29 @@ public function logout()
 
     }
 
+
+
+    private function createTokenTable($connection)
+    {
+        if (!$connection->getSchemaBuilder()->hasTable('personal_access_tokens')) {
+            $connection->getSchemaBuilder()->create('personal_access_tokens', function (Blueprint $table) {
+                $table->id();
+                // $table->foreignId('user_id');
+                $table->text('tokenable_type');
+                $table->unsignedBigInteger('tokenable_id');
+                $table->string('name',255);
+                $table->string('token', 64)->unique();
+                $table->text('abilities')->nullable();
+                $table->timestamp('last_used_at')->nullable();
+                $table->timestamps();
+    
+                // $table->index(['tokenable_id', 'tokenable_type']);
+            });
+        }
+    }
+
+
+
     private function generateUniqueCompanyCode()
 {
     $timestamp = time();
@@ -747,7 +777,7 @@ public function logout()
 private function generateUniqueDbName($name)
 {
     $randomString = substr(str_shuffle('0123456789'), 0, 3);
-    $code = substr($name, 0, 5) . '_' . $randomString;
+    $code = substr($name, 0, 4) . '_' . $randomString;
     return strtolower($code);
 }
 
@@ -871,7 +901,7 @@ public function rootProfile(request $request)
         }
         return response()->json(['success'=>false,'message'=>'data not found'],404);
     }
-    return response()->json(['success'=>false,'message'=>'session out!'],440);
+    return response()->json(['success'=>false,'message'=>'token not found!'],404);
 }
 
 
@@ -1843,12 +1873,35 @@ public function singleEmployee(Request $request, $employeeId)
 
 public function editEmployee(Request $request, $employeeId)
 {
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-
-    if (!$sessionCheckResult) {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+    $token = $request->user()->currentAccessToken();
+    //  $username = $token['tokenable']['username'];    
+    // print_r($username);die;
+    
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
 
+    $username = $token['tokenable']['username'];
+    $password = $token['tokenable']['dbPass'];
+    $dbName = $token['tokenable']['dbName'];
+    $maxEmp = $token['tokenable']['total'];
+    //  print_r($maxEmp);die;
+
+    Config::set('database.connections.dynamic', [
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'database' => $dbName,
+        'username' => $username,
+        'password' => $password,
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'strict' => true,
+        'engine' => null,
+    ]);
+
+    $dynamicDB = DB::connection('dynamic');
+  
     if (isset($_SESSION['edit']) && $_SESSION['edit'] == 1) {
         if (!Schema::connection('dynamic')->hasTable('employees')) {
             return response()->json(['message' => 'Table not found'], 404);
@@ -4296,75 +4349,84 @@ public function delUser(Request $request,$id)
     
 }
 
-
-
 public function logUser(Request $request)
 {
-
     try {
         $validatedData = $request->validate([
-            'email' => 'required',
+            'company_code' => 'required',
             'username' => 'required',
             'password' => 'required',
         ]);
 
-        $user = User::where('username', $request->username)->first();
-
-        if ($user && Hash::check($request->password, $user->password)) {
+        $user = User::where('company_code', $request->company_code)->first();
+        if ($user) {
             $dbName = $user->dbName;
-
-     
-             //ini_set('session.cookie_lifetime', 60 * 10);
-
-            // ini_set('session.cookie_lifetime', 60 * 2);
-            session_start();
-            $_SESSION['username'] = $user->username;
-            $_SESSION['password'] = $request->password;
-            $_SESSION['dbName']   = $dbName;
-
-            $_SESSION['start'] = time();
-            $_SESSION['expire'] = $_SESSION['start'] + (5 * 60);
-           
-            Config::set('database.connections.dynamic', [
+            $username = $user->username;
+            $password = $user->dbPass;
+            $dynamicDBConfig = [
                 'driver' => 'mysql',
                 'host' => 'localhost',
                 'database' => $dbName,
-                'username' => $user->username,
-                'password' => $request->password,
+                'username' => $username,
+                'password' => $password,
                 'charset' => 'utf8mb4',
                 'collation' => 'utf8mb4_unicode_ci',
                 'prefix' => '',
                 'strict' => true,
                 'engine' => null,
-            ]);
-
-            $dynamicDB = DB::connection('dynamic');
+            ];
 
           
-            $access = $dynamicDB->table('permission')->where('email', $request->email)->first();
+            // $dynamicDB = DB::connection('dynamic')->getName();
+            // DynamicPermission::setConnection($dynamicDBConfig);
+            // $access = DynamicPermission::on($dynamicDB)->where('username', $request->username)->first();
+            // $access = DynamicPermission::where('username', $request->username)->first();
 
-            if ($access) {
-                $_SESSION['read'] = $access->read;
-                $_SESSION['create'] = $access->create;
-                $_SESSION['edit'] = $access->edit;
-                $_SESSION['delete'] = $access->delete;
+            // $dynamicPermission = new DynamicPermission();
+            // $dynamicPermission->setConnection($dynamicDBConfig);
+            $access = DynamicPermission::on($dynamicDBConfig)->where('username', $request->username)->first();
+            // $access = $dynamicPermission->where('username', $request->username)->first();
 
-                return response()->json(['success' => true, 'message' => 'Login successful']);
+
+            print_r($access) ;die;
+            if ($access && Hash::check($request->password, $access->password)) {
+                $token = $access->createToken('dynamic-database-permission', ['dbname' => $dbName, 'username' => $username, 'password' => $password])->plainTextToken;
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Login successful',
+                    'token' => $token,
+                ]);
             } else {
-               
-                // session_unset();
-                // session_destroy();
                 return response()->json(['success' => false, 'message' => 'Access denied']);
             }
         }
 
-  
         return response()->json(['success' => false, 'message' => 'Invalid credentials']);
     } catch (Exception $e) {
-       
         return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
     }
 }
+
+
+
+public function test(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    $username = $token['tokenable']['name'];    
+    print_r($username);die;
+    
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Token not found!']);
+    }
+
+    $username = $token['tokenable']['username'];
+    $password = $token['tokenable']['dbPass'];
+    $dbName = $token['tokenable']['dbName'];
+    $maxEmp = $token['tokenable']['total'];
+}
+
+
 
 
 

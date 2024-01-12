@@ -64,7 +64,7 @@ Route::middleware('api')->group(function () {
 Route::post('create-user',[AdminController::class,'newUser']);
 Route::post('edit-user/{id}',[AdminController::class,'editUser']);
 Route::post('delete-user/{id}',[AdminController::class,'delUser']);
-Route::post('login-user',[AdminController::class,'logUser']);
+
 
   Route::post('logoutcompany', [AdminController::class, 'logoutCompany']);
 
@@ -75,6 +75,7 @@ Route::post('login-user',[AdminController::class,'logUser']);
      Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
      Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
 
+     Route::post('test',[AdminController::class,'test']);
   // ... other authenticated routes
 });
 // Route::post('select-modules', [AdminController::class, 'selectModules']);
@@ -94,7 +95,8 @@ Route::post('login-user',[AdminController::class,'logUser']);
    Route::post('company_verify_otp', [AdminController::class, 'verifyOtpCompany']); 
    Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);    
 
-   
+     // dynamic user
+   Route::post('login-user',[AdminController::class,'logUser']);  
   
 
    Route::post('logoutuser', [AdminController::class, 'logoutSession']);
