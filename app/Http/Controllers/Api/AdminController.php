@@ -40,7 +40,7 @@ use App\Models\CompanyModuleAccess;
 use App\Mail\RootUserMail;
 use App\Models\CompanyOtp;
 use Laravel\Sanctum\PersonalAccessToken;
-use App\Models\DynamicPermission;
+use App\Models\CompanyUserAccess;
 
 class AdminController extends Controller
 {
@@ -1077,14 +1077,14 @@ public function loginCompany(Request $request)
     public function verifyOtpCompany(Request $request)
     {
         $validatedData = $request->validate([
-            //    'user_id' => 'required',
+               'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
         
-        $userId = $request->userId;
+        // $userId = $request->userId;
         
-        // $userId = $validatedData['user_id'];
+        $userId = $validatedData['user_id'];
         $otp = $validatedData['otp'];
       
         $companyOtp = CompanyOtp::where('user_id', $userId)
@@ -1874,25 +1874,30 @@ public function singleEmployee(Request $request, $employeeId)
 public function editEmployee(Request $request, $employeeId)
 {
     $token = $request->user()->currentAccessToken();
-    //  $username = $token['tokenable']['username'];    
-    // print_r($username);die;
-    
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
-
-    $username = $token['tokenable']['username'];
-    $password = $token['tokenable']['dbPass'];
+    $validatedData = $request->validate([
+        'name' => 'required',
+        'email' => 'required',
+        'designation' => 'required',
+        'address' => 'required',
+                
+        ]);
+  
+    $companyCode = $token['tokenable']['company_code'];
     $dbName = $token['tokenable']['dbName'];
-    $maxEmp = $token['tokenable']['total'];
-    //  print_r($maxEmp);die;
+    $user = User::where('company_code',$companyCode)->first();
+    $dbUsername = $user->username;
+    $dbPass = $user->dbPass;
+    $edit = $token['tokenable']['edit'];
 
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
         'host' => 'localhost',
         'database' => $dbName,
-        'username' => $username,
-        'password' => $password,
+        'username' => $dbUsername,
+        'password' => $dbPass,
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
         'prefix' => '',
@@ -1901,13 +1906,12 @@ public function editEmployee(Request $request, $employeeId)
     ]);
 
     $dynamicDB = DB::connection('dynamic');
-  
-    if (isset($_SESSION['edit']) && $_SESSION['edit'] == 1) {
+    if ($edit && $edit == 1) {
         if (!Schema::connection('dynamic')->hasTable('employees')) {
             return response()->json(['message' => 'Table not found'], 404);
         }
 
-        $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+        $employee = $dynamicDB->table('employees')->find($employeeId);
 
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
@@ -1980,21 +1984,37 @@ public function editEmployee(Request $request, $employeeId)
 
 
 public function destroyEmployee(Request $request, $employeeId)
-{
-    // $validatedData = $request->validate([
-    //     'employeeId' => 'required|integer',
-    // ]);
-
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-    if(!$sessionCheckResult)
-    {
-      return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);    
+{ 
+    $token = $request->user()->currentAccessToken();
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
+    $companyCode = $token['tokenable']['company_code'];
+    $dbName = $token['tokenable']['dbName'];
+    $user = User::where('company_code',$companyCode)->first();
+    $dbUsername = $user->username;
+    $dbPass = $user->dbPass;
+    $delete = $token['tokenable']['delete'];
+
+    Config::set('database.connections.dynamic', [
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'database' => $dbName,
+        'username' => $dbUsername,
+        'password' => $dbPass,
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'strict' => true,
+        'engine' => null,
+    ]);
+
+    $dynamicDB = DB::connection('dynamic');
     if(!Schema::connection('dynamic')->hasTable('employees'))
     {
         return response()->json(['message' => 'table not found'],500);
     }
-    if(isset($_SESSION['delete']) && $_SESSION['delete'] == 1)
+    if($delete && $delete == 1)
     {
       $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
       if(!$employee)
@@ -4158,10 +4178,8 @@ public function newUser(Request $request)
         'edit' => 'nullable|boolean',
         'delete' => 'nullable|boolean',
         'role' => 'required',
+        // 'company_code' => 'required',
 
-        // 'username' => 'required',
-        // 'password' => 'required',
-        // 'dbName'   =>  'required',
         
     ]);
 
@@ -4171,7 +4189,23 @@ public function newUser(Request $request)
         $username = $token['tokenable']['username'];
         $password = $token['tokenable']['dbPass'];
         $dbName = $token['tokenable']['dbName'];
+        $companyCode = $token['tokenable']['company_code'];
         $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+
+        $company_access = new CompanyUserAccess;
+        $company_access->name = $request->name;
+        $company_access->emp_id = $request->emp_id;
+        // $company_access->emp_code = $request->company_code;
+        $company_access->email = $request->email;
+        $company_access->username = $request->username;
+        $company_access->password = Hash::make($request->password);
+        $company_access->dbName = $dbName;
+        $company_access->company_code = $companyCode;
+        $company_access->read = $request->read;
+        $company_access->create = $request->create;
+        $company_access->edit = $request->edit;
+        $company_access->delete = $request->delete;
+        $company_access->save();
 
         Config::set('database.connections.dynamic', [
             'driver' => 'mysql',
@@ -4363,35 +4397,48 @@ public function logUser(Request $request)
             $dbName = $user->dbName;
             $username = $user->username;
             $password = $user->dbPass;
-            $dynamicDBConfig = [
-                'driver' => 'mysql',
-                'host' => 'localhost',
-                'database' => $dbName,
-                'username' => $username,
-                'password' => $password,
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'strict' => true,
-                'engine' => null,
-            ];
-
-          
-            // $dynamicDB = DB::connection('dynamic')->getName();
-            // DynamicPermission::setConnection($dynamicDBConfig);
-            // $access = DynamicPermission::on($dynamicDB)->where('username', $request->username)->first();
-            // $access = DynamicPermission::where('username', $request->username)->first();
-
-            // $dynamicPermission = new DynamicPermission();
-            // $dynamicPermission->setConnection($dynamicDBConfig);
-            $access = DynamicPermission::on($dynamicDBConfig)->where('username', $request->username)->first();
-            // $access = $dynamicPermission->where('username', $request->username)->first();
+      
+           
+        // Config::set('database.connections.dynamic', [
+        //     'driver' => 'mysql',
+        //     'host' => 'localhost',
+        //     'database' => $dbName,
+        //     'username' => $username,
+        //     'password' => $password,
+        //     'charset' => 'utf8mb4',
+        //     'collation' => 'utf8mb4_unicode_ci',
+        //     'prefix' => '',
+        //     'strict' => true,
+        //     'engine' => null,
+        // ]);
 
 
-            print_r($access) ;die;
-            if ($access && Hash::check($request->password, $access->password)) {
-                $token = $access->createToken('dynamic-database-permission', ['dbname' => $dbName, 'username' => $username, 'password' => $password])->plainTextToken;
+        //    $dynamicDB = DB::connection('dynamic');
 
+        //    $access = $dynamicDB->table('permission')->where('username',$request->username)->first();
+
+
+        // Config::set('database.connections.dynamic', [
+        //     'driver' => 'mysql',
+        //     'host' => 'localhost',
+        //     'database' => $dbName,
+        //     'username' => $username,
+        //     'password' => $password,
+        //     'charset' => 'utf8mb4',
+        //     'collation' => 'utf8mb4_unicode_ci',
+        //     'prefix' => '',
+        //     'strict' => true,
+        //     'engine' => null,
+        // ]);
+      
+        // DB::connection('dynamic');
+
+            $access = CompanyUserAccess::where('username', $request->username)->
+            where('company_code', $request->company_code)->first();
+            // print_r($access) ;die;
+            if ($access  && Hash::check($request->password, $access->password)) {
+                // $token = $access->createToken('dynamic-database-permission', ['dbname' => $dbName, 'username' => $username, 'password' => $password])->plainTextToken;
+                $token = $access->createToken('company-user-accessToken')->plainTextToken;
                 return response()->json([
                     'success' => true,
                     'message' => 'Login successful',
@@ -4412,14 +4459,19 @@ public function logUser(Request $request)
 
 public function test(Request $request)
 {
+
+    // $dynamicDB = DB::connection('dynamic');
+   
     $token = $request->user()->currentAccessToken();
-    $username = $token['tokenable']['name'];    
-    print_r($username);die;
+    // $token = $request->user()->currentAccessToken();
+    // $username = $token['tokenable']['name'];    
+    print_r($token);die;
     
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
 
+    
     $username = $token['tokenable']['username'];
     $password = $token['tokenable']['dbPass'];
     $dbName = $token['tokenable']['dbName'];
