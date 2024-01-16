@@ -41,6 +41,7 @@ use App\Mail\RootUserMail;
 use App\Models\CompanyOtp;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Models\CompanyUserAccess;
+use App\Models\UserAccessOtp;
 
 class AdminController extends Controller
 {
@@ -268,7 +269,7 @@ public function logout()
     public function verifyOtp(Request $request)
     {
         $validatedData = $request->validate([
-               'user_id' => 'required',
+            'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
@@ -485,6 +486,10 @@ public function logout()
 
     public function registerCompany(Request $request)
     {
+        // print_r(explode(',',$request->modules));die;
+        // $request->modules = explode(',',$request->modules);
+
+        // print_r($request->modules);die;
         $token = $request->user()->currentAccessToken();
         // $token = $request->bearerToken();
         if(!$token)
@@ -511,8 +516,12 @@ public function logout()
                 'company_logo' => 'file|nullable',
                 //'company_code' => 'required',
                 // 'role' => 'required',
-                // 'total' => 'required',           
+                // 'total' => 'required', 
+                'modules' => 'required',
+                          
             ]);
+            $modulesId = explode(',',$request->modules);
+            // print_r($modulesId);die;
             $generatedDbName = $this->generateUniqueDbName($request->input('name'));
             // $userpassword = $validatedData['password'];
             $role = $token['tokenable']['role']; 
@@ -543,6 +552,19 @@ public function logout()
                         
                 $companyCode = $this->generateUniqueCompanyCode();
                 // print_r($companyCode);die;
+
+                // $modules = $request->input('modules',[]);
+                if (!isset($modulesId) || !is_array($modulesId)) {
+                    return response()->json(['success' => false, 'message' => 'Modules parameter is required and must be an array'],404);
+                }
+
+                $moduleSelectionResult = $this->selectModules($companyCode, $modulesId);
+                if(!$moduleSelectionResult['success'])
+                {
+                    return response()->json(['success'=>false,'message'=>'some issue to select modules'],401);
+                }
+        
+
                 $user = new User;
                 $user->name = $validatedData['name'];
                 $user->email = $validatedData['email'];
@@ -639,17 +661,6 @@ public function logout()
               
     
                 // return response()->json(['success'=>true,'companyCode'=>$companyCode,'message' => 'Company registered successfully'], 201);
-                $modules = $request->input('modules',[]);
-                // if (!isset($modules) || !is_array($modules)) {
-                //     return response()->json(['success' => false, 'message' => 'Modules parameter is required and must be an array']);
-                // }
-
-                $moduleSelectionResult = $this->selectModules($companyCode, $modules);
-                if(!$moduleSelectionResult['success'])
-                {
-                    return response()->json(['success'=>false,'message'=>'some issue to select modules']);
-                }
-        
                 
                 return response()->json([
                     'success' => true,
@@ -819,8 +830,12 @@ private function generateUniqueDbName($name)
 
 
 
-private function selectModules($companyCode, $modules)
+private function selectModules($companyCode, $modulesId)
 {
+    if (!is_array($modulesId)) {
+        return ['success' => false, 'message' => 'Modules must be an array'];
+    }
+
     if (!$companyCode) {
         return ['success' => false, 'message' => 'Company code not found'];
     }
@@ -828,7 +843,7 @@ private function selectModules($companyCode, $modules)
     CompanyModuleAccess::where('company_code', $companyCode)->delete();
 
     try {
-        foreach ($modules as $moduleId) {
+        foreach ($modulesId as $moduleId) {
             CompanyModuleAccess::create([
                 'company_code' => $companyCode,
                 'module_id' => $moduleId,
@@ -837,6 +852,7 @@ private function selectModules($companyCode, $modules)
 
         return ['success' => true, 'message' => 'Modules selected successfully'];
     } catch (\Exception $e) {
+        Log::error('Module selection error: ' . $e->getMessage());
         return ['success' => false, 'message' => $e->getMessage()];
     }
 }
@@ -1150,7 +1166,7 @@ public function loginCompany(Request $request)
 
 
 
-    public function verifyRootForgetPassCompany(Request $request)
+    public function verifyForgetPassCompany(Request $request)
     {
         $validatedData = $request->validate([
             // 'mobile_number' => 'required',
@@ -1246,16 +1262,6 @@ public function loginCompany(Request $request)
 
       return null;
    }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1569,7 +1575,6 @@ private function checkSessionAndSetupConnection()
 
 
 
-
 public function addEmployee(Request $request)
 {
     $token = $request->user()->currentAccessToken();
@@ -1579,7 +1584,19 @@ public function addEmployee(Request $request)
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
-
+    //check employee module
+    $companyCode = $token['tokenable']['company_code'];
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $companyCode)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();  
+    
+    //   echo $empModule;die;
+    if(!$empModule)
+    {
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+    }
     $username = $token['tokenable']['username'];
     $password = $token['tokenable']['dbPass'];
     $dbName = $token['tokenable']['dbName'];
@@ -1877,6 +1894,22 @@ public function editEmployee(Request $request, $employeeId)
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
+
+    $companyCode = $token['tokenable']['company_code']; 
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $companyCode)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();  
+    
+    //   echo $empModule;die;
+    if(!$empModule)
+    {
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+    }
+
+
+
     $validatedData = $request->validate([
         'name' => 'required',
         'email' => 'required',
@@ -1885,7 +1918,7 @@ public function editEmployee(Request $request, $employeeId)
                 
         ]);
   
-    $companyCode = $token['tokenable']['company_code'];
+    // $companyCode = $token['tokenable']['company_code'];
     $dbName = $token['tokenable']['dbName'];
     $user = User::where('company_code',$companyCode)->first();
     $dbUsername = $user->username;
@@ -1990,6 +2023,16 @@ public function destroyEmployee(Request $request, $employeeId)
         return response()->json(['success' => false, 'message' => 'Token not found!']);
     }
     $companyCode = $token['tokenable']['company_code'];
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $companyCode)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();  
+    
+    if(!$empModule)
+    {
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+    }
     $dbName = $token['tokenable']['dbName'];
     $user = User::where('company_code',$companyCode)->first();
     $dbUsername = $user->username;
@@ -4178,6 +4221,7 @@ public function newUser(Request $request)
         'edit' => 'nullable|boolean',
         'delete' => 'nullable|boolean',
         'role' => 'required',
+        'mobile_number' => 'required',
         // 'company_code' => 'required',
 
         
@@ -4201,6 +4245,7 @@ public function newUser(Request $request)
         $company_access->password = Hash::make($request->password);
         $company_access->dbName = $dbName;
         $company_access->company_code = $companyCode;
+        $company_access->mobile_number = $request->mobile_number;
         $company_access->read = $request->read;
         $company_access->create = $request->create;
         $company_access->edit = $request->edit;
@@ -4237,6 +4282,7 @@ public function newUser(Request $request)
                 $table->boolean('edit');
                 $table->boolean('delete');
                 $table->enum('role', ['admin', 'subadmin']);
+                $table->string('mobile_number');
                 $table->timestamps();
 
                 $table->foreign('emp_id')->references('id')->on('employees');
@@ -4255,6 +4301,7 @@ public function newUser(Request $request)
             'edit' => $request->input('edit', false),
             'delete' => $request->input('delete', false),
             'role' => $request->role,
+            'mobile_number' => $request->input('mobile_number'),
             'created_at' => $date,
             'updated_at' => $date,
         ]);
@@ -4454,6 +4501,223 @@ public function logUser(Request $request)
         return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
     }
 }
+
+
+public function accessFogetPass(Request $request)
+{
+    $validatedData = $request->validate([
+      'mobile_number' => 'required',
+    ]);
+    $phone = $validatedData['mobile_number'];
+    $accessUser = CompanyUserAccess::where('mobile_number',$phone)->first();
+    if($accessUser)
+    {
+        // $companyCode = $accessUser->company_code;
+        // $mobile = $accessUser->mobile_number;
+        // $user = User::where('company_code',$companyCode)->first();
+        // $dbName = $user->dbName;
+        // $dbUsername = $user->username;
+        // $dbPass = $user->dbPass;
+        //  print_r($accessUser->emp_id);die;
+
+        $otpResult = $this->generateAndSendOtpUserAccess($accessUser->emp_id, $accessUser->phone,$accessUser->email);
+        if($otpResult['success'])
+        {
+            return response()->json(['success' => true,'phone'=>$validatedData['mobile_number'], 'message' => 'OTP sent successfully'],200);
+        }
+        else 
+        {
+            return response()->json(['success' => false, 'message' => $otpResult['error']],500);
+        }
+
+    }
+    else
+    {
+       return response()->json(['success'=>'error','message'=>'user not found!'],404); 
+
+    }
+
+    // Config::set('database.connections.dynamic', [
+    //     'driver' => 'mysql',
+    //     'host' => 'localhost',
+    //     'database' => $dbName,
+    //     'username' => $username,
+    //     'password' => $password,
+    //     'charset' => 'utf8mb4',
+    //     'collation' => 'utf8mb4_unicode_ci',
+    //     'prefix' => '',
+    //     'strict' => true,
+    //     'engine' => null,
+    // ]);
+    // $dynamicDB = DB::connection('dynamic');
+    // $dynamicDB->table('permission')
+
+}
+
+
+
+
+
+private function generateAndSendOtpUserAccess($empId, $phone,$email)
+{
+    try {
+        $otp = rand(100000, 999999);
+
+        $expireAt = now()->addMinutes(1);
+        UserAccessOtp::create([
+            'emp_id' => $userId,
+            'otp' => $otp,
+            'expire_at' => $expireAt,
+        ]);
+
+        $this->sendOtpViaTwilioUserAccess($phone, $otp);
+        $this->sendOtpViaEmailUserAccess($email,$otp);
+
+        return ['success' => true];
+    } catch (\Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+private function sendOtpViaTwilioUserAccess($phone, $otp)
+{
+    try {
+        $accountSid = getenv("TWILIO_SID");
+        $authToken = getenv("TWILIO_TOKEN");
+        $twilioNumber = getenv("TWILIO_FROM");
+
+        $client = new Client($accountSid, $authToken);
+        $message = $client->messages->create($phone, [
+            'from' => $twilioNumber,
+            'body' => "Your OTP: $otp",
+        ]);
+
+        if ($message->sid) {
+            return ['success' => true];
+        } else {
+            return ['success' => false, 'error' => 'Failed to send OTP'];
+        }
+    } catch (\Twilio\Exceptions\RestException $e) {
+      //  \Log::error("Twilio Exception: " . $e->getMessage());
+        return ['success' => false, 'error' => $e->getMessage()];
+    } catch (\Exception $e) {
+      //  \Log::error("Exception: " . $e->getMessage());
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+
+
+private function sendOtpViaEmailUserAccess($email,$otp)
+{
+    try{
+        Mail::to($email)->send(new OtpMail($otp));
+        return ['success'=>true];
+    }
+    catch(\Exception $e)
+    {
+       return ['success'=>false,'error'=>$e->getMessage()];
+    }
+}
+
+
+
+public function verifyAccessFogetPass(Request $request)
+{
+    $validatedData = $request->validate([
+        // 'mobile_number' => 'required',
+        'otp'  => 'required',
+    ]);
+    $otp = $validatedData['otp'];
+    $phone = $request->mobile_number;
+    $accessUser = CompanyUserAccess::where('mobile_number',$phone)->first();
+    if($accessUser)
+    {
+      $empId = $accessUser->emp_id;
+      $userOtp = UserAccessOtp::where('emp_id',$empId)->where('otp',$otp)->where('expire_at', '>', now())->first();
+      if($userOtp)
+      {
+          $userOtp->delete();
+          $accessUser->time_expire = now()->addMinutes(1440);
+          $accessUser->save();
+          $token = $accessUser->createToken('access-token')->plainTextToken;
+          return response()->json(['success' => true,'token'=>$token,'message' => 'OTP verification successful'],200);
+      }
+      else
+           {
+            return response()->json(['success' => false,'success'=>false,'message' => 'Invalid OTP or mobile number'],422);
+           }
+    }
+    return response()->json(['success' => false,'success'=>false,'message' => 'user not found'],404);
+  
+
+}
+
+
+
+public function setNewPasswordUserAccess(Request $request)
+{
+    $validatedData = $request->validate([
+        'new_password' => 'required|string|min:6',
+        'confirm_new_password' => 'required|string|same:new_password',
+    ]);
+
+    $token = $request->user()->currentAccessToken();
+    if ($token) {
+        $phone = $token['tokenable']['mobile_number'];
+        $empId = $token['tokenable']['emp_id'];
+
+        $user = $this->validateCompanyUserTimeExpire($phone, $empId);
+
+        if ($user) {
+            $newPassword = $validatedData['new_password'];
+            $user->password = Hash::make($newPassword);
+            $user->save();
+            $token->delete();
+
+            return response()->json(['success' => true, 'message' => 'Password updated successfully'], 200);
+        } else {
+            return response()->json(['success' => false, 'message' => 'Invalid user or token or token has expired'], 422);
+        }
+    }
+
+    return response()->json(['success' => false, 'message' => 'Invalid Token'], 422);
+}
+
+
+
+protected function validateCompanyUserTimeExpire($phone, $empId)
+{
+    $user = CompanyUserAccess::where('mobile_number', $phone)->where('emp_id', $empId)->first();
+
+    if ($user && Carbon::now()->lt($user->time_expire)) {
+        return $user;
+    } elseif ($user) {
+        $token = $user->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
+        return null;
+    }
+
+    return null;
+}
+
+
+
+
+public function logoutAccess(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    if ($token) {
+        $token->delete();
+    }
+    Auth::guard('web')->logout();
+    return response()->json(['success' => true, 'message' => 'Successfully logged out'], 200);
+}
+
+
+
 
 
 

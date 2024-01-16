@@ -41,7 +41,7 @@ use App\Http\Controllers\Api\AssetController;
 
 
 Route::middleware('api')->group(function () {
-  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+  // Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
   
   // Add more API routes as needed
 });
@@ -66,15 +66,18 @@ Route::post('edit-user/{id}',[AdminController::class,'editUser']);
 Route::post('delete-user/{id}',[AdminController::class,'delUser']);
 
 
-  Route::post('logoutcompany', [AdminController::class, 'logoutCompany']);
+  Route::post('logout_company', [AdminController::class, 'logoutCompany']);
+  Route::post('company-set-new-password', [AdminController::class, 'setNewPasswordCompany']); 
 
+  Route::post('access-user/set-new-password', [AdminController::class, 'setNewPasswordUserAccess']); 
+  Route::post('access-user/logout', [AdminController::class, 'logoutAccess']);
      //Employee controlled by admin
      Route::post('addemployee',[AdminController::class,'addEmployee']);
      Route::post('editemployee/{employeeId}',[AdminController::class,'editEmployee']);
      Route::post('allemployee',[AdminController::class,'allEmployee']);
      Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
      Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
-
+    
      Route::post('test',[AdminController::class,'test']);
   // ... other authenticated routes
 });
@@ -86,18 +89,21 @@ Route::post('delete-user/{id}',[AdminController::class,'delUser']);
    Route::post('root/login', [AdminController::class, 'adminLogin']);
    Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
    Route::post('root/forget-password', [AdminController::class, 'rootForgetPass']);
-  //  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+   Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
   //  Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
  
          
        // company
    Route::post('logincompany',[AdminController::class,'loginCompany']);
    Route::post('company_verify_otp', [AdminController::class, 'verifyOtpCompany']); 
-   Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);    
+   Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);  
+   Route::post('company-verify-forget-password', [AdminController::class, 'verifyForgetPassCompany']);    
+   
 
      // dynamic user
    Route::post('login-user',[AdminController::class,'logUser']);  
-  
+   Route::post('access-user/forget-pass',[AdminController::class,'accessFogetPass']);
+   Route::post('access-user/verify-forget-pass',[AdminController::class,'verifyAccessFogetPass']);
 
    Route::post('logoutuser', [AdminController::class, 'logoutSession']);
    
