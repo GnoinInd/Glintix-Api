@@ -55,6 +55,9 @@ Route::middleware('api')->group(function () {
   Route::post('get-token',[AdminController::class,'getRootToken']);
   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
   Route::post('registercompany',[AdminController::class,'registerCompany']);
+  Route::post('root/all-companies',[AdminController::class,'allCompanies']);
+
+  
         
             //company
   Route::post('company_profile',[AdminController::class,'companyProfile']);
