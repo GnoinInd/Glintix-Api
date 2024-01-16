@@ -494,7 +494,7 @@ public function logout()
         // $token = $request->bearerToken();
         if(!$token)
         {
-            return response()->json(['success'=>false,'message'=>'invalid token']);
+            return response()->json(['success'=>false,'message'=>'invalid token'],401);
         }
         try {
            
@@ -861,6 +861,21 @@ private function selectModules($companyCode, $modulesId)
 
 
 
+public function allCompanies(Request $request)
+{
+  $token = $request->user()->currentAccessToken();
+  $tokenRole = $token['tokenable']['role'];
+  if($token && $tokenRole && $tokenRole == 'root')
+  {
+    $allCompanies = User::all(); 
+    return response()->json(['success'=>true, 'data'=>$allCompanies, 'message' => 'Users found'],200);
+  }
+ return response()->json(['success'=>false,'message' => 'token not found'],404);
+
+}
+
+
+
 
 
 
@@ -1142,11 +1157,11 @@ public function loginCompany(Request $request)
     public function companyForgetPass(Request $request)
     {
         $validatedData = $request->validate([
-            'mobile_number' => 'required|exists:super_users,phone',
+            'mobile_number' => 'required|exists:users,mobile_number',
         ]);
-        $root = User::where('phone', $validatedData['mobile_number'])->first();
+        $root = User::where('mobile_number', $validatedData['mobile_number'])->first();
         if ($root) {
-            $otpResult = $this->generateAndSendOtp($root->id, $root->mobile_number,$root->email);
+            $otpResult = $this->generateAndSendOtpCompany($root->id, $root->mobile_number,$root->email);
             if ($otpResult['success'])
              {
                 return response()->json(['success' => true,'phone'=>$validatedData['mobile_number'], 'message' => 'OTP sent successfully'],200);
@@ -1169,13 +1184,13 @@ public function loginCompany(Request $request)
     public function verifyForgetPassCompany(Request $request)
     {
         $validatedData = $request->validate([
-            // 'mobile_number' => 'required',
+            'mobile_number' => 'required',
             'otp'  => 'required'
         ]);
         $otp = $validatedData['otp'];
         // $phone = $validatedData['mobile_number'];
         $phone = $request->mobile_number;
-        $user = User::where('phone',$phone)->first();
+        $user = User::where('mobile_number',$phone)->first();
         if($user)
         {
             $userId = $user->id; 
@@ -1189,7 +1204,7 @@ public function loginCompany(Request $request)
             // $_SESSION['phone'] = $phone;
             // Session::start();
           
-            $user->time_expire = now()->addMinutes(1440);
+            $user->expire_at = now()->addMinutes(1440);
             $user->save();
             // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
             // $token->expires_at = now()->addDay(1);
@@ -1287,12 +1302,16 @@ public function companyProfile(Request $request)
 {
     $token_array = $request->user()->currentAccessToken();
     // print_r($token_array->tokenable);die;
-    if ($token_array && is_object($token_array) && property_exists($token_array->tokenable, 'username') && property_exists($token_array->tokenable, 'dbName')) 
+    // if ($token_array && is_object($token_array) && property_exists($token_array->tokenable, 'username') && property_exists($token_array->tokenable, 'dbName')) 
+    if ($token_array && isset($token_array['tokenable']['email']))
     {
-        $username = $token_array->tokenable->username;
-        $dbName = $token_array->tokenable->dbName;
+        // $username = $token_array->tokenable->username;
+        // $dbName = $token_array->tokenable->dbName;
+         $email = $token_array['tokenable']['email'];
+         $dbName = $token_array['tokenable']['dbName'];
+        //  $profile = User::where('email',$email)->first(); 
 
-        $user = User::where('username', $username)
+        $user = User::where('email', $email)
             ->where('dbName', $dbName)
             ->first();
 
