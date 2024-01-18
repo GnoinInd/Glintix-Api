@@ -1608,7 +1608,7 @@ public function addEmployee(Request $request)
     $moduleId = 3;
     $empModule = CompanyModuleAccess::where('company_code', $companyCode)
     ->where('module_id', $moduleId)
-    ->where('status', "1")
+    ->where('status', 1)
     ->first();  
     
         // echo $empModule;die;
