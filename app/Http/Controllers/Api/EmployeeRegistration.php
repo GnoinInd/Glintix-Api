@@ -37,6 +37,7 @@ use App\Exports\MonthsData;
 use App\Exports\ThreeMonthWiseData;
 use App\Exports\SixMonthData;
 use App\Exports\YearwiseData;
+use App\Models\CompanyModuleAccess;
 
 
 
@@ -242,83 +243,207 @@ private function checkSessionAndSetupConnection()
 
 
 
-public function employeeBasic(Request $request)
-{
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-    if (!$sessionCheckResult) {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
-    }
-    $dynamicDB = DB::connection('dynamic');
-    $maxEmp = $sessionCheckResult['maxEmp'];
-    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-    // $empCount = $dynamicDB->table('company_employee')->count();
-    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
-    {
-        if (!$dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
-        {
-            $dynamicDB->getSchemaBuilder()->create('company_employee', function (Blueprint $table)
-            {
-                $table->id();
-                 $table->string('title')->nullable();
-                 $table->string('first_name')->nullable();
-                 $table->string('middle_name')->nullable();
-                 $table->string('last_name')->nullable();
-                 $table->string('preferred_name')->nullable();
-                 $table->date('DOB')->nullable();
-                 $table->enum('gender',['male','female','other'])->nullable();
-                 $table->string('blood_group')->nullable();
-                 $table->string('marital_status')->nullable();
-                 $table->string('marital_doc')->nullable();
-                 $table->string('nationality_one')->nullable();
-                 $table->string('nationality_two')->nullable();
-                 $table->string('nationality_doc')->nullable();
-                 $table->string('country_code')->nullable();
-                 $table->bigInteger('mobile_no')->nullable();
-                 $table->string('home_phone_no')->nullable();
-                 $table->string('work_phone_no')->nullable();
-                 $table->string('whatsapp_no')->nullable();
-                 //$table->string('emergency_phone_number')->nullable();
-                 $table->string('email')->nullable();
-                 $table->string('voter_id')->nullable();
-                 $table->string('pan_no')->nullable();
-                 $table->string('driving_licence')->nullable();
-                 $table->string('passport_no')->nullable();
-                 $table->date('passport_to')->nullable();
-                 $table->date('passport_from')->nullable();
-                 $table->string('eme_country_code')->nullable();
-                 $table->string('eme_mobile')->nullable();
-                 $table->string('eme_whatsapp_no')->nullable();
-                 $table->string('eme_email')->nullable();
-                 $table->enum('status',['pending','rejected'])->default('pending');
+// public function employeeBasic(Request $request)
+// {
+//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//     if (!$sessionCheckResult) {
+//         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+//     }
+//     $dynamicDB = DB::connection('dynamic');
+//     $maxEmp = $sessionCheckResult['maxEmp'];
+//     $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+//     // $empCount = $dynamicDB->table('company_employee')->count();
+//     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//     {
+//         if (!$dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
+//         {
+//             $dynamicDB->getSchemaBuilder()->create('company_employee', function (Blueprint $table)
+//             {
+//                 $table->id();
+//                  $table->string('title')->nullable();
+//                  $table->string('first_name')->nullable();
+//                  $table->string('middle_name')->nullable();
+//                  $table->string('last_name')->nullable();
+//                  $table->string('preferred_name')->nullable();
+//                  $table->date('DOB')->nullable();
+//                  $table->enum('gender',['male','female','other'])->nullable();
+//                  $table->string('blood_group')->nullable();
+//                  $table->string('marital_status')->nullable();
+//                  $table->string('marital_doc')->nullable();
+//                  $table->string('nationality_one')->nullable();
+//                  $table->string('nationality_two')->nullable();
+//                  $table->string('nationality_doc')->nullable();
+//                  $table->string('country_code')->nullable();
+//                  $table->bigInteger('mobile_no')->nullable();
+//                  $table->string('home_phone_no')->nullable();
+//                  $table->string('work_phone_no')->nullable();
+//                  $table->string('whatsapp_no')->nullable();
+//                  //$table->string('emergency_phone_number')->nullable();
+//                  $table->string('email')->nullable();
+//                  $table->string('voter_id')->nullable();
+//                  $table->string('pan_no')->nullable();
+//                  $table->string('driving_licence')->nullable();
+//                  $table->string('passport_no')->nullable();
+//                  $table->date('passport_to')->nullable();
+//                  $table->date('passport_from')->nullable();
+//                  $table->string('eme_country_code')->nullable();
+//                  $table->string('eme_mobile')->nullable();
+//                  $table->string('eme_whatsapp_no')->nullable();
+//                  $table->string('eme_email')->nullable();
+//                  $table->enum('status',['pending','rejected'])->default('pending');
               
-                 $table->timestamps();
-            }); 
-        }
-        $empCount = $dynamicDB->table('company_employee')->count();
-        if($maxEmp > $empCount)
-        {
-             $dynamicDB->table('company_employee')->insert([
-             'title' =>     $request->input('title'),
-             'first_name' => $request->input('first_name'),
-             'middle_name' => $request->input('middle_name'),
-             'last_name'  => $request->input('last_name'),
-             'preferred_name'  =>  $request->input('preferred_name'),
-             'DOB' => $request->input('DOB'),
-             'blood_group' => $request->input('blood_group'),
+//                  $table->timestamps();
+//             }); 
+//         }
+//         $empCount = $dynamicDB->table('company_employee')->count();
+//         if($maxEmp > $empCount)
+//         {
+//              $dynamicDB->table('company_employee')->insert([
+//              'title' =>     $request->input('title'),
+//              'first_name' => $request->input('first_name'),
+//              'middle_name' => $request->input('middle_name'),
+//              'last_name'  => $request->input('last_name'),
+//              'preferred_name'  =>  $request->input('preferred_name'),
+//              'DOB' => $request->input('DOB'),
+//              'blood_group' => $request->input('blood_group'),
            
     
-             'created_at' =>      $date,
-             'updated_at' =>      $date,
+//              'created_at' =>      $date,
+//              'updated_at' =>      $date,
     
     
-         ]);
-         return response()->json(['message' => 'employee basic details stored successfully']);
+//          ]);
+//          return response()->json(['message' => 'employee basic details stored successfully']);
+//         }
+//         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
+
+//     }
+
+//     return response()->json(['message' => 'you have no permission'],400);
+
+// }
+
+
+public function employeeBasic(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role'];
+    // print_r($tokenRole); die; 
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    //  print_r($tokenRole); die;
+    $company = User::where('company_code',$code)->first();
+    // print_r($tokenRole); die;
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    // print_r($empModule); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+     
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
         }
-        return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
+        elseif($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+            
+            $validatedData = $request->validate([
+                'title' => 'nullable',
+                'first_name' => 'required',
+                'middle_name' => 'nullable',
+                'last_name'   => 'required',
+                'preferred_name' => 'required',
+                'dob'       =>  'required',
+                'blood_group' => 'required',
+            ]);
+           Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+        $dynamicDB = DB::connection('dynamic');
+        if (!$dynamicDB->getSchemaBuilder()->hasTable('company_employee'))
+                 {
+                     $dynamicDB->getSchemaBuilder()->create('company_employee', function (Blueprint $table)
+                     {
+                         $table->id();
+                          $table->string('title')->nullable();
+                          $table->string('first_name')->nullable();
+                          $table->string('middle_name')->nullable();
+                          $table->string('last_name')->nullable();
+                          $table->string('preferred_name')->nullable();
+                          $table->date('DOB')->nullable();
+                          $table->enum('gender',['male','female','other'])->nullable();
+                          $table->string('blood_group')->nullable();
+                          $table->string('marital_status')->nullable();
+                          $table->string('marital_doc')->nullable();
+                          $table->string('nationality_one')->nullable();
+                          $table->string('nationality_two')->nullable();
+                          $table->string('nationality_doc')->nullable();
+                          $table->string('country_code')->nullable();
+                          $table->bigInteger('mobile_no')->nullable();
+                          $table->string('home_phone_no')->nullable();
+                          $table->string('work_phone_no')->nullable();
+                          $table->string('whatsapp_no')->nullable();
+                          //$table->string('emergency_phone_number')->nullable();
+                          $table->string('email')->nullable();
+                          $table->string('voter_id')->nullable();
+                          $table->string('pan_no')->nullable();
+                          $table->string('driving_licence')->nullable();
+                          $table->string('passport_no')->nullable();
+                          $table->date('passport_to')->nullable();
+                          $table->date('passport_from')->nullable();
+                          $table->string('eme_country_code')->nullable();
+                          $table->string('eme_mobile')->nullable();
+                          $table->string('eme_whatsapp_no')->nullable();
+                          $table->string('eme_email')->nullable();
+                          $table->enum('status',['pending','rejected'])->default('pending');
+                      
+                          $table->timestamps();
+                     }); 
+                 }
+                 $empCount = $dynamicDB->table('company_employee')->count();
+                //  print_r($empCount);die;
+                 if($maxEmp >= $empCount)
+                 {
+                    $dynamicDB->table('company_employee')->insert([
+                        'title' =>     $request->input('title'),
+                        'first_name' => $request->input('first_name'),
+                        'middle_name' => $request->input('middle_name'),
+                        'last_name'  => $request->input('last_name'),
+                        'preferred_name'  =>  $request->input('preferred_name'),
+                        'DOB' => $request->input('DOB'),
+                        'blood_group' => $request->input('blood_group'),
+                        'created_at' =>      $date,
+                        'updated_at' =>      $date,         
+               
+                    ]);
+                    $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
 
-    }
-
-    return response()->json(['message' => 'you have no permission'],400);
+                    return response()->json(['success' => true,'empData'=>$lastInsertedRecord,'message' => 'employee basic details stored successfully'],201);
+    
+                 }
+                 return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'],403); 
 
 }
 
@@ -326,30 +451,128 @@ public function employeeBasic(Request $request)
 
 
 
+
+// public function employeeMarital(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'emp_id' => 'required',
+//         'marital_status' => 'required',
+//         'marital_doc' => 'file|mimes:jpeg,png,pdf',
+//     ]);
+
+//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+
+//     if (!$sessionCheckResult) {
+//         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+//     }
+
+//     $dynamicDB = DB::connection('dynamic');
+//     $maxEmp = $sessionCheckResult['maxEmp'];
+//     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+//     $emp_id = $request->input('emp_id');
+//     $empCount = $dynamicDB->table('company_employee')->count();
+//     $maritalDocPath = '';
+
+//     if (isset($_SESSION['create']) && $_SESSION['create'] == 1) {
+//         if ($maxEmp > $empCount) {
+//             if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) {
+//                 if ($request->hasFile('marital_doc')) {
+//                     $file = $request->file('marital_doc');
+//                     $uniqueFolderName = $emp_id . '_' . time();
+//                     $filePath = $file->store('marital_docs/' . $uniqueFolderName);
+//                     $maritalDocPath = $filePath;
+//                     $dynamicDB->table('company_employee')->where('id', $emp_id)->update([
+//                         'marital_status' => $request->input('marital_status'),
+//                         'marital_doc' => $maritalDocPath,
+//                         'updated_at' => $date,
+//                     ]);
+//                     return response()->json(['message' => 'Employee marital details stored successfully']);
+//                 } 
+//                     return response()->json(['message' => 'Please add a valid image file for marital_doc'], 400);
+                
+//             } 
+//                 return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+            
+//         } 
+//             return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+        
+//     } 
+//         return response()->json(['message' => 'You have no permission'], 403);
+    
+// }
+
+
+
+
 public function employeeMarital(Request $request)
 {
-    $validatedData = $request->validate([
-        'emp_id' => 'required',
-        'marital_status' => 'required',
-        'marital_doc' => 'file|mimes:jpeg,png,pdf',
-    ]);
+   
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role'];
+    // print_r($tokenRole); die;
 
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-
-    if (!$sessionCheckResult) {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
-    }
-
-    $dynamicDB = DB::connection('dynamic');
-    $maxEmp = $sessionCheckResult['maxEmp'];
-    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
-    $emp_id = $request->input('emp_id');
-    $empCount = $dynamicDB->table('company_employee')->count();
-    $maritalDocPath = '';
-
-    if (isset($_SESSION['create']) && $_SESSION['create'] == 1) {
-        if ($maxEmp > $empCount) {
-            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) {
+    // if($tokenRole == 'admin' || $tokenRole == 'root')
+    // {
+    //     return response()->json(['success' => true,'token'=>$tokenRole,'message' => 'found']);
+    // }  
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    // print_r($code); die;
+    // $maxEmp = User::where('company_code',$code)->value('total');
+    $company = User::where('company_code',$code)->first();
+    // print_r($tokenRole); die;
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    // print_r($username); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+     
+    
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
+        }
+        elseif($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        
+            
+        $validatedData = $request->validate([
+           'emp_id' => 'required',
+           'marital_status' => 'required',
+           'marital_doc' => 'file|mimes:jpeg,png,pdf',
+        ]);
+        $emp_id = $request->emp_id;
+           Config::set('database.connections.dynamic', [
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'database' => $dbName,
+            'username' => $username,
+            'password' => $password,
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ]);
+        $dynamicDB = DB::connection('dynamic');
+        $empCount = $dynamicDB->table('company_employee')->count();
+        if($maxEmp >= $empCount)
+        {
+            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists())
+            {
                 if ($request->hasFile('marital_doc')) {
                     $file = $request->file('marital_doc');
                     $uniqueFolderName = $emp_id . '_' . time();
@@ -360,166 +583,482 @@ public function employeeMarital(Request $request)
                         'marital_doc' => $maritalDocPath,
                         'updated_at' => $date,
                     ]);
-                    return response()->json(['message' => 'Employee marital details stored successfully']);
+
+                    $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
+
+                    return response()->json(['success'=>true,'empData'=>$lastInsertedRecord,'message' => 'Employee marital details stored successfully'],201);
                 } 
                     return response()->json(['message' => 'Please add a valid image file for marital_doc'], 400);
-                
-            } 
-                return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
-            
-        } 
-            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
-        
-    } 
-        return response()->json(['message' => 'You have no permission'], 403);
-    
+            }
+            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+        }
+        return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+
+
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+// public function employeeNationality(Request $request)
+// {
+//     $validatedData = $request->validate([
+//                  'emp_id'  =>  'required',
+//                  'nationality_one' => 'required',
+//                  'nationality_two'  =>  'nullable',
+//                  'nationality_doc' => 'required|file|mimes:jpeg,png,pdf',
+//              ]);
+
+//              $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//              if (!$sessionCheckResult) {
+//                  return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+//              }
+//              $dynamicDB = DB::connection('dynamic');
+//              $maxEmp = $sessionCheckResult['maxEmp'];
+//              $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+//              $emp_id = $request->input('emp_id');
+//              $empCount = $dynamicDB->table('company_employee')->count();
+//              $nationalityDocPath  = '';
+//          if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//          {
+//             if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+//             {
+//                 if($request->hasFile('nationality_doc'))
+//              {
+//                  $file = $request->file('nationality_doc');
+//                  $uniqueFolderName = $emp_id . '_' . time();
+//                  //$fileName = $file->getClientOriginalName();
+//                  $filePath = $file->store('nationality_docs/' . $uniqueFolderName);
+//                  $nationalityDocPath = $filePath;   
+//                  $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+//                   'nationality_one' => $request->input('nationality_one'),
+//                   'nationality_two' => $request->input('nationality_two'),
+//                   'nationality_doc' => $nationalityDocPath,
+//                   'updated_at'   =>   $date,
+//                 ]);
+//                 return response()->json(['success'=> true,'message' => 'nationality data stored successfully'],200);                       
+                
+//              }
+//              else 
+//              {
+//                 return response()->json(['message' => 'Please add a valid image file for mnationality doc'], 400);
+//              }         
+//             }
+//             else 
+//             {
+//                 return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+//             }
+//          }
+//          else 
+//          {
+//             return response()->json(['message' => 'You have no permission'], 403);
+//          }
+// }
 
 
 
 
 public function employeeNationality(Request $request)
 {
-    $validatedData = $request->validate([
-                 'emp_id'  =>  'required',
-                 'nationality_one' => 'required',
-                 'nationality_two'  =>  'nullable',
-                 'nationality_doc' => 'required|file|mimes:jpeg,png,pdf',
-             ]);
-
-             $sessionCheckResult = $this->checkSessionAndSetupConnection();
-             if (!$sessionCheckResult) {
-                 return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
-             }
-             $dynamicDB = DB::connection('dynamic');
-             $maxEmp = $sessionCheckResult['maxEmp'];
-             $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
-             $emp_id = $request->input('emp_id');
-             $empCount = $dynamicDB->table('company_employee')->count();
-             $nationalityDocPath  = '';
-         if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
-         {
-            if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
-            {
-                if($request->hasFile('nationality_doc'))
-             {
-                 $file = $request->file('nationality_doc');
-                 $uniqueFolderName = $emp_id . '_' . time();
-                 //$fileName = $file->getClientOriginalName();
-                 $filePath = $file->store('nationality_docs/' . $uniqueFolderName);
-                 $nationalityDocPath = $filePath;   
-                 $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
-                  'nationality_one' => $request->input('nationality_one'),
-                  'nationality_two' => $request->input('nationality_two'),
-                  'nationality_doc' => $nationalityDocPath,
-                  'updated_at'   =>   $date,
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role']; 
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    $company = User::where('company_code',$code)->first();
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    //  print_r($username); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
+        }
+        if($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+            $validatedData = $request->validate([
+                'emp_id'  =>  'required',
+                'nationality_one' => 'required',
+                'nationality_two'  =>  'nullable',
+                'nationality_doc' => 'required|file|mimes:jpeg,png,pdf',
+            ]);
+                $emp_id = $request->emp_id;
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $username,
+                    'password' => $password,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
                 ]);
-                return response()->json(['success'=> true,'message' => 'nationality data stored successfully'],200);                       
-                
-             }
-             else 
-             {
-                return response()->json(['message' => 'Please add a valid image file for mnationality doc'], 400);
-             }         
-            }
-            else 
-            {
-                return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
-            }
-         }
-         else 
-         {
-            return response()->json(['message' => 'You have no permission'], 403);
-         }
+                $dynamicDB = DB::connection('dynamic');
+                $empCount = $dynamicDB->table('company_employee')->count();
+                if($maxEmp >= $empCount)
+                {
+                    if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+                    {
+                        if($request->hasFile('nationality_doc'))
+                     {
+                         $file = $request->file('nationality_doc');
+                         $uniqueFolderName = $emp_id . '_' . time();
+                         //$fileName = $file->getClientOriginalName();
+                         $filePath = $file->store('nationality_docs/' . $uniqueFolderName);
+                         $nationalityDocPath = $filePath;   
+                         $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+                          'nationality_one' => $request->input('nationality_one'),
+                          'nationality_two' => $request->input('nationality_two'),
+                          'nationality_doc' => $nationalityDocPath,
+                          'updated_at'   =>   $date,
+                        ]);
+                        $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
+                        return response()->json(['success'=> true,'empData'=>$lastInsertedRecord,'message' => 'nationality data stored successfully'],200);                       
+                        
+                     }
+                     else 
+                     {
+                        return response()->json(['success'=>false,'message' => 'Please add a valid image file for mnationality doc'], 400);
+                     }         
+                    }
+                    else 
+                    {
+                        return response()->json(['success'=>false,'message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+                    }
+                }
+                return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+           
+      
+   
+
+                 
+
+        
+             
 }
 
+
+
+
+
+
+// public function employeeCommunication(Request $request)
+// {
+//     $validatedData = $request->validate([
+//          'emp_id'   =>  'required',
+//          'country_code' => 'required',
+//          'mobile_number' => 'required',
+//          'home_phone_number' => 'nullable',
+//          'work_phone_number' => 'nullable',
+//          'whatsapp_number'   =>  'nullable',
+//         // 'emergency_phone_number'  => 'nullable',
+//          'email'       =>   'required',
+//          'void'        =>  'nullable',
+        
+//      ]);
+
+//      $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//      if (!$sessionCheckResult) {
+//          return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+//      }
+//      $dynamicDB = DB::connection('dynamic');
+//      $maxEmp = $sessionCheckResult['maxEmp'];
+//      $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+//      $emp_id = $request->input('emp_id');
+     
+//      if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//      {
+//         if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+//         {
+//             $empCount = $dynamicDB->table('company_employee')->count();
+//             $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+//                     'country_code' => $request->input('country_code'),
+//                     'mobile_no'   =>  $request->input('mobile_number'),
+//                     'home_phone_no'  => $request->input('home_phone_number'),
+//                     'work_phone_no'   =>  $request->input('work_phone_number'),
+//                     'whatsapp_no'     =>  $request->input('whatsapp_number'),
+//                     'email'       =>   $request->input('email'),
+//                     'voter_id'     =>  $request->input('void'),
+//                  ]);
+//                  return response()->json(['success'=>true,'message' => 'emergency details stored successfully']);
+//         }
+//         else 
+//         {
+//             return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+//         }
+//      }
+//      else 
+//      {
+//         return response()->json(['message' => 'You have no permission'], 403);
+//      }
+
+    
+// }
 
 
 
 public function employeeCommunication(Request $request)
 {
-    $validatedData = $request->validate([
-         'emp_id'   =>  'required',
-         'country_code' => 'required',
-         'mobile_number' => 'required',
-         'home_phone_number' => 'nullable',
-         'work_phone_number' => 'nullable',
-         'whatsapp_number'   =>  'nullable',
-        // 'emergency_phone_number'  => 'nullable',
-         'email'       =>   'required',
-         'void'        =>  'nullable',
-        
-     ]);
-
-     $sessionCheckResult = $this->checkSessionAndSetupConnection();
-     if (!$sessionCheckResult) {
-         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
-     }
-     $dynamicDB = DB::connection('dynamic');
-     $maxEmp = $sessionCheckResult['maxEmp'];
-     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
-     $emp_id = $request->input('emp_id');
-     
-     if (isset($_SESSION['create']) && $_SESSION['create'] == 1)
-     {
-        if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
-        {
-            $empCount = $dynamicDB->table('company_employee')->count();
-            $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
-                    'country_code' => $request->input('country_code'),
-                    'mobile_no'   =>  $request->input('mobile_number'),
-                    'home_phone_no'  => $request->input('home_phone_number'),
-                    'work_phone_no'   =>  $request->input('work_phone_number'),
-                    'whatsapp_no'     =>  $request->input('whatsapp_number'),
-                    'email'       =>   $request->input('email'),
-                    'voter_id'     =>  $request->input('void'),
-                 ]);
-                 return response()->json(['success'=>true,'message' => 'emergency details stored successfully']);
-        }
-        else 
-        {
-            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
-        }
-     }
-     else 
-     {
-        return response()->json(['message' => 'You have no permission'], 403);
-     }
-
     
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role']; 
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    $company = User::where('company_code',$code)->first();
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    //  print_r($username); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
+        }
+        if($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+            $validatedData = $request->validate([
+                'emp_id'   =>  'required',
+                'country_code' => 'required',
+                'mobile_number' => 'required',
+                'home_phone_number' => 'nullable',
+                'work_phone_number' => 'nullable',
+                'whatsapp_number'   =>  'nullable',
+               // 'emergency_phone_number'  => 'nullable',
+                'email'       =>   'required',
+                'void'        =>  'nullable',
+               
+            ]);
+                $emp_id = $request->emp_id;
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $username,
+                    'password' => $password,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
+                ]);
+                $dynamicDB = DB::connection('dynamic');
+                $empCount = $dynamicDB->table('company_employee')->count();
+                if($maxEmp >= $empCount)
+                {
+                    if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+                    {
+                        $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+                            'country_code' => $request->input('country_code'),
+                            'mobile_no'   =>  $request->input('mobile_number'),
+                            'home_phone_no'  => $request->input('home_phone_number'),
+                            'work_phone_no'   =>  $request->input('work_phone_number'),
+                            'whatsapp_no'     =>  $request->input('whatsapp_number'),
+                            'email'       =>   $request->input('email'),
+                            'voter_id'     =>  $request->input('void'),
+                         ]);
+                         $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
+
+                         return response()->json(['success'=>true,'empData' => $lastInsertedRecord,'message' => 'emergency details stored successfully']);
+                }
+                else 
+                {
+                    return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+                }
+                    }
+                    return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+               
+
 }
+
+
+
+
+
+
+
+// public function employeeEducation(Request $request)
+// {
+//     $validatedData = $request->validate([
+//          'emp_id'   =>  'required',
+//          'board/university' => 'required',
+//          'specification' => 'required',
+//          'course_type' => 'nullable',
+//          'quali_start_date' => 'nullable',
+//          'quali_end_date' => 'nullable',
+//          'grade_type'   =>  'nullable',
+//          'total_marks'  => 'nullable',
+//          'grade'       =>   'required',
+        
+//      ]);
+
+//      $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//      if (!$sessionCheckResult) {
+//          return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+//      }
+//      $dynamicDB = DB::connection('dynamic');
+//      $maxEmp = $sessionCheckResult['maxEmp'];
+//      $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+//      $emp_id = $request->input('emp_id');
+     
+//      if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//      {
+//          if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification'))
+//          {
+//              $dynamicDB->getSchemaBuilder()->create('qualification', function (Blueprint $table)
+//              {
+//                  $table->id();
+//                  $table->bigInteger('emp_id')->unsigned()->nullable();
+//                  $table->string('course')->nullable();
+//                  $table->string('board')->nullable();
+//                  $table->string('specialization')->nullable();
+//                  $table->string('course_type')->nullable();
+//                  $table->string('qua_st_date')->nullable();
+//                  $table->string('qua_end_date')->nullable();
+//                  $table->string('grade_type')->nullable();
+//                  $table->string('grade')->nullable();
+//                  $table->string('total_marks')->nullable(); 
+//                  $table->string('document_type')->nullable();
+//                  $table->string('document_path')->nullable();
+//                  $table->timestamps();
+                
+//                  $table->foreign('emp_id')->references('id')->on('company_employee')->onDelete('cascade');
+//              }); 
+//          }
+//          $empCount = $dynamicDB->table('qualification')->count();
+
+//          if(!$dynamicDB->table('company_employee')->where('id',$emp_id)->exists())
+//          {
+//             return response()->json(['message' => 'Employee with ID ' . $emp_id . 'not found.'], 404);
+//          }
+
+//          if($maxEmp > $empCount)
+//          {
+//             $dynamicDB->table('qualification')->insert([
+//                  'emp_id' => $emp_id,
+//                  'course' => $request->input('course'),
+//                  'board' => $request->input('board'),
+//                  'specialization' => $request->input('specialization'),
+//                  'course_type' => $request->input('course_type'),
+//                  'qua_st_date' => $request->input('quali_start_date'),
+//                  'qua_end_date' => $request->input('quali_end_date'),
+//                  'grade_type' => $request->input('grade_type'),
+//                  'grade' => $request->input('grade'),
+//                  'total_marks' => $request->input('total_marks'),
+//                  'created_at' => $date,
+//                  'updated_at' => $date,
+//              ]);
+                        
+//              return response()->json(['success'=>true,'message' => 'qualification details stored successfully']);
+//          }
+//          return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
+ 
+//      }
+ 
+//      return response()->json(['message' => 'you have no permission'],400);
+
+// }
 
 
 
 
 public function employeeEducation(Request $request)
 {
-    $validatedData = $request->validate([
-         'emp_id'   =>  'required',
-         'board/university' => 'required',
-         'specification' => 'required',
-         'course_type' => 'nullable',
-         'quali_start_date' => 'nullable',
-         'quali_end_date' => 'nullable',
-         'grade_type'   =>  'nullable',
-         'total_marks'  => 'nullable',
-         'grade'       =>   'required',
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role']; 
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    $company = User::where('company_code',$code)->first();
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    //  print_r($username); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
+        }
+        if($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+            $validatedData = $request->validate([
+            'emp_id'   =>  'required',
+            'board/university' => 'required',
+            'specification' => 'required',
+            'course_type' => 'nullable',
+            'quali_start_date' => 'nullable',
+            'quali_end_date' => 'nullable',
+            'grade_type'   =>  'nullable',
+            'total_marks'  => 'nullable',
+            'grade'       =>   'required',
         
-     ]);
+         ]);
 
-     $sessionCheckResult = $this->checkSessionAndSetupConnection();
-     if (!$sessionCheckResult) {
-         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
-     }
-     $dynamicDB = DB::connection('dynamic');
-     $maxEmp = $sessionCheckResult['maxEmp'];
-     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
-     $emp_id = $request->input('emp_id');
-     
-     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
-     {
-         if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification'))
+                $emp_id = $request->emp_id;
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $username,
+                    'password' => $password,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
+                ]);
+                $dynamicDB = DB::connection('dynamic');
+
+                if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification'))
          {
              $dynamicDB->getSchemaBuilder()->create('qualification', function (Blueprint $table)
              {
@@ -541,39 +1080,35 @@ public function employeeEducation(Request $request)
                  $table->foreign('emp_id')->references('id')->on('company_employee')->onDelete('cascade');
              }); 
          }
-         $empCount = $dynamicDB->table('qualification')->count();
-
-         if(!$dynamicDB->table('company_employee')->where('id',$emp_id)->exists())
-         {
-            return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
-         }
-
-         if($maxEmp > $empCount)
-         {
-            $dynamicDB->table('qualification')->insert([
-                 'emp_id' => $emp_id,
-                 'course' => $request->input('course'),
-                 'board' => $request->input('board'),
-                 'specialization' => $request->input('specialization'),
-                 'course_type' => $request->input('course_type'),
-                 'qua_st_date' => $request->input('quali_start_date'),
-                 'qua_end_date' => $request->input('quali_end_date'),
-                 'grade_type' => $request->input('grade_type'),
-                 'grade' => $request->input('grade'),
-                 'total_marks' => $request->input('total_marks'),
-                 'created_at' => $date,
-                 'updated_at' => $date,
-             ]);
-                        
-             return response()->json(['success'=>true,'message' => 'qualification details stored successfully']);
-         }
-         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.']);
- 
-     }
- 
-     return response()->json(['message' => 'you have no permission'],400);
-
+                
+                $empCount = $dynamicDB->table('company_employee')->count();
+                // print_r($empCount);die;
+                if($maxEmp >= $empCount)
+                {
+                    $dynamicDB->table('qualification')->insert([
+                      'emp_id' => $emp_id,
+                      'course' => $request->input('course'),
+                      'board' => $request->input('board'),
+                      'specialization' => $request->input('specialization'),
+                      'course_type' => $request->input('course_type'),
+                      'qua_st_date' => $request->input('quali_start_date'),
+                      'qua_end_date' => $request->input('quali_end_date'),
+                      'grade_type' => $request->input('grade_type'),
+                      'grade' => $request->input('grade'),
+                      'total_marks' => $request->input('total_marks'),
+                      'created_at' => $date,
+                      'updated_at' => $date,
+                  ]);
+                                                
+                  return response()->json(['success'=>true,'message' => 'qualification details stored successfully'],201);
+             
+                }
+                
 }
+
+
+
+
 
 
 

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('company_code');
             $table->unsignedBigInteger('module_id');
+            $table->enum('status',['1'.'0'])->default('1');
             $table->timestamps();
             $table->foreign('module_id')->references('id')->on('modules')->onDelete('cascade'); 
         });

@@ -80,8 +80,32 @@ Route::post('delete-user/{id}',[AdminController::class,'delUser']);
      Route::post('allemployee',[AdminController::class,'allEmployee']);
      Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
      Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
-    
+     
      Route::post('test',[AdminController::class,'test']);
+
+
+          //Employee registration
+Route::post('employee-basic-details',[EmployeeRegistration::class,'employeeBasic']); 
+Route::post('employee-marital',[EmployeeRegistration::class,'employeeMarital']);
+Route::post('employee-nationality',[EmployeeRegistration::class,'employeeNationality']); 
+Route::post('employee-communication-details',[EmployeeRegistration::class,'employeeCommunication']);
+Route::post('employee-education-details',[EmployeeRegistration::class,'employeeEducation']);
+Route::post('employee-education-attachment',[EmployeeRegistration::class,'employeeEducationDoc']);
+Route::post('employee-experience-details',[EmployeeRegistration::class,'employeeExperience']);
+Route::post('employee-experience-time',[EmployeeRegistration::class,'employeeExpTime']);
+Route::post('employee-experience-doc',[EmployeeRegistration::class,'employeeExpDoc']);
+Route::post('employee-bank-details',[EmployeeRegistration::class,'employeeBank']);
+Route::post('employee-bank-cheque',[EmployeeRegistration::class,'employeeCheque']);
+Route::post('employee-family-details',[EmployeeRegistration::class,'employeeFamily']);
+Route::post('employee-document-deatils',[EmployeeRegistration::class,'employeeDocument']);
+Route::post('employee-address-proof',[EmployeeRegistration::class,'employeeAddressProof']);
+//Route::post('employee-driving-licence',[EmployeeRegistration::class,'employeeDrivingLicenec']);
+Route::post('employee-skill',[EmployeeRegistration::class,'employeeSkill']);
+Route::post('employee-emergency-details',[EmployeeRegistration::class,'employeeEmergencyDetails']);
+Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAddressDetails']);
+
+
+    
   // ... other authenticated routes
 });
 // Route::post('select-modules', [AdminController::class, 'selectModules']);
@@ -297,29 +321,6 @@ Route::post('all-session',[AdminController::class,'allSession']);
 // Route::post('employee-document_upload-forget',[EmployeeRegistration::class,'employeeDocumentUploadForget']);
 // Route::post('employee-document-session-check',[EmployeeRegistration::class,'checkStoredFile']);
 
-
-
-
-
-     //Employee registration
-Route::post('employee-basic-details',[EmployeeRegistration::class,'employeeBasic']); 
-Route::post('employee-marital',[EmployeeRegistration::class,'employeeMarital']);
-Route::post('employee-nationality',[EmployeeRegistration::class,'employeeNationality']); 
-Route::post('employee-communication-details',[EmployeeRegistration::class,'employeeCommunication']);
-Route::post('employee-education-details',[EmployeeRegistration::class,'employeeEducation']);
-Route::post('employee-education-attachment',[EmployeeRegistration::class,'employeeEducationDoc']);
-Route::post('employee-experience-details',[EmployeeRegistration::class,'employeeExperience']);
-Route::post('employee-experience-time',[EmployeeRegistration::class,'employeeExpTime']);
-Route::post('employee-experience-doc',[EmployeeRegistration::class,'employeeExpDoc']);
-Route::post('employee-bank-details',[EmployeeRegistration::class,'employeeBank']);
-Route::post('employee-bank-cheque',[EmployeeRegistration::class,'employeeCheque']);
-Route::post('employee-family-details',[EmployeeRegistration::class,'employeeFamily']);
-Route::post('employee-document-deatils',[EmployeeRegistration::class,'employeeDocument']);
-Route::post('employee-address-proof',[EmployeeRegistration::class,'employeeAddressProof']);
-//Route::post('employee-driving-licence',[EmployeeRegistration::class,'employeeDrivingLicenec']);
-Route::post('employee-skill',[EmployeeRegistration::class,'employeeSkill']);
-Route::post('employee-emergency-details',[EmployeeRegistration::class,'employeeEmergencyDetails']);
-Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAddressDetails']);
 
 
 // Route::post('employee-qualification',[EmployeeRegistration::class,'employeeQualification']);

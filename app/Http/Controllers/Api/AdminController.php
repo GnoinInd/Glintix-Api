@@ -867,8 +867,8 @@ public function allCompanies(Request $request)
   $tokenRole = $token['tokenable']['role'];
   if($token && $tokenRole && $tokenRole == 'root')
   {
-    $allCompanies = User::all(); 
-    return response()->json(['success'=>true, 'data'=>$allCompanies, 'message' => 'Users found'],200);
+    $userData = User::all(); 
+    return response()->json(['success'=>true, 'data'=> $userData, 'message' => 'users found'],200);
   }
  return response()->json(['success'=>false,'message' => 'token not found'],404);
 
@@ -1598,7 +1598,7 @@ public function addEmployee(Request $request)
 {
     $token = $request->user()->currentAccessToken();
     //  $username = $token['tokenable']['company_code'];    
-    // print_r($username);die;
+    //  print_r($token);die;
     
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Token not found!']);
@@ -1611,16 +1611,18 @@ public function addEmployee(Request $request)
     ->where('status', 1)
     ->first();  
     
-    //   echo $empModule;die;
+        // echo $empModule;die;
     if(!$empModule)
     {
       return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
     }
-    $username = $token['tokenable']['username'];
-    $password = $token['tokenable']['dbPass'];
-    $dbName = $token['tokenable']['dbName'];
-    $maxEmp = $token['tokenable']['total'];
-    //  print_r($maxEmp);die;
+    $company= User::where('company_code',$companyCode)->first();
+    
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $maxEmp = $company->total;
+    //print_r($username);die;
 
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
@@ -1675,8 +1677,9 @@ public function addEmployee(Request $request)
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
 
-        return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
+        return response()->json(['message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 200);
     } else {
         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
     }
