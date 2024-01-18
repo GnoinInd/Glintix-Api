@@ -1611,7 +1611,7 @@ public function addEmployee(Request $request)
     ->where('status', 'active')
     ->first();  
     
-    //  echo $empModule;die;
+    //  echo $empModule;die; 
     if(!$empModule)
     {
       return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
