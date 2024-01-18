@@ -1677,7 +1677,7 @@ public function addEmployee(Request $request)
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
+        $lastInsertedRecord = $dynamicDB->table('employees')->orderBy('id','desc')->first();
 
         return response()->json(['message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 200);
     } else {
