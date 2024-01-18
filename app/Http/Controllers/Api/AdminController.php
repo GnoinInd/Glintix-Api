@@ -1608,16 +1608,16 @@ public function addEmployee(Request $request)
     $moduleId = 3;
     $empModule = CompanyModuleAccess::where('company_code', $companyCode)
     ->where('module_id', $moduleId)
-    ->where('status', 1)
+    ->where('status', 'active')
     ->first();  
     
-        // echo $empModule;die;
+    //  echo $empModule;die;
     if(!$empModule)
     {
       return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
     }
     $company= User::where('company_code',$companyCode)->first();
-    
+    // print_r($company);die;
     $username = $company->username;
     $password = $company->dbPass;
     $dbName = $company->dbName;
@@ -1677,7 +1677,7 @@ public function addEmployee(Request $request)
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $lastInsertedRecord = $dynamicDB->table('company_employee')->orderBy('id','desc')->first();
+        $lastInsertedRecord = $dynamicDB->table('employees')->orderBy('id','desc')->first();
 
         return response()->json(['message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 200);
     } else {
