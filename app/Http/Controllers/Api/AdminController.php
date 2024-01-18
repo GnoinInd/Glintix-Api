@@ -1638,7 +1638,12 @@ public function addEmployee(Request $request)
     ]);
 
     $dynamicDB = DB::connection('dynamic');
-
+    $email = $request->email;
+    $unique = $dynamicDB->table('employees')->where('email',$email)->first();
+    if($unique)
+    {
+        return response()->json(['success'=>false,'message'=>'email exists'],400);
+    }
     $validatedData = $request->validate([
         'name' => 'required',
         'email' => 'required|email',
