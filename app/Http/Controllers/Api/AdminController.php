@@ -1601,9 +1601,8 @@ public function addEmployee(Request $request)
     //  print_r($token);die;
     
     if (!$token) {
-        return response()->json(['success' => false, 'message' => 'Token not found!']);
+        return response()->json(['success' => false, 'message' => 'Token not found!'],404);
     }
-    //check employee module
     $companyCode = $token['tokenable']['company_code'];
     $moduleId = 3;
     $empModule = CompanyModuleAccess::where('company_code', $companyCode)
@@ -1614,7 +1613,7 @@ public function addEmployee(Request $request)
     //  echo $empModule;die; 
     if(!$empModule)
     {
-      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module'],403);
     }
     $company= User::where('company_code',$companyCode)->first();
     // print_r($company);die;
@@ -1642,7 +1641,7 @@ public function addEmployee(Request $request)
     $unique = $dynamicDB->table('employees')->where('email',$email)->first();
     if($unique)
     {
-        return response()->json(['success'=>false,'message'=>'email exists'],400);
+        return response()->json(['success'=>false,'message'=>'email exists'],409);
     }
     $validatedData = $request->validate([
         'name' => 'required',
@@ -1684,9 +1683,9 @@ public function addEmployee(Request $request)
         ]);
         $lastInsertedRecord = $dynamicDB->table('employees')->orderBy('id','desc')->first();
 
-        return response()->json(['message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 200);
+        return response()->json(['success'=>true,'message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 201);
     } else {
-        return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+        return response()->json(['success'=>false,'message' => 'Maximum employee limit reached. Cannot add more.'],422);
     }
 }
 
@@ -1754,32 +1753,85 @@ public function addEmployee(Request $request)
 
 
 
+// public function allEmployee(Request $request)
+// {
+//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//     if(!$sessionCheckResult)
+//     {
+//         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+//     }
+//     //$maxEmp = $sessionCheckResult['maxEmp'];
+
+//     if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+//     {
+//         if (!Schema::connection('dynamic')->hasTable('employees'))
+//          {
+//           return response()->json(['message' => 'table not found'], 404);
+//          }
+//          $allEmp = DB::connection('dynamic')->table('employees')->get();
+//          if(!$allEmp)
+//          {
+//             return response()->json(['message' => 'no record found']);
+//          }
+//          return response()->json(['success' => true,'message' => $allEmp]);
+        
+//     }
+//     return response()->json(['message' => 'you have no permission']);
+
+// }
+
+
+
 public function allEmployee(Request $request)
 {
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-    if(!$sessionCheckResult)
-    {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
-    }
-    //$maxEmp = $sessionCheckResult['maxEmp'];
-
-    if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
-    {
-        if (!Schema::connection('dynamic')->hasTable('employees'))
-         {
-          return response()->json(['message' => 'table not found'], 404);
-         }
-         $allEmp = DB::connection('dynamic')->table('employees')->get();
-         if(!$allEmp)
-         {
-            return response()->json(['message' => 'no record found']);
-         }
-         return response()->json(['success' => true,'message' => $allEmp]);
-        
-    }
-    return response()->json(['message' => 'you have no permission']);
-
+  $token = $request->user()->CurrentAccessToken();
+//   print_r($token);die;
+$companyCode = $token['tokenable']['company_code'];
+$moduleId = 3;
+$empModule = CompanyModuleAccess::where('company_code', $companyCode)
+->where('module_id', $moduleId)
+->where('status', 'active')
+->first(); 
+// print_r($empModule);die;
+ if(!$empModule)
+ {
+    return response()->json(['success'=>false,'message'=>'you can not access Employee module'],403);
+ }
+ $company = User::where('company_code',$companyCode)->first();
+$username = $company->username;
+$password = $company->dbPass;
+$dbName = $company->dbName;
+// print_r($username);die;
+ Config::set('database.connections.dynamic',[
+     'driver' => 'mysql',
+     'host' => 'localhost',
+     'database' => $dbName,
+     'username' => $username, 
+     'password' => $password,
+     'charset' => 'utf8mb4',
+     'collection' => 'utf8mb4_unicode_ci',
+     'prefix' => '',
+     'strict' => true,
+     'engine' => null,
+  ]);
+  $dynamicDB = DB::connection('dynamic');
+  if(!Schema::connection('dynamic')->hasTable('employees'))
+  {
+    return response()->json(['success'=>false,'message'=>'Employee table not found'],404);
+  }
+//   $allEmp = $dynamicDb->table('employees')->get();
+   $allEmp = $dynamicDB->table('employees')->select('name','email','designation','address','created_at')->get();
+//   print_r($allEmp);die;
+if(!$allEmp)
+{
+    return response()->json(['success'=>false,'message'=>'data not found'],404);
 }
+return response()->json(['success'=>true,'message'=>'Employee found','allEmployee'=>$allEmp],200);
+  
+}
+
+
+
 
 
 
@@ -1830,32 +1882,83 @@ public function allEmployee(Request $request)
 // }
 
 
+// public function singleEmployee(Request $request, $employeeId)
+// {
+//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//     if(!$sessionCheckResult)
+//     {
+//       return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
+//     }
+   
+//     if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+//     {
+//         if(!Schema::connection('dynamic')->hasTable('employees'))
+//         {
+//           return response()->json(['message' => 'no table found'],404);
+//         }
+//        $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
+//        if(!$employee)
+//        {
+//         return response()->json(['message' => 'data not found']);
+//        }
+//      return response()->json(['message' => $employee]);
+//     }
+//     else
+//     {
+//         return response()->json(['message' => 'you have no permission'],403);
+//     }
+  
+// }
+
+
+
+
 public function singleEmployee(Request $request, $employeeId)
 {
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-    if(!$sessionCheckResult)
-    {
-      return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
-    }
+    $token = $request->user()->currentAccessToken();
    
-    if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
+    if(!$token)
     {
-        if(!Schema::connection('dynamic')->hasTable('employees'))
-        {
-          return response()->json(['message' => 'no table found'],404);
-        }
-       $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
-       if(!$employee)
-       {
-        return response()->json(['message' => 'data not found']);
-       }
-     return response()->json(['message' => $employee]);
+        return response()->json(['success'=>false,'message'=>'token not found'],404);
     }
-    else
+    $companyCode = $token['tokenable']['company_code'];
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code',$companyCode)->where('module_id',$moduleId)->where('status','active')->first();
+    if(!$empModule)
     {
-        return response()->json(['message' => 'you have no permission'],403);
+        return response()->json(['success'=>false,'message'=>'you can not access Employee module'],403);
     }
-  
+    $company = User::where('company_code',$companyCode)->first();
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    Config::set('database.connections.dynamic',[
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'database' => $dbName,
+        'username' => $username,
+        'password' => $password,
+        'charset' => 'utf8mb4',
+        'collection' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'strict' => true,
+        'engine' => null,
+    ]);
+    $dynamicDB = DB::connection('dynamic');
+    $singleEmp = $dynamicDB->table('employees')->where('id',$employeeId)->first();
+    if(!$singleEmp)
+    {
+        return response()->json(['success'=>false,'message'=>'Employee not found!'],404);
+    }
+    return response()->json(['success'=>true,'message'=>'Employee found',
+    'empDetails' => [
+        'name' => $singleEmp->name,
+        'email' => $singleEmp->email,
+        'address' => $singleEmp->address,
+        'designation' => $singleEmp->designation,
+        'created_at' => $singleEmp->created_at,
+    ]
+],200);
 }
 
 
@@ -1919,20 +2022,20 @@ public function editEmployee(Request $request, $employeeId)
 {
     $token = $request->user()->currentAccessToken();
     if (!$token) {
-        return response()->json(['success' => false, 'message' => 'Token not found!']);
+        return response()->json(['success' => false, 'message' => 'Token not found!'],404);
     }
 
     $companyCode = $token['tokenable']['company_code']; 
     $moduleId = 3;
     $empModule = CompanyModuleAccess::where('company_code', $companyCode)
     ->where('module_id', $moduleId)
-    ->where('status', 1)
+    ->where('status', 'active')
     ->first();  
     
     //   echo $empModule;die;
     if(!$empModule)
     {
-      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module'],403);
     }
 
 
@@ -1951,6 +2054,8 @@ public function editEmployee(Request $request, $employeeId)
     $dbUsername = $user->username;
     $dbPass = $user->dbPass;
     $edit = $token['tokenable']['edit'];
+    $role = $token['tokenable']['role'];
+    // print_r($role);die;
 
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
@@ -1966,15 +2071,16 @@ public function editEmployee(Request $request, $employeeId)
     ]);
 
     $dynamicDB = DB::connection('dynamic');
-    if ($edit && $edit == 1) {
+    if ($edit && $edit == 1 || $role && $role == 'Super Admin') {
+        
         if (!Schema::connection('dynamic')->hasTable('employees')) {
-            return response()->json(['message' => 'Table not found'], 404);
+            return response()->json(['success'=>false,'message' => 'Table not found'], 404);
         }
 
         $employee = $dynamicDB->table('employees')->find($employeeId);
 
         if (!$employee) {
-            return response()->json(['message' => 'Employee not found'], 404);
+            return response()->json(['success'=>false,'message' => 'Employee not found'], 404);
         }
 
         $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
@@ -1987,10 +2093,10 @@ public function editEmployee(Request $request, $employeeId)
             'updated_at' => $date,
         ]);
 
-        return response()->json(['message' => 'Employee updated successfully'], 200);
+        return response()->json(['success'=>true,'message' => 'Employee updated successfully'], 200);
     }
 
-    return response()->json(['message' => 'You have no permission to edit'], 403);
+    return response()->json(['success'=>false,'message' => 'You have no permission to edit'], 403);
 }
 
 
@@ -2047,7 +2153,7 @@ public function destroyEmployee(Request $request, $employeeId)
 { 
     $token = $request->user()->currentAccessToken();
     if (!$token) {
-        return response()->json(['success' => false, 'message' => 'Token not found!']);
+        return response()->json(['success' => false, 'message' => 'Token not found!'],404);
     }
     $companyCode = $token['tokenable']['company_code'];
     $moduleId = 3;
@@ -2058,13 +2164,15 @@ public function destroyEmployee(Request $request, $employeeId)
     
     if(!$empModule)
     {
-      return response()->json(['success'=>false,'message'=>'you can not access Employee module']);
+      return response()->json(['success'=>false,'message'=>'you can not access Employee module'],403);
     }
     $dbName = $token['tokenable']['dbName'];
     $user = User::where('company_code',$companyCode)->first();
     $dbUsername = $user->username;
     $dbPass = $user->dbPass;
     $delete = $token['tokenable']['delete'];
+    $role = $token['tokenable']['role'];
+    // print_r($role);die;
 
     Config::set('database.connections.dynamic', [
         'driver' => 'mysql',
@@ -2082,26 +2190,83 @@ public function destroyEmployee(Request $request, $employeeId)
     $dynamicDB = DB::connection('dynamic');
     if(!Schema::connection('dynamic')->hasTable('employees'))
     {
-        return response()->json(['message' => 'table not found'],500);
+        return response()->json(['success'=>false,'message' => 'table not found'],404);
     }
-    if($delete && $delete == 1)
+    if($delete && $delete == 1 || $role && $role == 'Super Admin')
     {
       $employee = DB::connection('dynamic')->table('employees')->find($employeeId);
       if(!$employee)
       {
-        return response()->json(['message' => 'no record found']);
+        return response()->json(['success'=>false,'message' => 'no record found'],404);
       }
       DB::connection('dynamic')->table('employees')->where('id',$employeeId)->delete(); 
-      return response()->json(['message' => 'record deleted successfully']);
+      return response()->json(['success'=>true,'message' => 'record deleted successfully'],200);
     }
     else
     {
-        return response()->json(['message' => 'you have no permission to perform this action']);
+        return response()->json(['success'=>false,'message' => 'you have no permission to perform this action'],403);
     }
    
 
 
 }
+
+
+
+public function multiDelEmp(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    $companyCode = $token['tokenable']['company_code'];
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code',$companyCode)->where('module_id',$moduleId)->where('status','active')->first();
+    if(!$empModule)
+    {
+        return response()->json(['success'=>false,'message'=>'you can not access employee module'],403);
+    }
+    $company = User::where('company_code',$companyCode)->first();
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;  
+    
+    $validatedData = $request->validate([
+        'employee_ids' => 'required',
+    ]);
+    Config::set('database.connections.dynamic',[
+    'driver' => 'mysql',
+    'host' => 'localhost',
+    'database' => $dbName,
+    'username' => $username,
+    'password' => $password,
+    'charset' => 'utf8mb4',
+    'collection'=> 'utf8mb4_unicode_ci',
+    'prefix' => '',
+    'strict' => true,
+    'engine' => null,
+    ]);
+    $dynamicDB = DB::connection('dynamic');
+ 
+    if(!$request->has('employee_ids'))
+    {
+        return response()->json(['success'=>false,'message'=>'no employee ids provided'],400);
+    }
+    $employeeIds = $request->employee_ids;
+    $deletedRow = $dynamicDB->table('employees')->whereIn('id', explode(',', $employeeIds))->delete();
+    if($deletedRow > 0) 
+    {
+        return response()->json(['success' => true, 'message' => 'Employees deleted successfully'], 200);
+ 
+    }
+    else
+    {
+        return response()->json(['success' => false, 'message' => 'No employees found for delete'], 404);
+
+    }
+  
+}
+
+
+
+
 
 
 

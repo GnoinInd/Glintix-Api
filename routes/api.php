@@ -80,6 +80,7 @@ Route::post('delete-user/{id}',[AdminController::class,'delUser']);
      Route::post('allemployee',[AdminController::class,'allEmployee']);
      Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
      Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
+     Route::post('delete-multiple-employee',[AdminController::class,'multiDelEmp']);
      
      Route::post('test',[AdminController::class,'test']);
 

@@ -1114,62 +1114,130 @@ public function employeeEducation(Request $request)
 
 
 
-public function employeeEducationDoc(Request $request)
-{
-    $validatedData = $request->validate([
-         'emp_id'   =>  'required',
-         'document_type' => 'required',
-         'document_path' => 'file|mimes:jpeg,png,pdf',
-     ]);
+// public function employeeEducationDoc(Request $request)
+// {
+//     $validatedData = $request->validate([
+//          'emp_id'   =>  'required',
+//          'document_type' => 'required',
+//          'document_path' => 'file|mimes:jpeg,png,pdf',
+//      ]);
 
-    $sessionCheckResult = $this->checkSessionAndSetupConnection();
-    if (!$sessionCheckResult) {
-        return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
-    }
-    $dynamicDB = DB::connection('dynamic');
-    $maxEmp = $sessionCheckResult['maxEmp'];
-    $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
-    $emp_id = $request->input('emp_id');
-    $documentPath = '';
+//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
+//     if (!$sessionCheckResult) {
+//         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 401);
+//     }
+//     $dynamicDB = DB::connection('dynamic');
+//     $maxEmp = $sessionCheckResult['maxEmp'];
+//     $date = now()->timezone('Asia/Kolkata')->toDateTimeString();
+//     $emp_id = $request->input('emp_id');
+//     $documentPath = '';
 
-    if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
-    {
-     if ($dynamicDB->getSchemaBuilder()->hasTable('qualification')) 
-     {
-        $empCount = $dynamicDB->table('qualification')->count();
+//     if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
+//     {
+//      if ($dynamicDB->getSchemaBuilder()->hasTable('qualification')) 
+//      {
+//         $empCount = $dynamicDB->table('qualification')->count();
 
-        if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
-        {
-            if ($maxEmp > $empCount)
-            {
-                if($request->hasFile('document_path'))
-                     {
-                         $file = $request->file('document_path');
-                         //$fileName = $file->getClientOriginalName();
-                         $uniqueFolder = $emp_id . '_' . time();
-                         $filePath = $file->store('qualification_docs/' . $uniqueFolder);
-                         $documentPath = $filePath;
+//         if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+//         {
+//             if ($maxEmp > $empCount)
+//             {
+//                 if($request->hasFile('document_path'))
+//                      {
+//                          $file = $request->file('document_path');
+//                          //$fileName = $file->getClientOriginalName();
+//                          $uniqueFolder = $emp_id . '_' . time();
+//                          $filePath = $file->store('qualification_docs/' . $uniqueFolder);
+//                          $documentPath = $filePath;
 
-                         $dynamicDB->table('qualification')->where('emp_id',$emp_id)->update([
-                                 'document_type' => $request->input('document_type'),
-                                 'document_path' => $documentPath,
-                                 'updated_at' => $date,
-                                 ]);
-                                return response()->json(['success'=>true,'message' => 'qualification document stored successfully']);
+//                          $dynamicDB->table('qualification')->where('emp_id',$emp_id)->update([
+//                                  'document_type' => $request->input('document_type'),
+//                                  'document_path' => $documentPath,
+//                                  'updated_at' => $date,
+//                                  ]);
+//                                 return response()->json(['success'=>true,'message' => 'qualification document stored successfully']);
                                     
-                     }
-                     return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
-                    }
-            return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
-        }
-        return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
-     }
-     return response()->json(['message' => 'table not found.'], 404);
-    }
-    return response()->json(['message' => 'You have no permission'], 403);
+//                      }
+//                      return response()->json(['message' => 'Please add a valid image file for qualification doc'], 400);
+//                     }
+//             return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'], 400);
+//         }
+//         return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404);
+//      }
+//      return response()->json(['message' => 'table not found.'], 404);
+//     }
+//     return response()->json(['message' => 'You have no permission'], 403);
 
     
+// }
+
+
+
+public function employeeEducationDoc(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role']; 
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    $company = User::where('company_code',$code)->first();
+    $maxEmp = $company->total;
+    $username = $company->username;
+    $password = $company->dbPass;
+    $dbName = $company->dbName;
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code', $code)
+    ->where('module_id', $moduleId)
+    ->where('status', 1)
+    ->first();
+    //  print_r($username); die;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $accessEmp = $token['tokenable']['create'];
+        if(!$empModule)
+        {
+            return response()->json(['success' => false,'message' => 'you can not access employee module'],403);
+        }
+        if($tokenRole == 'admin' && $accessEmp != 1)
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+        elseif($tokenRole != 'admin')
+        {
+            return response()->json(['success' => false,'message' => 'you have no permission'],403);
+        }
+            $validatedData = $request->validate([
+            'emp_id'   =>  'required',
+            'board/university' => 'required',
+            'specification' => 'required',
+            'course_type' => 'nullable',
+            'quali_start_date' => 'nullable',
+            'quali_end_date' => 'nullable',
+            'grade_type'   =>  'nullable',
+            'total_marks'  => 'nullable',
+            'grade'       =>   'required',
+        
+         ]);
+
+                $emp_id = $request->emp_id;
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $username,
+                    'password' => $password,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
+                ]);
+                $dynamicDB = DB::connection('dynamic');
+
+                if (!$dynamicDB->getSchemaBuilder()->hasTable('qualification'))
+         {
+         }
 }
+
+
 
 
 
