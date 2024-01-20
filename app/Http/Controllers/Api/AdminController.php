@@ -1820,7 +1820,7 @@ $dbName = $company->dbName;
     return response()->json(['success'=>false,'message'=>'Employee table not found'],404);
   }
 //   $allEmp = $dynamicDb->table('employees')->get();
-   $allEmp = $dynamicDB->table('employees')->select('name','email','designation','address','created_at')->get();
+   $allEmp = $dynamicDB->table('employees')->select('id','name','email','designation','address','created_at')->get();
 //   print_r($allEmp);die;
 if(!$allEmp)
 {
