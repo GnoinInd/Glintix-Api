@@ -81,6 +81,7 @@ Route::post('delete-user/{id}',[AdminController::class,'delUser']);
      Route::post('singleemployee/{id}',[AdminController::class,'singleEmployee']);
      Route::delete('deleteemployee/{employeeId}',[AdminController::class,'destroyEmployee']);
      Route::post('delete-multiple-employee',[AdminController::class,'multiDelEmp']);
+    //  Route::post('check-id',[AdminController::class,'checkId']);
      
      Route::post('test',[AdminController::class,'test']);
 
