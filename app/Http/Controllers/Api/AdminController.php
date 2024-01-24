@@ -62,7 +62,6 @@ public function register(Request $request)
 
         $data = $request->all();
         $data['password'] = Hash::make($request->password);
-
         $user = User::create($data);
 
         if($user)
@@ -4476,7 +4475,7 @@ public function newUser(Request $request)
         'edit' => 'nullable|boolean',
         'delete' => 'nullable|boolean',
         'role' => 'required',
-        'mobile_number' => 'required',
+         'mobile_number' => 'required',
         // 'company_code' => 'required',
 
         
@@ -4521,13 +4520,13 @@ public function newUser(Request $request)
                 $table->string('password');
                 // $table->string('db_name');
                 $table->string('email');
-                // $table->string('mobile_number');
+                $table->string('mobile_number')->nullable();
                 $table->boolean('read');
                 $table->boolean('create');
                 $table->boolean('edit');
                 $table->boolean('delete');
                 $table->enum('role', ['admin', 'subadmin']);
-                $table->string('mobile_number');
+                // $table->string('mobile_number')->nullable();
                 $table->timestamps();
 
                 $table->foreign('emp_id')->references('id')->on('employees');
@@ -4546,7 +4545,7 @@ public function newUser(Request $request)
             'edit' => $request->input('edit', false),
             'delete' => $request->input('delete', false),
             'role' => $request->role,
-            // 'mobile_number' => $request->input('mobile_number'),
+            //  'mobile_number' => $request->input('mobile_number'),
             'created_at' => $date,
             'updated_at' => $date,
         ]);
