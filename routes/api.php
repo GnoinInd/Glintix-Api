@@ -55,7 +55,7 @@ Route::middleware('api')->group(function () {
   Route::post('get-token',[AdminController::class,'getRootToken']);
   Route::post('root/set-password', [AdminController::class, 'setNewPassword']);
   Route::post('registercompany',[AdminController::class,'registerCompany']);
-  Route::post('root/all-companies',[AdminController::class,'allCompanies']);
+  Route::post('root/all-companies',[AdminController::class,'allCompanies']); 
 
   
         
@@ -105,6 +105,10 @@ Route::post('employee-address-proof',[EmployeeRegistration::class,'employeeAddre
 Route::post('employee-skill',[EmployeeRegistration::class,'employeeSkill']);
 Route::post('employee-emergency-details',[EmployeeRegistration::class,'employeeEmergencyDetails']);
 Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAddressDetails']);
+
+
+   // single api for employee registration
+   Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
 
 
     

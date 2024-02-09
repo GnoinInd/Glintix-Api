@@ -172,6 +172,8 @@ public function logout()
 
     public function adminLogin(Request $request)
     {
+      try
+      {  
         $validatedData = $request->validate([
             'username' => 'required',
             'password' => 'required|string|min:6',
@@ -186,17 +188,18 @@ public function logout()
             if ($otpResult['success']) {
                 // $role = $root->role;
                 // $email = $root->email;
-                // session_start();
-                // $_SESSION['role'] = $role;
-                // $_SESSION['email'] = $email;
-
                 return response()->json(['success' => true,'userId' => $root->id,'message' => 'otp send successfully'],200);
             } else {
                 return response()->json(['success' => false, 'message' => $otpResult['error']],401);
             }
         }
 
-        return response()->json(['success' => false, 'message' => 'Username or password is incorrect'],401);
+        return response()->json(['success' => false, 'message' => 'Username or password is incorrect'],401); 
+      }
+      catch(\Exception $e)
+      {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+      }
     }
 
     private function generateAndSendOtp($userId, $phone,$email)
@@ -267,15 +270,19 @@ public function logout()
     
     public function verifyOtp(Request $request)
     {
+      try
+       {
+ 
         $validatedData = $request->validate([
-            'user_id' => 'required',
+             'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
 
         
-        // $userId = $request->userId;
-        $userId = $validatedData['user_id'];
-        $otp = $validatedData['otp'];
+         $userId = $request->user_id;
+        // $userId = $validatedData['user_id'];
+        // $otp = $validatedData['otp'];
+        $otp = $request->otp;
       
         $userOtp = UserOtp::where('user_id', $userId)
             ->where('otp', $otp)
@@ -286,12 +293,6 @@ public function logout()
             $root = SuperUser::find($userId);
             $role = $root->role;
             $email = $root->email;
-    
-            // session_start();
-            // $_SESSION['role'] = $role;
-            // $_SESSION['email'] = $email;
-
-            // print_r($_SESSION);die;
 
              Mail::to($email)->send(new SuccessfulLoginNotification($root));
              // Issue a SANCTUM token
@@ -314,7 +315,11 @@ public function logout()
             }
             
            
-        }
+        } 
+      }
+      catch(\Exception $e)
+      {
+     return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);      }
     }
 
 
@@ -333,6 +338,8 @@ public function logout()
 
     public function rootForgetPass(Request $request)
     {
+      try
+      { 
         $validatedData = $request->validate([
             'mobile_number' => 'required|exists:super_users,phone',
         ]);
@@ -352,7 +359,11 @@ public function logout()
          {
             return response()->json(['success' => false, 'message' => 'User not found'],404);
          }
-
+      }
+      catch(\Exception $e)
+      {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+      }
 
     }
 
@@ -405,6 +416,7 @@ public function logout()
 
   public function setNewPassword(Request $request)
   {
+    try{
     $validatedData = $request->validate([
         'new_password' => 'required|string|min:6',
         'confirm_new_password' => 'required|string|same:new_password',
@@ -431,7 +443,11 @@ public function logout()
      }
     }
     return response()->json(['success'=> false,'message'=>'Invalid Token'],422);
-  
+   }
+   catch(\Exception $e)
+   {
+    return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+   }
   }
 
 
@@ -498,24 +514,31 @@ public function logout()
         try {
            
             $validatedData = $request->validate([
-                // 'dbName' => 'required|string|max:255',
                 'name' => 'required|string|max:255',
                 'contact_person' =>'required',
                 'country'  => 'required',
                 'state'  =>  'required',
                 'postal_code'  => 'required',
-                'address' => 'required',
-                'email' => 'required|email|unique:users,email',
+                'address' => 'required|string',
+                'email' => [
+                    'required',
+                    'email',
+                    'unique:users,email',
+                    function ($attribute, $value, $fail) {
+                        if (strpos($value, '@') !== false) {
+                            list($username, $domain) = explode('@', $value);
+                            if (strpos($domain, '.com') === false) {
+                                $fail($attribute.' must have ".com" after the @ symbol.');
+                            }
+                        } else {
+                            $fail($attribute.' is not a valid email address.');
+                        }
+                    },
+                ],
                 'fax'  =>  'nullable',
                 'mobile_number' => 'required',
-                // 'username' => 'required|string|max:255',
-                // 'password' => 'required|string|min:6',
-                // 'phone' => 'required|string|max:20',
                 'website_url' => 'nullable',
                 'company_logo' => 'file|nullable',
-                //'company_code' => 'required',
-                // 'role' => 'required',
-                // 'total' => 'required', 
                 'modules' => 'required',
                           
             ]);
@@ -803,32 +826,6 @@ private function generateUniqueDbName($name)
 
 
 
-
-
-// public function rootLogout(Request $request)
-// {
-//     if(isset($_SESSION['username']) && isset($_SESSION['password']) && isset($_SESSION['dbName']))
-//     {
-//         session_start();
-//         session_unset();
-//         session_destroy();
-    
-       
-//         return response()->json(['status'=>true,'success'=>true,'message' => 'Logged out successfully'], 200);
-//     }
-//     return response()->json(['status'=>false,'success'=>false,'message' => 'already Logged out'], 400);
-
-
-  
-// }
-
-
-
-
-
-
-
-
 private function selectModules($companyCode, $modulesId)
 {
     if (!is_array($modulesId)) {
@@ -862,14 +859,21 @@ private function selectModules($companyCode, $modulesId)
 
 public function allCompanies(Request $request)
 {
-  $token = $request->user()->currentAccessToken();
-  $tokenRole = $token['tokenable']['role'];
-  if($token && $tokenRole && $tokenRole == 'root')
-  {
-    $userData = User::all(); 
-    return response()->json(['success'=>true, 'data'=> $userData, 'message' => 'users found'],200);
-  }
- return response()->json(['success'=>false,'message' => 'token not found'],404);
+    try{
+        $token = $request->user()->currentAccessToken();
+        $tokenRole = $token['tokenable']['role'];
+        if($token && $tokenRole && $tokenRole == 'root')
+        {
+          $userData = User::all(); 
+          return response()->json(['success'=>true,  'message' => 'company data found', 'data'=> $userData],200);
+        }
+       return response()->json(['success'=>false,'message' => 'token not found'],404);
+      
+    }
+    catch(\Exception $e)
+    {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+    }
 
 }
 
@@ -918,6 +922,7 @@ public function allCompanies(Request $request)
 
 public function rootProfile(request $request)
 {
+    try{
      $token = $request->user()->currentAccessToken();
 
      if ($token && isset($token['tokenable']['email']))
@@ -932,6 +937,12 @@ public function rootProfile(request $request)
         return response()->json(['success'=>false,'message'=>'data not found'],404);
     }
     return response()->json(['success'=>false,'message'=>'token not found!'],404);
+ }
+ catch(\Exception $e)
+ {
+    return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+ }
+
 }
 
 
@@ -951,52 +962,14 @@ public function logoutSession(Request $request)
 
 
 
-// public function logincompany(Request $request)
-//     {
-        
-//     $validatedData = $request->validate([
-//         'username' => 'required|string|max:255',
-//         'password' => 'required|string|min:6',           
-//     ]);
-
-//     $user = User::where('username', $validatedData['username'])->first();
-//     if ($user && Hash::check($validatedData['password'], $user->password)) {
-//         $dbName = $user->dbName;
-//         $this->storeSessionCredentials($request, $validatedData['username'], $validatedData['password'], $dbName);
-
-//         return response()->json(['success' => true, 'message' => 'Login Successfully' ], 200);
-//     } else {
-//         return response()->json(['success' => false, 'message' => 'Invalid credentials'], 401);
-//     }
-// }
-
-// private function storeSessionCredentials($request, $username, $password, $dbName)
-// {
-//     Config::set('database.connections.dynamic', [
-//         'driver' => 'mysql',
-//         'host' => 'localhost',
-//         'database' => $dbName,
-//         'username' => $username,
-//         'password' => $password,
-//         'charset' => 'utf8mb4',
-//         'collation' => 'utf8mb4_unicode_ci',
-//         'prefix' => '',
-//         'strict' => true,
-//         'engine' => null,
-//     ]);
-//            session_start(); 
-//            $_SESSION["username"] = $username;
-//            $_SESSION["password"] = $password;
-//            $_SESSION["dbName"] = $dbName;
-
-// }
-
-
 
 
 
 public function loginCompany(Request $request)
 {
+    try{
+
+    
     $validatedData = $request->validate([
         'username' => 'required|string|max:255',
         'password' => 'required|string|min:6',
@@ -1036,6 +1009,11 @@ public function loginCompany(Request $request)
     } else {
         return response()->json(['success' => false, 'message' => 'Username or password is incorrect'],401);
     }
+  }
+  catch(\Exception $e)
+  {
+    return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+  }
 }
 
 
@@ -1106,17 +1084,15 @@ public function loginCompany(Request $request)
      
     public function verifyOtpCompany(Request $request)
     {
+        try{    
         $validatedData = $request->validate([
                'user_id' => 'required',
              'otp' => 'required|string|digits:6',
         ]);
-
+         $userId = $request->user_id;
         
-        // $userId = $request->userId;
-        
-        $userId = $validatedData['user_id'];
-        $otp = $validatedData['otp'];
-      
+        // $userId = $validatedData['user_id'];
+        $otp = $request->otp;
         $companyOtp = CompanyOtp::where('user_id', $userId)
             ->where('otp', $otp)
             ->where('expire_at', '>', now())
@@ -1147,6 +1123,11 @@ public function loginCompany(Request $request)
             
            
         }
+      }
+      catch(\Exception $e)
+      {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
+      }
     }
 
 
@@ -1155,6 +1136,9 @@ public function loginCompany(Request $request)
 
     public function companyForgetPass(Request $request)
     {
+        try{
+
+       
         $validatedData = $request->validate([
             'mobile_number' => 'required|exists:users,mobile_number',
         ]);
@@ -1175,51 +1159,62 @@ public function loginCompany(Request $request)
             return response()->json(['success' => false, 'message' => 'User not found'],404);
          }
 
-
+      }
+      catch(\Exception $e)
+      {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+      }
     }
 
 
 
     public function verifyForgetPassCompany(Request $request)
     {
-        $validatedData = $request->validate([
-            'mobile_number' => 'required',
-            'otp'  => 'required'
-        ]);
-        $otp = $validatedData['otp'];
-        // $phone = $validatedData['mobile_number'];
-        $phone = $request->mobile_number;
-        $user = User::where('mobile_number',$phone)->first();
-        if($user)
+        try{
+            $validatedData = $request->validate([
+                'mobile_number' => 'required',
+                'otp'  => 'required'
+            ]);
+            $otp = $validatedData['otp'];
+            // $phone = $validatedData['mobile_number'];
+            $phone = $request->mobile_number;
+            $user = User::where('mobile_number',$phone)->first();
+            if($user)
+            {
+                $userId = $user->id; 
+                $userOtp = CompanyOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
+                    
+             if($userOtp)
+             {
+                $userOtp->delete();
+                // session_start();
+                // $_SESSION['setTime'] = time() + (10*60); 
+                // $_SESSION['phone'] = $phone;
+                // Session::start();
+              
+                $user->expire_at = now()->addMinutes(1440);
+                $user->save();
+                // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
+                // $token->expires_at = now()->addDay(1);
+                // $token->save();
+                $token = $user->createToken('access-token')->plainTextToken;
+                return response()->json(['success' => true,'token'=>$token,'message' => 'OTP verification successful'],200);
+    
+             }
+             else
+             {
+              return response()->json(['success' => false,'success'=>false,'message' => 'Invalid OTP or mobile number'],422);
+             }
+    
+           }
+           return response()->json(['success' => false,'success'=>false,'message' => 'user not found'],404);
+    
+        }
+        catch(\Exception $e)
         {
-            $userId = $user->id; 
-            $userOtp = CompanyOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
-                
-         if($userOtp)
-         {
-            $userOtp->delete();
-            // session_start();
-            // $_SESSION['setTime'] = time() + (10*60); 
-            // $_SESSION['phone'] = $phone;
-            // Session::start();
-          
-            $user->expire_at = now()->addMinutes(1440);
-            $user->save();
-            // $token = $user->createToken('auth-token', ['custom-scope'])->plainTextToken;  
-            // $token->expires_at = now()->addDay(1);
-            // $token->save();
-            $token = $user->createToken('access-token')->plainTextToken;
-            return response()->json(['success' => true,'token'=>$token,'message' => 'OTP verification successful'],200);
-
-         }
-         else
-         {
-          return response()->json(['success' => false,'success'=>false,'message' => 'Invalid OTP or mobile number'],422);
-         }
-
-       }
-       return response()->json(['success' => false,'success'=>false,'message' => 'user not found'],404);
-
+            return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+        }
+     
 
     }
 
@@ -1227,6 +1222,8 @@ public function loginCompany(Request $request)
 
   public function setNewPasswordCompany(Request $request)
   {
+    try{
+    
     $validatedData = $request->validate([
         'new_password' => 'required|string|min:6',
         'confirm_new_password' => 'required|string|same:new_password',
@@ -1253,7 +1250,11 @@ public function loginCompany(Request $request)
      }
     }
     return response()->json(['success'=> false,'message'=>'Invalid Token'],422);
-  
+   }
+   catch(\Exception $e)
+   {
+    return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
+   }
   }
 
 
@@ -1393,8 +1394,7 @@ public function forgetpassword(Request $request)
 
 
 
-public function resetpasswordLoad(Request $request)
-    
+public function resetpasswordLoad(Request $request)   
 {
     $token = $request->token;
     $userData = DB::table('password_resets')->where('token',$token)->get();
@@ -1425,117 +1425,6 @@ public function resetPassword(Request $request)
    return "<h1> Your Password has been reset Successfully </h1>";
     
 }
-
-
-// public function addEmployee(Request $request)
-// {
-
-//     $validatedData = $request->validate([
-//         'name' => 'required',
-//         'email' => 'required|email',
-//         'designation' => 'required|string|min:6',
-//         'address' => 'required',
-        
-//     ]);
-
-//     session_start();
-//     $now = time();
-//     if(isset($_SESSION['expire']) && $now > $_SESSION['expire'])
-//     {
-//        session_destroy();
-//     }
-
-//  try {
-//     if (isset($_SESSION["username"]) && isset($_SESSION["password"]) && isset($_SESSION["dbName"]) ) 
-// {
-//         $username = $_SESSION["username"];
-//         $password = $_SESSION["password"];
-//         $dbName = $_SESSION["dbName"];
-
-//         $passcode = Hash::make($password);
-
-//         $maxEmp = User::where('username',$username)->where('dbName',$dbName)->value('total');
-        
-
-//         Config::set('database.connections.dynamic', [
-//             'driver' => 'mysql', 
-//             'host' => 'localhost', 
-//             'database' => $dbName,
-//             'username' => $username,
-//             'password' => $password,
-//             'charset' => 'utf8mb4',
-//             'collation' => 'utf8mb4_unicode_ci',
-//             'prefix' => '',
-//             'strict' => true,
-//             'engine' => null,
-//         ]);
-
-
-   
-//        if (!Schema::connection('dynamic')->hasTable('employees')) {
-//         Schema::connection('dynamic')->create('employees', function (Blueprint $table) {
-//             $table->id();
-//             $table->string('name');
-//             $table->string('email')->unique()->index();
-//             $table->string('username');
-//             $table->string('password');
-           
-//             $table->string('designation');
-//             $table->string('address')->nullable();
-            
-//             $table->timestamps();
-//             // $table->index('email');
-    
-           
-//         });
-//     }   
-   
-//         $empCount = DB::connection('dynamic')->table('employees')->count();
-
-//         $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-//         if(isset($_SESSION['create']) && $_SESSION['create'] == 1)
-//         {
-//             if($empCount < $maxEmp)
-//        {
-//          $employee = DB::connection('dynamic')->table('employees')->insert([
-//             'name' => $request->input('name'),
-//             'email' => $request->input('email'),
-//             'username' => $username,
-//             'password' => $passcode,
-//             'designation' => $request->input('designation'),
-//             'address' => $request->input('address'),
-//             'created_at' => $date,
-//             'updated_at' => $date,
-//         ]); 
-//         return response()->json(['message' => 'Employee added successfully', 'data' => $employee], 200);
-
-//        }
-//        else
-//        {
-//         return response()->json(['message' => 'Maximum employee limit reached. Cannot add more.'],400);
-//        }
-
-//         }
-
-//         else
-//         {
-//             return response()->json(['message' => 'You have no permission.'],400);
-//         }
-
-       
-//     }
-     
-//         return response()->json(['message' => 'Sorry Session out, to add please login'], 400);
-      
-// } 
-//  catch (Exception $e) 
-//  {
-//     return response()->json(['message' => 'An error occurred: ' . $e->getMessage()], 500);
-//  }
-
-    
-// }
 
 
 
@@ -1595,7 +1484,8 @@ private function checkSessionAndSetupConnection()
 
 public function addEmployee(Request $request)
 {
-    $token = $request->user()->currentAccessToken();
+    try{
+        $token = $request->user()->currentAccessToken();
     //  $username = $token['tokenable']['company_code'];    
     //  print_r($token);die;
     
@@ -1639,10 +1529,13 @@ public function addEmployee(Request $request)
 
     $dynamicDB = DB::connection('dynamic');
     $email = $request->email;
-    $unique = $dynamicDB->table('employees')->where('email',$email)->first();
-    if($unique)
+    if($dynamicDB->getSchemaBuilder()->hasTable('employees'))
     {
-        return response()->json(['success'=>false,'message'=>'email exists'],409);
+        $uniqueEmail = $dynamicDB->table('employees')->where('email',$email)->first();
+        if($uniqueEmail)
+        {
+            return response()->json(['success'=>false,'message'=>'email exists'],409);
+        }
     }
     $validatedData = $request->validate([
         'name' => 'required',
@@ -1693,104 +1586,21 @@ public function addEmployee(Request $request)
   }
    return response()->json(['success'=>false,'message' => 'Access Denied!'],422);
 
+
+    }
+    catch(\Exception $e)
+    {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
+    }
+    
 }
-
-
-
-
-
-
-
-
-
-
-// public function allEmployee(Request $request)
-//    {
-  
-//    session_start();
-//    if (isset($_SESSION["username"]) && $_SESSION["password"] && $_SESSION["dbName"])
-//    {
-//         $username = $_SESSION["username"];
-//         $password = $_SESSION["password"];
-//         $dbName = $_SESSION["dbName"];
-
-    
- 
-//    Config::set('database.connections.dynamic', [
-//     'driver' => 'mysql',
-//     'host' => 'localhost',
-//     'database' => $dbName,
-//     'username' => $username,
-//     'password' => $password,
-//     'charset' => 'utf8mb4',
-//     'collation' => 'utf8mb4_unicode_ci',
-//     'prefix' => '',
-//     'strict' => true,
-//     'engine' => null,
-// ]);
-
-//  if (!Schema::connection('dynamic')->hasTable('employees')) {
- 
-//     return response()->json(['message' => 'data not found'], 404);
-// }
-
-//  $employee = DB::connection('dynamic')->table('employees')->get();
-
-//  if (!$employee) {
-//     return response()->json(['message' => 'Employee not found'], 404);
-// }
-
-//  return response()->json(['message' => 'all Employee', 'data' => $employee]);
-
-
-
-
-//    }
-//    else
-//    {
-//     return response()->json(['message' => 'sorry session out,pls login']);
-//    }
-
-
-    
-  
-   
-// }
-
-
-
-// public function allEmployee(Request $request)
-// {
-//     $sessionCheckResult = $this->checkSessionAndSetupConnection();
-//     if(!$sessionCheckResult)
-//     {
-//         return response()->json(['message' => 'Sorry, session expired or invalid. Please login.'], 400);
-//     }
-//     //$maxEmp = $sessionCheckResult['maxEmp'];
-
-//     if(isset($_SESSION['read']) && $_SESSION['read'] == 1)
-//     {
-//         if (!Schema::connection('dynamic')->hasTable('employees'))
-//          {
-//           return response()->json(['message' => 'table not found'], 404);
-//          }
-//          $allEmp = DB::connection('dynamic')->table('employees')->get();
-//          if(!$allEmp)
-//          {
-//             return response()->json(['message' => 'no record found']);
-//          }
-//          return response()->json(['success' => true,'message' => $allEmp]);
-        
-//     }
-//     return response()->json(['message' => 'you have no permission']);
-
-// }
 
 
 
 public function allEmployee(Request $request)
 {
-  $token = $request->user()->CurrentAccessToken();
+    try{
+        $token = $request->user()->CurrentAccessToken();
 //   print_r($token);die;
 $companyCode = $token['tokenable']['company_code'];
 $moduleId = 3;
@@ -1830,7 +1640,7 @@ if($role && $role == 'admin' && $read && $read == 1 || $role && $role == 'Super 
        return response()->json(['success'=>false,'message'=>'Employee table not found'],404);
      }
    //   $allEmp = $dynamicDb->table('employees')->get();
-      $allEmp = $dynamicDB->table('employees')->select('id','id','name','email','designation','address','created_at')->get();
+      $allEmp = $dynamicDB->table('employees')->select('id','name','email','designation','address','created_at')->get();
    //   print_r($allEmp);die;
    if(!$allEmp)
    {
@@ -1841,6 +1651,11 @@ if($role && $role == 'admin' && $read && $read == 1 || $role && $role == 'Super 
 
 return response()->json(['success'=>false,'message'=>'Access Denied!'],403);
 
+    }
+    catch(\Exception $e)
+    {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.','error'=>$e->getMessage()], 500);
+    }
 }
 
 
