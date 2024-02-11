@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\EmployeeController;
 
 use App\Http\Controllers\Api\EmployeeRegistration;
+use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\AssetController;
 
  use App\Http\Controllers\Api\LoanController;
@@ -111,6 +112,14 @@ Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAdd
    Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
 
 
+   //leave
+   Route::post('add-leave',[LeaveController::class,'addLeaveCount']);
+   Route::post('add-leave-type',[LeaveController::class,'addLeaveType']);
+   Route::post('leave-application',[LeaveController::class,'leaveApplication']);
+
+
+
+
     
   // ... other authenticated routes
 });
@@ -146,7 +155,9 @@ Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAdd
 
 
   //employee login
-  Route::post('loginEmployee',[EmployeeController::class,'loginEmp']);
+  // Route::post('loginEmployee',[EmployeeController::class,'loginEmp']);
+  
+   Route::post('employee-login',[EmployeeRegistration::class,'employeeLogin']);
     //logout employee
     Route::post('empLogout',[EmployeeController::class,'emplogout']);
 

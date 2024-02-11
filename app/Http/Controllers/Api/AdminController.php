@@ -385,7 +385,7 @@ public function logout()
             $userOtp = UserOtp::where('user_id',$userId)->where('otp',$otp)->where('expire_at', '>', now())->first();
                 
          if($userOtp)
-         {
+         { 
             $userOtp->delete();
             // session_start();
             // $_SESSION['setTime'] = time() + (10*60); 
