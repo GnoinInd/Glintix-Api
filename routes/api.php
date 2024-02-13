@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\EmployeeRegistration;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\DeptController;
 
  use App\Http\Controllers\Api\LoanController;
 
@@ -109,22 +110,26 @@ Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAdd
 
 
    // single api for employee registration
-   Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
+Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
 
 
    //leave
-   Route::post('add-leave',[LeaveController::class,'addLeaveCount']);
-   Route::post('add-leave-type',[LeaveController::class,'addLeaveType']);
-   Route::post('leave-application',[LeaveController::class,'leaveApplication']);
+Route::post('add-leave',[LeaveController::class,'addLeaveCount']);
+Route::post('add-leave-type',[LeaveController::class,'addLeaveType']);
+Route::post('leave-application',[LeaveController::class,'leaveApplication']);
 
 
+      // dept crud
+Route::post('dept_allrecord',[DeptController::class,'deptGet']);
+Route::post('dept_create',[DeptController::class,'deptCreate']);
+Route::post('dept_edit',[DeptController::class,'editDept']);
+Route::post('dept_delete/{id}',[DeptController::class,'destroyDept']);
 
 
     
   // ... other authenticated routes
 });
 // Route::post('select-modules', [AdminController::class, 'selectModules']);
- 
 
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    

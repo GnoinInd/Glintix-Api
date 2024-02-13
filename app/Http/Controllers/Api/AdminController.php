@@ -4276,7 +4276,7 @@ public function newUser(Request $request)
         //  print_r($username);die;
     if (!$token)
     {
-        return response()->json(['success'=>false,'message'=>'token not found!']);
+        return response()->json(['success'=>false,'message'=>'token not found!'],404);
     }
     
     $validatedData = $request->validate([

@@ -211,6 +211,10 @@ class LeaveController extends Controller
     {
         try{
         $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'token not found!'],404); 
+        }
         $tokenRole = $token['tokenable']['role'];
         $status = $token['tokenable']['status'];
         $code = $token['tokenable']['company_code'];
@@ -218,70 +222,72 @@ class LeaveController extends Controller
         $username = $company->username;
         $password = $company->dbPass;
         $dbName = $company->dbName;
-        $moduleId = 4;
-        $empModule = CompanyModuleAccess::where('company_code',$code)->where('module_id',$moduleId)
-        ->where('status','Active')->first();
-        $accessLeave = $token['tokenable']['create'];
-        if($tokenRole == 'admin' && $accessLeave != 1)
-        {
-            return response()->json(['success'=>false,'message' => 'you have no permission'],403);
-        }
-        if(!$empModule)
-        {
-            return response()->json(['success'=>false,'message' => 'you can not access Leave Module'],403);
-        }
-        if (($accessLeave == 1 && $tokenRole == 'admin') || $tokenRole == 'Super Admin')
-        {
-            $validatedData = $request->validate([
-                'leavetype' => 'required',
-                'startdate' => 'required|date', 
-                'enddate' => 'required|date', 
-                'reason' => 'required',  
+        $emp_name = $token['tokenable']['name'];
+        $emp_id = $token['tokenable']['emp_id'];
+        $validatedData = $request->validate([
+            'leave_type' => 'required',
+            'start_date' => 'required|date', 
+            'end_date' => 'required|date',
+            'application_type' => 'required',
+            'leave_name' => 'required', 
+            'reason' => 'required',  
+            ]);  
+         Config::set('database.connections.dynamic',[
+           'driver' => 'mysql',
+           'host'  => 'localhost',
+           'database' => $dbName,
+           'username' => $username,
+           'password' => $password,
+           'charset'  => 'utf8mb4',
+           'collection' => 'utf8mb4_unicode_ci',
+           'prefix' => '',
+           'strict' => true,
+           'engine' => null,
             ]);
-            Config::set('database.connections.dynamic',[
-                'driver' => 'mysql',
-                'host'  => 'localhost',
-                'database' => $dbName,
-                'username' => $username,
-                'password' => $password,
-                'charset'  => 'utf8mb4',
-                'collection' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'strict' => true,
-                'engine' => null,
-            ]);
-            $dynamicDB = DB::connection('dynamic');
-            $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
-            if (!$dynamicDB->getSchemaBuilder()->hasTable('leave_application'))
-            {
+           $dynamicDB = DB::connection('dynamic');
+           $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+           $start_date = Carbon::parse($validatedData['start_date']);
+           $end_date = Carbon::parse($validatedData['end_date']);
+           $duration = $end_date->diffInDays($start_date) + 1;
+           if (!$dynamicDB->getSchemaBuilder()->hasTable('leave_application'))
+           {
               $dynamicDB->getSchemaBuilder()->create('leave_application', function (Blueprint $table) {
                  $table->id();
-                 $table->string('application_date');
+                 $table->date('application_date');
+                 $table->bigInteger('emp_id')->unsigned();
                  $table->string('emp_name');
-                 $table->string('reporting_manager');
+                 $table->string('emp_code')->nullable();
+                 $table->string('reporting_manager')->nullable();
                  $table->string('leave_name');
                  $table->enum('application_type',['regular','previous month']);
-                 $table->string('start_date');
-                 $table->string('end_date');
+                 $table->date('start_date');
+                 $table->date('end_date');
                  $table->string('total_days');
                  $table->string('leave_type');
                  $table->string('reason');
-                 $table->enum('status',['active','inactive'])->default('active');
+                 $table->enum('status', ['pending', 'approved','reject'])->default('pending');
                  $table->timestamps();
 
              });
            }
-           $dynamicDB->table('leave_type')->insert([
+           $dynamicDB->table('leave_application')->insert([
             'application_date' => $date,
+            'emp_id'         =>   $emp_id,
             'emp_name' => $emp_name,
+            // 'emp_code' => $emp_code,
+            // 'reporting_manager'  => $rep_man;
+            'start_date'  => $request->input('start_date'),
             'leave_name' => $request->input('leave_name'),
+            'end_date'   => $request->input('end_date'),
+            'total_days' => $duration,
+            'application_type' => $request->input('application_type'),
+            'leave_type'  => $request->input('leave_type'),
+            'reason'    => $request->input('reason'),
             'created_at' => $date,
             'updated_at' => $date,
            ]);
            $leaveData = $dynamicDB->table('leave_application')->orderBy('id','desc')->first();
-           return response()->json(['success'=>true,'message' => 'leave details stored successfully','leaveData'=>$leaveData],201);                                  
-        }   
-          return response()->json(['success' => false,'message' => 'you have no permission'],403);
+           return response()->json(['success'=>true,'message' => 'leave details stored successfully','leaveData'=>$leaveData],201);                                    
 
      }
     
