@@ -266,6 +266,7 @@ class LeaveController extends Controller
                  $table->string('leave_type');
                  $table->string('reason');
                  $table->enum('status', ['pending', 'approved','reject'])->default('pending');
+                 $table->string('approved_by')->nullable();
                  $table->timestamps();
 
              });
@@ -300,6 +301,106 @@ class LeaveController extends Controller
 
  
   
+
+
+    public function allLeaveApplication(request $request)
+    {
+        try
+        {
+            $token = $request->user()->currentAccessToken();
+            $tokenRole = $token['tokenable']['role'];
+            $status = $token['tokenable']['status'];
+            $code = $token['tokenable']['company_code'];
+            $company = User::where('company_code', $code)->where('status','active')->first();     
+            if (!$company) {
+                return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+            }
+            $username = $company->username;
+            $password = $company->dbPass;
+            $dbName = $company->dbName;   
+            if ($tokenRole == 'admin' || $tokenRole == 'Super Admin')
+            {
+                Config::set('database.connections.dynamic', [
+                    'driver' => 'mysql',
+                    'host' => 'localhost',
+                    'database' => $dbName,
+                    'username' => $username,
+                    'password' => $password,
+                    'charset' => 'utf8mb4',
+                    'collation' => 'utf8mb4_unicode_ci',
+                    'prefix' => '',
+                    'strict' => true,
+                    'engine' => null,
+                ]);
+            
+                $dynamicDB = DB::connection('dynamic');
+               $allData = $dynamicDB->table('leave_application')->get();
+               return response()->json(['success'=>true,'message' => 'Data Found',$allData],200);
+            }
+        }
+        catch (\Exception $e) {
+            // Log::error('Error deleting department: ' . $e->getMessage());
+            return response()->json(['success'=>false,'message' => 'An error occurred.', 'error' => $e->getMessage()], 500);
+        }
+
+    }
+
+
+
+
+public function leaveApplicationApprove(Request $request, $leaveId)
+{
+    try
+    {
+        $token = $request->user()->currentAccessToken();
+        $tokenRole = $token['tokenable']['role'];
+        $status = $token['tokenable']['status'];
+        $code = $token['tokenable']['company_code']; 
+        $company = User::where('company_code', $code)->where('status','active')->first();     
+        if (!$company) {
+          return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+        }
+        $username = $company->username;
+        $password = $company->dbPass;
+        $dbName = $company->dbName;   
+        if ($tokenRole == 'admin' || $tokenRole == 'Super Admin')
+        {
+            Config::set('database.connections.dynamic', [
+                'driver' => 'mysql',
+                'host' => 'localhost',
+                'database' => $dbName,
+                'username' => $username,
+                'password' => $password,
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'strict' => true,
+                'engine' => null,
+            ]);
+        
+            $dynamicDB = DB::connection('dynamic');
+
+
+            $leave = $dynamicDB->table('leave_application')->find($leaveId);
+
+            if (!$leave) {
+                return response()->json(['success'=>false,'message' => 'Employee not found'], 404);
+            }
+            $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+             $dynamicDB->table('leave_application')->where('id', $leaveId)->update([
+                'approved_by' => $tokenRole,
+                'updated_at' => $date,
+            ]);
+           return response()->json(['success'=>true,'message' => 'leave status updated successfully'],200);
+        }
+    }
+    catch (\Exception $e) {
+        // Log::error('Error deleting department: ' . $e->getMessage());
+        return response()->json(['success'=>false,'message' => 'An error occurred.', 'error' => $e->getMessage()], 500);
+    }
+
+}
+
 
 
 
