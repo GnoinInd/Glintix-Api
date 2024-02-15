@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 use App\Models\User;
-
+use App\Models\CompanyUserAccess;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -2413,6 +2413,22 @@ public function empYearWiseExcel(Request $request)
                      $documentResult = $this->employeeDocumentDetails($request,$emp_id,$date);
                      $addressResult = $this->employeeAddressDetail($request,$emp_id,$date);
                      $skillResult = $this->employeeSkillDetails($request,$emp_id,$date);
+                     $company_access = new CompanyUserAccess;
+                     $company_access->name = $request->preferred_name;
+                     $company_access->emp_id = $emp_id;
+                     // $company_access->emp_code = $request->company_code;
+                     $company_access->email = $request->email;
+                     $company_access->username = $request->username;
+                     $company_access->password = Hash::make($request->password);
+                     $company_access->dbName = $company->dbName;
+                     $company_access->company_code = $code;
+                     $company_access->mobile_number = $request->mobile_number;
+                     $company_access->role = 'subadmin';
+                     $company_access->read = 0;
+                     $company_access->create = 0;
+                     $company_access->edit = 0;
+                     $company_access->delete = 0;
+                     $company_access->save();
                     return response()->json(['success'=>true,'message' => 'Employee registration stored successfully',
                     'qualification'=>$qualificationResult,'experience'=>$experienceResult,'bank'=>$bankResult,
                     'family'=>$familyResult,'doc'=>$documentResult,'address'=>$addressResult,'skill'=>$skillResult], 200);
@@ -2963,6 +2979,36 @@ public function empYearWiseExcel(Request $request)
       
     // }
 
+
+
+
+    public function employeeLogin(Request $request)
+    {
+     try{
+       $validatedData = $request->validate([
+            'company_code' => 'required',
+            'username' => 'required', 
+            'password' => 'required', 
+            'email' => 'required',  
+               ]);
+         $code = $request->company_code;
+         $company = User::where('company_code',$code)->where('status','active')->first();
+         $dbName = $company->dbName;
+         $username = $company->username;
+         $password = $company->dbPass;
+         $empRecord = CompanyUserAccess::where('company_code',$code)->where('username',$request->username)
+        ->where('email',$request->email)->first();
+         if($empRecord && Hash::check($request->password,$empRecord->password))
+         {
+            $token = $empRecord->createToken('access-token')->plainTextToken;
+            return response()->json(['Success' => true,'Message' => 'username and Password are correct','token'=>$token],200);      
+         }
+         return response()->json(['Success' => false, 'Message' => 'username and Password are incorrect'],403);
+        }catch (\Exception $e) {
+        // Log::error('Error creating company employee: ' . $e->getMessage());
+        return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
+       }
+    }
 
 
 

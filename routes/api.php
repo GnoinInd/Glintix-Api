@@ -9,6 +9,8 @@ use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\EmployeeRegistration;
 use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\Api\DeptController;
+use App\Http\Controllers\Api\BranchController;
 
  use App\Http\Controllers\Api\LoanController;
 
@@ -109,22 +111,40 @@ Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAdd
 
 
    // single api for employee registration
-   Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
+Route::post('single-api-registration',[EmployeeRegistration::class,'createEmployeeAndDetails']);
 
 
    //leave
-   Route::post('add-leave',[LeaveController::class,'addLeaveCount']);
-   Route::post('add-leave-type',[LeaveController::class,'addLeaveType']);
-   Route::post('leave-application',[LeaveController::class,'leaveApplication']);
+Route::post('add-leave',[LeaveController::class,'addLeaveCount']);
+Route::post('add-leave-type',[LeaveController::class,'addLeaveType']);
+Route::post('leave-application',[LeaveController::class,'leaveApplication']);
+   // admin see leave application
+Route::post('all-leave-application',[LeaveController::class,'allLeaveApplication']);
+      // superadmin or admin approve
+Route::post('leave-application-approve/{id}',[LeaveController::class,'leaveApplicationApprove']);
 
 
+
+      // dept crud
+Route::post('dept_iddata/{id}',[DeptController::class,'deptIdData']);
+Route::post('dept_alldata',[DeptController::class,'deptAllData']);
+Route::post('dept_create',[DeptController::class,'deptCreate']);
+Route::post('dept_edit/{id}',[DeptController::class,'editDept']);
+Route::post('dept_delete/{id}',[DeptController::class,'destroyDept']);
+
+
+      // brunch crud
+Route::post('branch_id_data/{id}',[BranchController::class,'branchIdData']);
+Route::post('branch_alldata',[BranchController::class,'branchAllData']);
+Route::post('branch_create',[BranchController::class,'branchCreate']);
+Route::post('branch_edit/{id}',[BranchController::class,'editBranch']);
+Route::post('branch_delete/{id}',[BranchController::class,'destroyBranch']);
 
 
     
   // ... other authenticated routes
 });
 // Route::post('select-modules', [AdminController::class, 'selectModules']);
- 
 
 
    Route::post('root_register',[AdminController::class,'registerRoot']);    
