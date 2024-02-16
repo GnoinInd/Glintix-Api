@@ -52,12 +52,22 @@ class BranchController extends Controller
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
              $validatedData = $request->validate([
                  'name' => 'required',
-                 'location' => 'required',
+                 'address' => 'required',
+                 'country' => 'required',
+                 'state'   => 'required',
+                 'city'   => 'required',
+                 'phone'          => 'required',
+                 'legal_info'    => 'required',
              ]);
              $branch = new Branch;
              $branch->name = $request->name;
-             $branch->location = $request->location;
+             $branch->location = $request->address;
+             $branch->country = $request->country;
+             $branch->state = $request->state;
+             $branch->city = $request->city;
              $branch->company_code = $code;
+             $branch->phone = $request->phone;
+             $branch->legal_info = $request->legal_info;
              $branch->save();  
              $branchData = Branch::orderBy('id','desc')->first();  
              return response()->json(['success'=>true,'message' => 'Branch data stored successfully',$branchData],200);    
@@ -85,7 +95,7 @@ class BranchController extends Controller
              return response()->json(['success' => false,'message' => 'Company not found.'], 404);
          }
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
-             $branchData = Branch::where('id', $branchId)->get();  
+             $branchData = Branch::where('id', $branchId)->first();  
              if (!$branchData) {
                  return response()->json(['success' => false, 'message' => 'Branch not found for the provided branch id.'], 404);
              }
@@ -147,7 +157,13 @@ class BranchController extends Controller
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
              $validatedData = $request->validate([
                 'branch_name' => 'required',
-                'branch_location' => 'required',
+                'branch_address' => 'required',
+                'phone'          => 'required',
+                'legal_info'    => 'required',
+                'country'     => 'required',
+                'state'   => 'required',
+                'city'   => 'required',
+               
              ]);
               
              $branch = Branch::find($branchId);
@@ -156,7 +172,12 @@ class BranchController extends Controller
                 return response()->json(['success' => false,'message' => 'branch not found.'], 404);
              }
              $branch->name = $request->branch_name;
-             $branch->location = $request->branch_location;
+             $branch->location = $request->branch_address;
+             $branch->phone = $request->phone;
+             $branch->country = $request->country;
+             $branch->state = $request->state;
+             $branch->city = $request->city;
+             $branch->legal_info = $request->legal_info;
              $branch->save();
              $branchData = Branch::where('id',$branchId)->first();
              return response()->json(['success'=>true,'message' => 'branch data update successfully',$branchData],200);    
