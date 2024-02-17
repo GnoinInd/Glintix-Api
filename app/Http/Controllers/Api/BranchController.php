@@ -163,7 +163,7 @@ class BranchController extends Controller
                 'country'     => 'required',
                 'state'   => 'required',
                 'city'   => 'required',
-               
+                
              ]);
               
              $branch = Branch::find($branchId);
