@@ -13,11 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('branches', function (Blueprint $table) {
-            $table->string('country')->after('location')->nullable();
-            $table->string('state')->after('country')->nullable();
-            $table->string('city')->after('state')->nullable();
-            $table->text('description')->after('city')->nullable();
+        Schema::table('depts', function (Blueprint $table) {
+            $table->text('description')->after('dept_name')->nullable();
         });
     }
 
@@ -29,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->dropColumn(['country', 'state', 'city','description']);
+            $table->dropColumn(['description']);
         });
     }
 };

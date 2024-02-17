@@ -58,6 +58,7 @@ class BranchController extends Controller
                  'city'   => 'required',
                  'phone'          => 'required',
                  'legal_info'    => 'required',
+                 'description'    => 'required',
              ]);
              $branch = new Branch;
              $branch->name = $request->name;
@@ -68,6 +69,7 @@ class BranchController extends Controller
              $branch->company_code = $code;
              $branch->phone = $request->phone;
              $branch->legal_info = $request->legal_info;
+             $branch->description = $request->description;
              $branch->save();  
              $branchData = Branch::orderBy('id','desc')->first();  
              return response()->json(['success'=>true,'message' => 'Branch data stored successfully',$branchData],200);    
@@ -163,6 +165,7 @@ class BranchController extends Controller
                 'country'     => 'required',
                 'state'   => 'required',
                 'city'   => 'required',
+                'description'   => 'required',
                 
              ]);
               
@@ -178,6 +181,7 @@ class BranchController extends Controller
              $branch->state = $request->state;
              $branch->city = $request->city;
              $branch->legal_info = $request->legal_info;
+             $branch->description = $request->description;
              $branch->save();
              $branchData = Branch::where('id',$branchId)->first();
              return response()->json(['success'=>true,'message' => 'branch data update successfully',$branchData],200);    

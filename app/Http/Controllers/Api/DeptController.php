@@ -53,11 +53,13 @@ class DeptController extends Controller
              $validatedData = $request->validate([
                  'dept_name' => 'required',
                  'branch_id' => 'required',
+                 'description' => 'required',
              ]);
              $dept = new Dept;
              $dept->company_code = $code;
              $dept->dept_name = $request->dept_name;
              $dept->branch_id = $request->branch_id;
+             $dept->description = $request->description;
              $dept->save();    
              $deptData = Dept::orderBy('id','desc')->first();
              return response()->json(['success'=>true,'message' => 'Depertment data stored successfully',$deptData],200);    
@@ -149,6 +151,7 @@ class DeptController extends Controller
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
              $validatedData = $request->validate([
                  'dept_name' => 'required',
+                 'description' => 'required',
                  // 'branch_id' => 'required',
              ]);
              $dept = Dept::find($deptId);
@@ -157,6 +160,7 @@ class DeptController extends Controller
                  return response()->json(['success' => false,'message' => 'depertment data not found.'], 404);  
              }
              $dept->dept_name = $request->dept_name;
+             $dept->description = $request->description;
              // $dept->branch_id = $request->branch_id;
              $dept->save();
              $deptData = Dept::where('id',$deptId)->first();
