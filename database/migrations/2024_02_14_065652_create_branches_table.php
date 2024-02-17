@@ -17,9 +17,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('location')->nullable();
+
+            $table->string('company_code')->nullable();
             $table->string('phone')->nullable();
             $table->text('legal_info')->nullable();
-            $table->string('company_code')->nullable();
             $table->timestamps();
         });
     }
