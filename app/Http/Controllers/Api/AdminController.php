@@ -4840,6 +4840,24 @@ public function getRootToken(Request $request)
     }
 }
 
+// public function AssignBranchDeptToUsers(Request $request)
+// {
+//     $token = $request->user()->currentAccessToken();
+//     if(!$token)
+//     {
+//         return response()->json(['success' => false, 'message' => 'Invalid Token'], 422);
+//     }
+//     else{
+//         $validatedData = $request->validate([
+//             'branch_id' => 'required',
+//             'dept_id' => 'required',
+//             'emp_id' => 'required',
+//         ]);
+//         $code = $token['tokenable']['company_code'];
+
+//     }
+
+// }
 
 
 

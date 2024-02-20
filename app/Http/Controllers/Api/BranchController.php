@@ -232,7 +232,32 @@ class BranchController extends Controller
     }
 
     
-
+    public function branchDetailsByCode(Request $request)
+    {
+      try{
+         $token = $request->user()->currentAccessToken();
+         $tokenRole = $token['tokenable']['role'];
+         $status = $token['tokenable']['status'];
+         $code = $token['tokenable']['company_code'];
+         $company = User::where('company_code', $code)->where('status','active')->first();
+         if (!$company) {
+             return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+         }
+         if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
+             $branchData = Branch::where('company_code', $code)->first();  
+             if (!$branchData) {
+                 return response()->json(['success' => false, 'message' => 'Branch not found for the provided Company.'], 404);
+             }
+             return response()->json(['success'=>true,'message' => $branchData],200);    
+         }
+         return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
+      }
+      catch (\Exception $e) {
+         // Log::error('Error creating company employee: ' . $e->getMessage());
+         return response()->json(['success'=>false,'message' => 'An error occurred while fetching branch data.', 'error' => $e->getMessage()], 500);
+        }
+        
+    } 
 
 
 

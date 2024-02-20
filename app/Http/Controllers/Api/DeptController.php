@@ -214,6 +214,32 @@ class DeptController extends Controller
     
 
 
+    public function getDeptbyBranchandCompanyCode(Request $request)
+    {
+        try{
+            $token = $request->user()->currentAccessToken();
+            $tokenRole = $token['tokenable']['role'];
+            $status = $token['tokenable']['status'];
+            $code = $token['tokenable']['company_code'];
+            $branch_id =  $request->branch_id;
+            $company = User::where('company_code', $code)->where('status','active')->first();
+            if (!$company) {
+                return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+            }
+            if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
+                $deptData = Dept::where('branch_id',$branch_id)->where('company_code',$code)->all();  
+                if (!$deptData) {
+                    return response()->json(['success' => false, 'message' => 'Department not found for the provided branch id.'], 404);
+                }
+                return response()->json(['success'=>true,'message' => $deptData],200);    
+            }
+            return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
+         }
+         catch (\Exception $e) {
+            // Log::error('Error creating company employee: ' . $e->getMessage());
+            return response()->json(['success'=>false,'message' => 'An error occurred while fetching depertment data.', 'error' => $e->getMessage()], 500);
+           }
+    } 
 
 
 
