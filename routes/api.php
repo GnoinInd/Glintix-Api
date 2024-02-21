@@ -140,16 +140,18 @@ Route::post('branch_create',[BranchController::class,'branchCreate']);
 Route::post('branch_edit/{id}',[BranchController::class,'editBranch']);
 Route::post('branch_delete/{id}',[BranchController::class,'destroyBranch']);
 
+    
+Route::post('approve-emp',[AdminController::class,'empApproveByAdmin']);
 
 
 //Get branch by company code 
 Route::post('branch-by-company',[BranchController::class,'branchDetailsByCode']);
 
 //Get Dept by branch & company code 
-Route::post('dept-by-company-id',[BranchController::class,'getDeptbyBranchandCompanyCode']);
+Route::post('dept-by-company-id',[DeptController::class,'getDeptbyBranchandCompanyCode']);
 
 //Assign Branch & Dept
-// Route::post('assign-branch-dept-to-users',[AdminController::class,'AssignBranchDeptToUsers']);
+ Route::post('assign-branch-dept-to-users',[AdminController::class,'AssignBranchDeptToUsers']);
     
   // ... other authenticated routes
 });
