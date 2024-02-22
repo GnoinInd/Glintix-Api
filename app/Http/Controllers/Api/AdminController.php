@@ -4945,9 +4945,9 @@ public function empApproveByAdmin(Request $request)
          $employee->dept_id = $deptId;
          $employee->updated_at = $date;
          $employee->save();
-       return response()->json(['success' => true, 'message' => 'Employee status updated successfully.']);
+       return response()->json(['success' => true, 'message' => 'Employee status updated successfully.'],200);
         }
-        return response()->json(['success' => false, 'message' => 'dept_id or branch_id not found.'],404);
+        return response()->json(['success' => false, 'message' => 'deptid or branchid not found.'],404);
        
        }
        return response()->json(['success'=>false,'message'=>'employee not found'],404);
@@ -4960,6 +4960,57 @@ public function empApproveByAdmin(Request $request)
     }
 
 }
+
+
+
+public function allInactiveEmp(Request $request)
+{
+    try{
+    $token = $request->user()->currentAccessToken();
+    $tokenRole = $token['tokenable']['role'];
+    $status = $token['tokenable']['status'];
+    $code = $token['tokenable']['company_code'];
+    $company = User::where('company_code', $code)->first();
+    $moduleId = 3;
+    $empModule = CompanyModuleAccess::where('company_code',$code)->where('module_id',$moduleId)
+    ->where('status',$status)->first();
+    $accessEmp = $token['tokenable']['create'];
+    
+     if (!$company) {
+         return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+     }
+     if($tokenRole == 'admin' && $accessEmp != 1)
+     {
+       return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+     }
+     if(!$accessEmp && $tokenRole == 'admin')
+     {
+       return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+     }
+     if (($accessEmp == 1 && $tokenRole == 'admin') || $tokenRole == 'Super Admin') 
+     { 
+      $inactiveEmp = CompanyUserAccess::where('company_code',$code)->where('status','inactive')->get();
+      if(!$inactiveEmp)
+      {
+        return response()->json(['success' => false,'message' => 'no data found'],404);
+      }
+      return response()->json(['success' => false,'message' => 'data found',$inactiveEmp],200);
+
+     }
+     return response()->json(['success' => false,'message' => 'you have no permission'],403);
+     
+    }
+   catch(\Exception $e)
+   {   
+     return response()->json(['message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
+   }
+
+
+
+}
+
+
+
 
 
 

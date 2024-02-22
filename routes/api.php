@@ -140,7 +140,8 @@ Route::post('branch_create',[BranchController::class,'branchCreate']);
 Route::post('branch_edit/{id}',[BranchController::class,'editBranch']);
 Route::post('branch_delete/{id}',[BranchController::class,'destroyBranch']);
 
-    
+
+Route::post('inactive-emp',[AdminController::class,'allInactiveEmp']);    
 Route::post('approve-emp',[AdminController::class,'empApproveByAdmin']);
 
 
