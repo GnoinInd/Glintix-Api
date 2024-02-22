@@ -906,12 +906,12 @@ public function employeeExpTime(Request $request)
         $accessEmp = $token['tokenable']['create'];
         if(!$empModule)
         {
-            return response->json(['success'=>false,'message'=>'you can not access employee module'],403);
+            return response()->json(['success'=>false,'message'=>'you can not access employee module'],403);
 
         }
         if($tokenRole == 'admin' && $accessEmp != 1)
         {
-            return response->json(['success'=>false,'message'=>'you have no permission'],403);
+            return response()->json(['success'=>false,'message'=>'you have no permission'],403);
         }
         if($accessEmp == 1 && $tokenRole == 'admin' || $tokenRole && $tokenRole == 'Super Admin')
         {
