@@ -2390,7 +2390,7 @@ public function empYearWiseExcel(Request $request)
                      $table->string('eme_mobile')->nullable();
                      $table->string('eme_whatsapp_no')->nullable();
                      $table->string('eme_email')->nullable();
-                     $table->enum('status',['pending','rejected'])->default('pending');
+                     $table->enum('status',['pending','accepted','rejected'])->default('pending');
                      $table->string('username');
                      $table->string('password');
                      $table->timestamps();

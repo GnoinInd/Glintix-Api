@@ -227,7 +227,11 @@ class DeptController extends Controller
                 return response()->json(['success' => false,'message' => 'Company not found.'], 404);
             }
             if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
-                $deptData = Dept::where('branch_id',$branch_id)->where('company_code',$code)->all();  
+                $validatedData = $request->validate([
+                    'branch_id' => 'required',
+                ]);
+                $branchId = $request->branch_id;
+                $deptData = Dept::where('branch_id',$branchId)->where('company_code',$code)->get(); 
                 if (!$deptData) {
                     return response()->json(['success' => false, 'message' => 'Department not found for the provided branch id.'], 404);
                 }

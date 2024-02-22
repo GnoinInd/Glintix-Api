@@ -42,6 +42,9 @@ use App\Models\CompanyOtp;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Models\CompanyUserAccess;
 use App\Models\UserAccessOtp;
+use App\Models\Branch;
+use App\Models\Dept;
+
 
 class AdminController extends Controller
 {
@@ -319,8 +322,9 @@ public function logout()
       }
       catch(\Exception $e)
       {
-     return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);      }
+     return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);      }
     }
+
 
 
 
@@ -4840,24 +4844,122 @@ public function getRootToken(Request $request)
     }
 }
 
-// public function AssignBranchDeptToUsers(Request $request)
-// {
-//     $token = $request->user()->currentAccessToken();
-//     if(!$token)
-//     {
-//         return response()->json(['success' => false, 'message' => 'Invalid Token'], 422);
-//     }
-//     else{
-//         $validatedData = $request->validate([
-//             'branch_id' => 'required',
-//             'dept_id' => 'required',
-//             'emp_id' => 'required',
-//         ]);
-//         $code = $token['tokenable']['company_code'];
+public function AssignBranchDeptToUsers(Request $request)
+{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success' => false, 'message' => 'Invalid Token'], 422);
+    }
+    else{
+        $validatedData = $request->validate([
+            'branch_id' => 'required',
+            'dept_id' => 'required',
+            'emp_id' => 'required',
+        ]);
+        $code = $token['tokenable']['company_code'];
 
-//     }
+    }
 
-// }
+}
+
+
+
+
+public function empApproveByAdmin(Request $request)
+{
+    try{
+        $token = $request->user()->currentAccessToken();
+        //   print_r($token);die; 
+        $tokenRole = $token['tokenable']['role'];
+        $status = $token['tokenable']['status'];
+        $code = $token['tokenable']['company_code'];
+        $company = User::where('company_code', $code)->first();
+        $moduleId = 3;
+        $empModule = CompanyModuleAccess::where('company_code',$code)->where('module_id',$moduleId)
+        ->where('status',$status)->first();
+        $accessEmp = $token['tokenable']['create'];
+        $username = $company->username;
+        $password = $company->dbPass;
+        $dbName   = $company->dbName;
+        
+        if (!$company) {
+            return response()->json(['success' => false,'message' => 'Company not found.'], 404);
+        }
+        if($tokenRole == 'admin' && $accessEmp != 1)
+        {
+           return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+        }
+        if(!$accessEmp && $tokenRole == 'admin')
+        {
+          return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+        }
+        if (($accessEmp == 1 && $tokenRole == 'admin') || $tokenRole == 'Super Admin') 
+        {   
+            $validatedData = $request->validate([
+                'emp_id' => 'required',
+                'branch_id' => 'required',
+                'dept_id'   => 'required',
+                'status' => 'required',
+               ]); 
+               $emp_id = $request->emp_id;
+               $branchId = $request->branch_id;
+               $deptId = $request->dept_id;
+               $status = $request->status;
+               $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+
+
+               
+        //     Config::set('database.connections.dynamic', [
+        //         'driver' => 'mysql',
+        //         'host' => 'localhost',
+        //         'database' => $dbName,
+        //         'username' => $username,
+        //         'password' => $password,
+        //         'charset' => 'utf8mb4',
+        //         'collation' => 'utf8mb4_unicode_ci',
+        //         'prefix' => '',
+        //         'strict' => true,
+        //         'engine' => null,
+        //     ]);
+        //   $dynamicDB = DB::connection('dynamic');
+        //   if ($dynamicDB->table('company_employee')->where('id', $emp_id)->exists()) 
+        //   {
+        //       $dynamicDB->table('company_employee')->where('id',$emp_id)->update([
+        //     'status' => $status,
+        //     'updated_at' => $date,
+        //     ]);
+        //     return response()->json(['success' => true,'message' => 'employee details accepted by admin'],404);
+
+        //   }
+        // return response()->json(['success' => false,'message' => 'emp_id is not found'],404);
+
+       $employee = CompanyUserAccess::find($emp_id);
+       if($employee)
+       {
+        $dept = Dept::where('id',$deptId)->where('branch_id',$branchId)->where('company_code',$code)->first();
+        if($dept)
+        {
+         $employee->status = $status;
+         $employee->branch_id = $branchId;
+         $employee->dept_id = $deptId;
+         $employee->updated_at = $date;
+         $employee->save();
+       return response()->json(['success' => true, 'message' => 'Employee status updated successfully.']);
+        }
+        return response()->json(['success' => false, 'message' => 'dept_id or branch_id not found.'],404);
+       
+       }
+       return response()->json(['success'=>false,'message'=>'employee not found'],404);
+     }
+     return response()->json(['success' => false,'message' => 'you have no permission'],403);
+    }
+    catch(\Exception $e)
+    {
+        return response()->json(['message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
+    }
+
+}
 
 
 
