@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::table('depts', function (Blueprint $table) {
             $table->enum('status',['active','inactive'])->default('active')->after('branch_id');
+            $table->string('approved_by')->after('status')->nullable();
         });
     }
 
@@ -26,7 +27,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('depts', function (Blueprint $table) {
-            $table->dropColumn('status');
+            $table->dropColumn(['status','approved_by']);
         });
     }
 };

@@ -44,6 +44,7 @@ class BranchController extends Controller
          $token = $request->user()->currentAccessToken();
          $tokenRole = $token['tokenable']['role'];
          $status = $token['tokenable']['status'];
+         $name = $token['tokenable']['name'];
          $code = $token['tokenable']['company_code'];
          $company = User::where('company_code', $code)->where('status','active')->first();
          if (!$company) {
@@ -70,6 +71,7 @@ class BranchController extends Controller
              $branch->phone = $request->phone;
              $branch->legal_info = $request->legal_info;
              $branch->description = $request->description;
+             $branch->approved_by = $name;
              $branch->save();  
              $branchData = Branch::orderBy('id','desc')->first();  
              return response()->json(['success'=>true,'message' => 'Branch data stored successfully',$branchData],200);    
