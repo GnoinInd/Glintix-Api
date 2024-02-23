@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::table('branches', function (Blueprint $table) {
             $table->enum('status',['active','inactive'])->default('active')->after('company_code'); 
+            $table->string('approved_by')->after('status')->nullable();
 
         });
     }
@@ -27,7 +28,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->dropColumn('status');
+            $table->dropColumn(['status','approved_by']);
         });
     }
 };
