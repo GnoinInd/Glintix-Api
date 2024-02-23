@@ -44,6 +44,7 @@ class DeptController extends Controller
          $token = $request->user()->currentAccessToken();
          $tokenRole = $token['tokenable']['role'];
          $status = $token['tokenable']['status'];
+         $name = $token['tokenable']['name'];
          $code = $token['tokenable']['company_code'];
          $company = User::where('company_code', $code)->where('status','active')->first();
          if (!$company) {
@@ -60,6 +61,7 @@ class DeptController extends Controller
              $dept->dept_name = $request->dept_name;
              $dept->branch_id = $request->branch_id;
              $dept->description = $request->description;
+             $dept->approved_by = $name;
              $dept->save();    
              $deptData = Dept::orderBy('id','desc')->first();
              return response()->json(['success'=>true,'message' => 'Depertment data stored successfully',$deptData],200);    
