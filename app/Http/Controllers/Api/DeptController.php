@@ -120,7 +120,7 @@ class DeptController extends Controller
              return response()->json(['success' => false,'message' => 'Company not found.'], 404);
          }
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
-             $deptData = Dept::all();
+             $deptData = Dept::with('branch')->get();
              if (!$deptData) {
                  return response()->json(['success' => false, 'message' => 'Department not found for the provided branch id.'], 404);
              }
