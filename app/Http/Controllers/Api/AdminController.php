@@ -44,6 +44,9 @@ use App\Models\CompanyUserAccess;
 use App\Models\UserAccessOtp;
 use App\Models\Branch;
 use App\Models\Dept;
+use App\Models\Role;
+use App\Models\Permission;
+use App\Models\Module;
 
 
 class AdminController extends Controller
@@ -546,8 +549,14 @@ public function logout()
                 'modules' => 'required',
                           
             ]);
-            $modulesId = explode(',',$request->modules);
-            // print_r($modulesId);die;
+            $requestModules = $request->modules;
+
+            if (strpos($requestModules, '"') !== false) {
+                $modulesId = array_map('intval', explode(',', str_replace('"', '', $requestModules)));
+            } else {
+                $modulesId = explode(',', $requestModules);
+            }
+            //  print_r($modulesId);die;
             $generatedDbName = $this->generateUniqueDbName($request->input('name'));
             // $userpassword = $validatedData['password'];
             $role = $token['tokenable']['role']; 
@@ -577,7 +586,7 @@ public function logout()
                 $total = 25;
                         
                 $companyCode = $this->generateUniqueCompanyCode();
-                // print_r($companyCode);die;
+                //  print_r($companyCode);die;
 
                 // $modules = $request->input('modules',[]);
                 if (!isset($modulesId) || !is_array($modulesId)) {
@@ -4870,6 +4879,10 @@ public function empApproveByAdmin(Request $request)
 {
     try{
         $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'invalid token'],401);
+        }
         //   print_r($token);die; 
         $tokenRole = $token['tokenable']['role'];
         $status = $token['tokenable']['status'];
@@ -4967,6 +4980,10 @@ public function allInactiveEmp(Request $request)
 {
     try{
     $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
     $tokenRole = $token['tokenable']['role'];
     $status = $token['tokenable']['status'];
     $code = $token['tokenable']['company_code'];
@@ -5011,6 +5028,196 @@ public function allInactiveEmp(Request $request)
 
 
 
+
+
+
+public function assignRole(Request $request)
+{
+    try{
+     $token = $request->user()->currentAccessToken();
+     $code = $token['tokenable']['company_code'];
+    
+     $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+     $validatedData = $request->validate([
+        'role_name' => 'required',
+        'emp_id'   =>  'required',
+       
+    ]);
+    $role = Role::create([
+        'name' => $request->role_name,
+        'company_code' => $code,
+        'emp_id' => $request->emp_id,
+        'guard_name' => 'api',
+        'created_at' => $date,
+        'updated_at' => $date,
+    ]);
+
+    return response()->json(['success'=>true,'message' => 'Role assigned successfully'], 200);
+    }
+    catch(\Exception $e)
+    {   
+      return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
+    }
+    
+    
+}
+
+
+
+
+public function allRoleData(Request $request)
+{
+    try{
+     $token = $request->user()->currentAccessToken();
+     $code = $token['tokenable']['company_code'];
+     $allData = Role::where('company_code',$code)->get();
+     if($allData->isEmpty())
+     {
+        return response()->json(['success'=>false,'message'=> 'no data found'],404);
+     }
+     return response()->json(['success'=>true,'data'=>$allData]);
+    }
+    catch(\Exception $e)
+    {
+        return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()],500);
+    }
+ 
+}
+
+
+
+
+public function addPermission(Request $request)
+{
+   try
+   {
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $tokenRole = $token['tokenable']['role'];
+    if($tokenRole == 'admin')
+    {
+    $code = $token->tokenable->company_code;
+    
+    //  echo $token->tokenable->id;die;
+    $validatedData = $request->validate([
+        'emp_id' => 'required',
+        'modules_name' => 'required',
+    ]);
+    // $empId = $token->tokenable->id;
+    $empId = $request->emp_id;
+    $roleData = Role::where('company_code',$code)->where('emp_id',$empId)->first();
+    if(!$roleData)
+    {
+        return response()->json(['success'=>false,'message'=>'role not found'],404);
+    }
+    $roleId = $roleData->id;
+    $roleName = $roleData->name;
+    $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
+
+
+    $permission = Permission::create([
+     'name' => $roleName,
+     'guard_name' => 'api',
+     'role_id'   => $roleId,
+     'modules_name' => $request->modules_name,
+     'created_at' => $date,
+     'updated_at' => $date,
+    ]);
+    return response()->json(['success'=>true,'message' => 'Permission added successfully',$permission], 200);
+    }
+     return response()->json(['success' => false,'message' => 'you have no permission'],403);
+
+   }
+    catch(\Exception $e)
+    {
+        return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()],500);
+    }
+ 
+
+}
+
+
+
+
+public function allPermission(Request $request)
+{
+   try{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $code = $token->tokenable->company_code; 
+    $id = $token->tokenable->id;
+    $roleData = Role::where('company_code',$code)->where('emp_id',$id)->first();
+    if (!$roleData) {
+        return response()->json(['success' => false, 'message' => 'Role not found'], 404);
+     }
+    $roleId = $roleData->id;
+    $permission = Permission::where('role_id',$roleId)->first();
+    if (!$permission) {
+        return response()->json(['success' => false, 'message' => 'Permission not found for this role'], 404);
+     }
+    $allModules = $permission->modules_name;
+    $moduleIds = explode(',',$allModules);
+    $moduleNames = Module::whereIn('id',$moduleIds)->pluck('name')->toArray();   
+    return response()->json(['success' => true, 'modules' => $moduleNames], 200);
+   }
+   catch(\Exception $e)
+   {
+    return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()],500);
+   }
+
+
+}
+
+
+
+
+
+public function isEmpPermission(Request $request)
+{
+    try{
+     $token = $request->user()->currentAccessToken();
+     if(!$token)
+     {
+         return response()->json(['success'=>false,'message'=>'invalid token'],401);
+     }
+     $code = $token->tokenable->company_code;
+     $empId = $token->tokenable->id;
+     $roleData = Role::where('company_code',$code)->where('emp_id',$empId)->first();
+     if(!$roleData)
+     {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+     }
+     $roleId = $roleData->id;
+     $permission = Permission::where('role_id',$roleId)->first();
+     if(!$permission)
+     {
+        return response()->json(['success'=>false,'message'=>'permission not found'],404);
+     }
+    $moduleId = 1;
+    $modulesArray = explode(',',$permission->modules_name); 
+     if(in_array($moduleId,$modulesArray))
+     {
+        return response()->json(['success' => true, 'message' => 'Permission granted'], 200);
+     }
+     else {
+        return response()->json(['success' => false, 'message' => 'Permission denied'], 403);
+     }
+    
+
+    }
+    catch(\Exception $e)
+   {
+    return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()],500);
+   }
+
+
+}
 
 
 

@@ -123,7 +123,8 @@ Route::post('all-leave-application',[LeaveController::class,'allLeaveApplication
       // superadmin or admin approve
 Route::post('leave-application-approve/{id}',[LeaveController::class,'leaveApplicationApprove']);
 
-
+Route::post('empCheckin',[EmployeeController::class,'empCheckIns']);
+Route::post('empCheckout',[EmployeeController::class,'empCheckOuts']);
 
       // dept crud
 Route::post('dept_iddata/{id}',[DeptController::class,'deptIdData']);
@@ -153,6 +154,15 @@ Route::post('dept-by-company-id',[DeptController::class,'getDeptbyBranchandCompa
 
 //Assign Branch & Dept
  Route::post('assign-branch-dept-to-users',[AdminController::class,'AssignBranchDeptToUsers']);
+
+ Route::post('create-role',[AdminController::class,'assignRole']);
+ Route::post('all-role',[AdminController::class,'allRoleData']);
+ Route::post('add-permission',[AdminController::class,'addPermission']);
+ Route::post('all-permission-list',[AdminController::class,'allPermission']);
+ Route::post('is-emp-permission',[AdminController::class,'isEmpPermission']);
+
+
+ 
     
   // ... other authenticated routes
 });
@@ -198,8 +208,9 @@ Route::post('dept-by-company-id',[DeptController::class,'getDeptbyBranchandCompa
 
   //attendence
   
-  Route::post('empCheckin',[EmployeeController::class,'empCheckIn']);
-  Route::post('empCheckout',[EmployeeController::class,'empCheckOut']);
+  // Route::post('empCheckin',[EmployeeController::class,'empCheckIn']);
+  // Route::post('empCheckout',[EmployeeController::class,'empCheckOut']);
+
   // Route::post('getAttendence',[AdminController::class,'getAttend']);
   
 

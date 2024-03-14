@@ -160,8 +160,8 @@ class BranchController extends Controller
          }
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
              $validatedData = $request->validate([
-                'branch_name' => 'required',
-                'branch_address' => 'required',
+                'name' => 'required',
+                'address' => 'required',
                 'phone'          => 'required',
                 'legal_info'    => 'required',
                 'country'     => 'required',
@@ -176,9 +176,9 @@ class BranchController extends Controller
              {
                 return response()->json(['success' => false,'message' => 'branch not found.'], 404);
              }
-             $branch->name = $request->branch_name;
-             $branch->location = $request->branch_address;
-             $branch->phone = $request->phone;
+             $branch->name = $request->name;
+             $branch->location = $request->address;
+             $branch->phone = $request->phone; 
              $branch->country = $request->country;
              $branch->state = $request->state;
              $branch->city = $request->city;
