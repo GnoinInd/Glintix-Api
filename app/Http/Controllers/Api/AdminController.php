@@ -5223,6 +5223,125 @@ public function isEmpPermission(Request $request)
 
 
 
+public function editRole(Request $request,$id)
+{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $tokenRole = $token->tokenable->role;
+    $code = $token->tokenable->company_code;
+   if($tokenRole == 'admin' || $tokenRole =='Super Admin')
+   {
+    $validatedData = $request->validate([
+        'name' => 'required',
+        'emp_id' => 'required'   
+     ]);
+     $role = Role::where('company_code',$code)->where('id',$id)->first();
+     if(!$role)
+     {
+        return response()->json(['success' => false,'message' => 'role not found.'], 404);
+     }
+     $role->name = $request->name;
+     $role->emp_id = $request->emp_id;
+     $role->save();
+     return response()->json(['success' => true,'message' => 'role updated successfully'], 200);
+   }
+   return response()->json(['success' => false,'message' => 'you have no permission.'], 403);
+
+
+
+}
+
+
+
+
+
+public function delRole(Request $request,$id)
+{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $tokenRole = $token->tokenable->role;
+    $code = $token->tokenable->company_code;
+    if($tokenRole == 'admin' || $tokenRole =='Super Admin')
+    {
+        $role = Role::where('company_code',$code)->where('id',$id)->first();
+        if(!$role)
+        {
+           return response()->json(['success' => false,'message' => 'role not found.'], 404);
+        }
+        $role->delete();
+        return response()->json(['success' => true,'message' => 'role deleted successfully'], 200);
+
+
+    }
+    return response()->json(['success' => false,'message' => 'you have no permission.'], 403);
+
+}
+
+
+
+public function editPermission(Request $request,$id)
+{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $tokenRole = $token->tokenable->role;
+    $code = $token->tokenable->company_code;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $validatedData = $request->validate([
+        'modules_name' => 'required|string' ,
+        'modules_name.*' => 'integer|distinct',
+     ]);
+    $permission = Permission::where('role_id',$id)->first();
+    if (!$permission) {
+        return response()->json(['success' => false, 'message' => 'Permission not found'], 404);
+    }
+    $permission->modules_name = $request->modules_name;
+    $permission->updated_at = $date;
+    $permission->save();
+
+    return response()->json(['success' => true, 'message' => 'Permission updated successfully'], 200);
+
+    
+
+}
+
+
+
+
+public function deletePermission(Request $request,$id)
+{
+    $token = $request->user()->currentAccessToken();
+    if(!$token)
+    {
+        return response()->json(['success'=>false,'message'=>'invalid token'],401);
+    }
+    $tokenRole = $token->tokenable->role;
+    $code = $token->tokenable->company_code;
+    if($tokenRole == 'admin' || $tokenRole =='Super Admin')
+    {
+
+    
+     $permission = Permission::where('role_id',$id)->first();
+     if (!$permission) {
+        return response()->json(['success' => false, 'message' => 'Permission not found'], 404);
+     }
+     $permission->delete();
+     return response()->json(['success' => true,'message' => 'role deleted successfully'], 200);
+   }
+   return response()->json(['success' => false,'message' => 'you have no permission.'], 403);
+
+}
+
+
+
 
 
 
