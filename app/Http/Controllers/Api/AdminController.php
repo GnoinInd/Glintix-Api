@@ -5097,7 +5097,7 @@ public function addPermission(Request $request)
         return response()->json(['success'=>false,'message'=>'invalid token'],401);
     }
     $tokenRole = $token['tokenable']['role'];
-    if($tokenRole == 'admin')
+    if($tokenRole == 'admin'|| $tokenRole =='Super Admin')
     {
     $code = $token->tokenable->company_code;
     

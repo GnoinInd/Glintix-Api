@@ -157,9 +157,16 @@ Route::post('dept-by-company-id',[DeptController::class,'getDeptbyBranchandCompa
 
  Route::post('create-role',[AdminController::class,'assignRole']);
  Route::post('all-role',[AdminController::class,'allRoleData']);
+ Route::post('edit-role/{id}',[AdminController::class,'editRole']);
+ Route::post('delete-role/{id}',[AdminController::class,'delRole']);
+
  Route::post('add-permission',[AdminController::class,'addPermission']);
  Route::post('all-permission-list',[AdminController::class,'allPermission']);
+ Route::post('edit-permission/{RoleId}',[AdminController::class,'editPermission']);
+ Route::post('delete-permission/{RoleId}',[AdminController::class,'deletePermission']);
  Route::post('is-emp-permission',[AdminController::class,'isEmpPermission']);
+
+
 
 
  
