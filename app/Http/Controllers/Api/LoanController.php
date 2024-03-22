@@ -9,10 +9,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\LeaveMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Response;
-
-use Illuminate\Support\Facades\URL;
-
 use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\DB;
@@ -20,13 +16,10 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
 
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Session\Middleware\StartSession;
 
 
 class LoanController extends Controller
@@ -69,10 +62,8 @@ class LoanController extends Controller
                     'database' => $dbName,
                     'username' => $username,
                     'password' => $password,
-                    'charset' => 'utf8mb4',
                     'collation' => 'utf8mb4_unicode_ci',
                     'prefix' => '',
-                    'strict' => true,
                     'engine' => null,
                 ]);
         

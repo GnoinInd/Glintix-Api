@@ -236,7 +236,7 @@ class BranchController extends Controller
     
     public function branchDetailsByCode(Request $request)
     {
-      try{
+     
          $token = $request->user()->currentAccessToken();
          $tokenRole = $token['tokenable']['role'];
          $status = $token['tokenable']['status'];
@@ -253,11 +253,8 @@ class BranchController extends Controller
              return response()->json(['success'=>true,'message' => $branchData],200);    
          }
          return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
-      }
-      catch (\Exception $e) {
-         // Log::error('Error creating company employee: ' . $e->getMessage());
-         return response()->json(['success'=>false,'message' => 'An error occurred while fetching branch data.', 'error' => $e->getMessage()], 500);
-        }
+      
+     
         
     } 
 

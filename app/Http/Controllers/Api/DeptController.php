@@ -69,7 +69,6 @@ class DeptController extends Controller
          return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
       }
       catch (\Exception $e) {
-         // Log::error('Error creating company employee: ' . $e->getMessage());
          return response()->json(['success'=>false,'message' => 'An error occurred while storing deptartment data.', 'error' => $e->getMessage()], 500);
         }
         
@@ -98,7 +97,6 @@ class DeptController extends Controller
          return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
       }
       catch (\Exception $e) {
-         // Log::error('Error creating company employee: ' . $e->getMessage());
          return response()->json(['success'=>false,'message' => 'An error occurred while fetching depertment data.', 'error' => $e->getMessage()], 500);
         }
         
@@ -129,7 +127,6 @@ class DeptController extends Controller
          return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
       }
       catch (\Exception $e) {
-         // Log::error('Error creating company employee: ' . $e->getMessage());
          return response()->json(['success'=>false,'message' => 'An error occurred while fetching depertment data.', 'error' => $e->getMessage()], 500);
         }
         
@@ -242,7 +239,6 @@ class DeptController extends Controller
             return response()->json(['success'=>false,'message' => 'You do not have permission.'], 403);
          }
          catch (\Exception $e) {
-            // Log::error('Error creating company employee: ' . $e->getMessage());
             return response()->json(['success'=>false,'message' => 'An error occurred while fetching depertment data.', 'error' => $e->getMessage()], 500);
            }
     } 
