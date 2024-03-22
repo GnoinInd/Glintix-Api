@@ -63,7 +63,6 @@ Route::post('employee-bank-cheque',[EmployeeRegistration::class,'employeeCheque'
 Route::post('employee-family-details',[EmployeeRegistration::class,'employeeFamily']);
 Route::post('employee-document-deatils',[EmployeeRegistration::class,'employeeDocument']);
 Route::post('employee-address-proof',[EmployeeRegistration::class,'employeeAddressProof']);
-//Route::post('employee-driving-licence',[EmployeeRegistration::class,'employeeDrivingLicenec']);
 Route::post('employee-skill',[EmployeeRegistration::class,'employeeSkill']);
 Route::post('employee-emergency-details',[EmployeeRegistration::class,'employeeEmergencyDetails']);
 Route::post('employee-address-details',[EmployeeRegistration::class,'employeeAddressDetails']);
@@ -107,22 +106,19 @@ Route::post('is-emp-permission',[AdminController::class,'isEmpPermission']);
 });
 
 
-   Route::post('root_register',[AdminController::class,'registerRoot']);    
-   Route::post('root/login', [AdminController::class, 'adminLogin']);
-   Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
-   Route::post('root/forget-password', [AdminController::class, 'rootForgetPass']);
-   Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
-   Route::post('logincompany',[AdminController::class,'loginCompany']);
-   Route::post('company_verify_otp', [AdminController::class, 'verifyOtpCompany']); 
-   Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);  
-   Route::post('company-verify-forget-password', [AdminController::class, 'verifyForgetPassCompany']);    
-   Route::post('login-user',[AdminController::class,'logUser']);  
-   Route::post('access-user/forget-pass',[AdminController::class,'accessFogetPass']);
-   Route::post('access-user/verify-forget-pass',[AdminController::class,'verifyAccessFogetPass']);
-
-   Route::post('logoutuser', [AdminController::class, 'logoutSession']);
-   
-   Route::post('forgetpass',[AdminController::class,'forgetpassword']);
+  Route::post('root_register',[AdminController::class,'registerRoot']);    
+  Route::post('root/login', [AdminController::class, 'adminLogin']);
+  Route::post('verify_otp', [AdminController::class, 'verifyOtp']);
+  Route::post('root/forget-password', [AdminController::class, 'rootForgetPass']);
+  Route::post('root/verify-forget-pass', [AdminController::class, 'verifyRootForgetPass']);
+  Route::post('logincompany',[AdminController::class,'loginCompany']);
+  Route::post('company_verify_otp', [AdminController::class, 'verifyOtpCompany']); 
+  Route::post('company-forget-password', [AdminController::class, 'companyForgetPass']);  
+  Route::post('company-verify-forget-password', [AdminController::class, 'verifyForgetPassCompany']);    
+  Route::post('login-user',[AdminController::class,'logUser']);  
+  Route::post('access-user/forget-pass',[AdminController::class,'accessFogetPass']);
+  Route::post('access-user/verify-forget-pass',[AdminController::class,'verifyAccessFogetPass']);   
+  Route::post('forgetpass',[AdminController::class,'forgetpassword']);
   Route::post('employee-login',[EmployeeRegistration::class,'employeeLogin']);
   Route::post('datewiseAttendence',[AdminController::class,'datewiseAttend']);
   Route::post('monthwiseAttendence',[AdminController::class,'monthwiseAttend']);

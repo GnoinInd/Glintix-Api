@@ -8,5 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class RoleUserAssign extends Model
 {
     use HasFactory;
-    protected $fillable = ['emp_id','role_id','company_code']; 
+    protected $fillable = ['emp_id','role_id','company_code','branch_id','dept_id']; 
 }

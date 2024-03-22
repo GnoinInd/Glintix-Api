@@ -518,14 +518,10 @@ public function logout()
                 $passSpecial = $passSpecial[rand(0, strlen($passSpecial) - 1)];
                 $passNum = str_shuffle(Str::random(5, '0123456789'));
                 $generatedPassword = $passAlpha . $passSpecial . $passNum;
-                // print_r($generatedPassword);die;
                 $role = 'admin';
                 $total = 25;
                         
                 $companyCode = $this->generateUniqueCompanyCode();
-                //  print_r($companyCode);die;
-
-                // $modules = $request->input('modules',[]);
                 if (!isset($modulesId) || !is_array($modulesId)) {
                     return response()->json(['success' => false, 'message' => 'Modules parameter is required and must be an array'],404);
                 }
@@ -1632,7 +1628,6 @@ public function newUser(Request $request)
         'delete' => 'nullable|boolean',
         'role' => 'required',
          'mobile_number' => 'required',
-        // 'company_code' => 'required',
 
         
     ]);
@@ -1657,7 +1652,6 @@ public function newUser(Request $request)
         $dynamicDB = DB::connection('dynamic');
         $empId = $request->emp_id;
         $empIdCheck = $dynamicDB->table('employees')->where('id',$empId)->first();
-        //  print_r($empIdCheck);die;
         if(!$empIdCheck)
         {
             return response()->json(['success' => false, 'message' => 'employee id not found'],404);
@@ -1700,7 +1694,6 @@ public function newUser(Request $request)
         $company_access = new CompanyUserAccess;
         $company_access->name = $request->name;
         $company_access->emp_id = $request->emp_id;
-        // $company_access->emp_code = $request->company_code;
         $company_access->email = $request->email;
         $company_access->username = $request->username;
         $company_access->password = Hash::make($request->password);
@@ -1972,7 +1965,6 @@ private function sendOtpViaEmailUserAccess($email,$otp)
 public function verifyAccessFogetPass(Request $request)
 {
     $validatedData = $request->validate([
-        // 'mobile_number' => 'required',
         'otp'  => 'required',
     ]);
     $otp = $validatedData['otp'];
@@ -2418,6 +2410,8 @@ public function edituserRole(Request $request,$id)
     $validatedData = $request->validate([
         'role_id' => 'required',
         'emp_id' => 'required', 
+        'branch_id' => 'required',
+        'dept_id'  => 'required'
      ]);
      $role = RoleUserAssign::where('company_code',$code)->where('id',$id)->first();
      if(!$role)
@@ -2426,6 +2420,8 @@ public function edituserRole(Request $request,$id)
      }
      $role->emp_id = $request->emp_id;
      $role->role_id = $request->role_id;
+     $role->branch_id = $request->branch_id;
+     $role->dept_id = $request->dept_id;
      $role->save();
      return response()->json(['success' => true,'message' => 'role updated successfully'], 200);
    
@@ -2475,11 +2471,15 @@ public function userRole(Request $request)
         $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
         $validatedData = $request->validate([
            'emp_id' => 'required',
-           'role_id'   =>  'required',    
-       ]); 
+           'role_id'   =>  'required',  
+           'branch_id' => 'required',
+           'dept_id'   => 'required'   
+       ]);
        $role = RoleUserAssign::create([
            'emp_id' => $request->emp_id,
            'role_id'=> $request->role_id,
+           'branch_id'    => $request->branch_id,
+           'dept_id'      => $request->dept_id,
            'company_code' => $code,
            'created_at' => $date,
            'updated_at' => $date,
