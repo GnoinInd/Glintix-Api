@@ -102,6 +102,8 @@ Route::post('create-user-role',[AdminController::class,'userRole']);
 Route::post('edit-permission/{RoleId}',[AdminController::class,'editPermission']);
 Route::post('delete-permission/{RoleId}',[AdminController::class,'deletePermission']);
 Route::post('is-emp-permission',[AdminController::class,'isEmpPermission']);
+
+Route::post('create-control-pannel',[AdminController::class,'controlPannelCreate']);
  
 });
 

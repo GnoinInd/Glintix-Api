@@ -2075,7 +2075,7 @@ public function empApproveByAdmin(Request $request)
                 'dept_id'   => 'required',
                 'status' => 'required',
                ]); 
-               $emp_id = $request->emp_id;
+               $emp_id = $request->emp_id; 
                $branchId = $request->branch_id;
                $deptId = $request->dept_id;
                $status = $request->status;
@@ -2535,6 +2535,43 @@ public function modulePermission(Request $request)
          return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);
        }
 
+}
+
+
+
+public function controlPannelCreate(Request $request)
+{
+    try {
+        $token = $request->user()->currentAccessToken();
+        
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
+        }
+        
+        $code = $token->tokenable->company_code;
+        $empId = $token->tokenable->id;
+        $roleData = RoleUserAssign::where('emp_id',$empId)->where('company_code',$code)->first();
+        $roleId = $roleData->role_id;
+        $role = RoleMaster::find($roleId);
+        
+        if (!$role) {
+            return response()->json(['success' => false, 'message' => 'Data not found'], 404);
+        }
+        
+        $permission = $role->permission;
+        $permission = json_decode($permission,true);
+        $isControlPannel = in_array("createcontrolpannel", $permission);
+
+        if (!$isControlPannel) {
+            return response()->json(['success' => false, 'message' => 'you have no excess'], 403);
+        }
+        
+        return response()->json(['success' => true, 'message'=>'you can access control pannel','roleData' => $permission], 200);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.', 'error' => $e->getMessage()], 500);
+    }
+    
+    
 }
 
 
