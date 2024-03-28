@@ -2075,7 +2075,7 @@ public function empApproveByAdmin(Request $request)
                 'dept_id'   => 'required',
                 'status' => 'required',
                ]); 
-               $emp_id = $request->emp_id;
+               $emp_id = $request->emp_id; 
                $branchId = $request->branch_id;
                $deptId = $request->dept_id;
                $status = $request->status;
@@ -2172,7 +2172,8 @@ public function assignRole(Request $request)
          return response()->json(['success'=>false,'message'=>'invalid token'],401);
      }
      $code = $token['tokenable']['company_code'];
-    
+     $empData = CompanyUserAccess::where('company_code',$code)->get(); 
+     $modulesData = Module::all();
      $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
      $validatedData = $request->validate([
         'name' => 'required', 
@@ -2191,7 +2192,7 @@ public function assignRole(Request $request)
         'updated_at' => $date,
     ]);
 
-    return response()->json(['success'=>true,'message' => 'Role assigned successfully'], 200);
+    return response()->json(['success'=>true,'message' => 'Role assigned successfully','emp_data'=>$empData,'modules'=>$modulesData], 200);
     
 }
 
@@ -2536,6 +2537,101 @@ public function modulePermission(Request $request)
        }
 
 }
+
+
+
+public function controlPannelCreate(Request $request)
+{
+    try {
+        $token = $request->user()->currentAccessToken();
+        
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
+        }
+        $moduleId = 1;
+        $code = $token->tokenable->company_code;
+        $empId = $token->tokenable->id;
+        $roleData = RoleUserAssign::where('emp_id',$empId)->where('company_code',$code)->first();
+        $modules = $roleData->modules;
+        $modules = explode(',',$modules);
+        if(!in_array($moduleId,$modules))
+        {
+            return response()->json(['success'=>false,'message'=>'you have no permission'],403);
+        }
+        $roleId = $roleData->role_id;
+        $role = RoleMaster::find($roleId);
+        
+        if (!$role) {
+            return response()->json(['success' => false, 'message' => 'Data not found'], 404);
+        }
+        
+        $permission = $role->permission;
+        $permission = json_decode($permission,true);
+        $isControlPannel = in_array("createcontrolpannel", $permission);
+
+        if (!$isControlPannel) {
+            return response()->json(['success' => false, 'message' => 'you have no excess'], 403);
+        }
+        
+        return response()->json(['success' => true, 'message'=>'you can access control pannel','roleData' => $permission], 200);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.', 'error' => $e->getMessage()], 500);
+    }
+    
+    
+}
+
+
+
+public function permissionMaster(Request $request)
+
+ {
+        $modules = [
+            'Control Pannel' => [
+                '1' => ['readControlPanel', 'createControlPanel',',updateControlPanel','deleteControlPanel'],
+            ],
+            'Masters' => [
+                '2' => ['readMasters', 'createMasters','updateMasters','deleteMasters'],
+                
+            ],
+            'Employee' => [
+                '3' => ['readEmployee', 'createEmployee','updateEmployee','deleteEmployee'],
+                
+            ],
+            'Leave' => [
+                '4' => ['readLeave','createLeave', 'updateLeave','deleteLeave'],
+                
+            ],
+            'Loan' => [
+                '5' => ['readLoan','createLoan', 'updateLoan','deleteLoan'],
+                
+            ],
+            'Salary Deatils' => [
+                '6' => ['readSalaryDetails','createSalaryDetails', 'updateSalaryDetails','deleteSalaryDetails'],
+                
+            ],
+            'Reports' => [
+                '7' => ['readReports','createReports', 'updateReports','deleteReports'],
+                
+            ],
+            'HR Management' => [
+                '8' => ['readHRManagement','createHRManagement', 'updateHRManagement','deleteHRManagement'],
+                
+            ],
+            'Timesheet' => [
+                '9' => ['readTimesheet','createTimesheet', 'updateModuleName','deleteTimesheet'],
+                
+                
+            ],
+            'Task Management' => [
+                '10' => ['readTaskManagement','createTaskManagement', 'updateTaskManagement','deleteTaskManagement'],
+                
+            ],
+        ];
+
+        return response()->json($modules);
+ }
+
 
 
 

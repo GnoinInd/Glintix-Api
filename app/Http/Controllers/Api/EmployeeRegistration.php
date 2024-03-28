@@ -1242,6 +1242,7 @@ public function employeeSkill(Request $request)
 
 
 
+    protected $dynamicDB;
 
     public function createEmployeeAndDetails(Request $request)
     {
@@ -1270,7 +1271,7 @@ public function employeeSkill(Request $request)
             $maxEmp = $company->total;
             $accessEmp = $token['tokenable']['create'];
 
-            if (($accessEmp == 1 && $tokenRole == 'admin') || $tokenRole == 'Super Admin') {
+            if ($accessEmp == 'Super Admin') {
                 $validatedData = $request->validate([
                     'title' => 'nullable',
                     'first_name' => 'required',
@@ -1293,7 +1294,6 @@ public function employeeSkill(Request $request)
                     'work_phone_number' => 'nullable',
                     'whatsapp_no'   =>  'nullable',
                     'email'       =>   'required',
-                    // 'void'        =>  'nullable',
          
                     'course' => 'required',
                     'board' => 'required',
@@ -1344,7 +1344,6 @@ public function employeeSkill(Request $request)
                    'company_employee'       =>  'required',
              
                    'pan_number'           =>  'required',
-                  // 'adhar_number'         =>  'required',
                    'voter_id'             =>  'required',
                    'driving_licence'      =>  'nullable',
          
@@ -1394,7 +1393,6 @@ public function employeeSkill(Request $request)
                      $table->string('home_phone_no')->nullable();
                      $table->string('work_phone_no')->nullable();
                      $table->string('whatsapp_no')->nullable();
-                     //$table->string('emergency_phone_number')->nullable();
                      $table->string('email')->nullable();
                      $table->string('voter_id')->nullable();
                      $table->string('pan_no')->nullable();
@@ -1413,7 +1411,6 @@ public function employeeSkill(Request $request)
                      });
                  }  
                  $empCount =  $this->dynamicDB->table('company_employee')->count();
-                //   echo $empCount;die;
                  $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
                 if ($maxEmp >= $empCount) {
                     $emp_id = $this->createCompanyEmployee($request);
@@ -1432,7 +1429,6 @@ public function employeeSkill(Request $request)
                      $company_access = new CompanyUserAccess;
                      $company_access->name = $request->preferred_name;
                      $company_access->emp_id = $emp_id;
-                     // $company_access->emp_code = $request->company_code;
                      $company_access->email = $request->email;
                      $company_access->username = $request->username;
                      $company_access->password = Hash::make($request->password);
@@ -1455,7 +1451,6 @@ public function employeeSkill(Request $request)
                 return response()->json(['success'=>false,'message' => 'You do not have permission to create employees.'], 403);
             }
         } catch (\Exception $e) {
-            // Log::error('Error creating company employee: ' . $e->getMessage());
             return response()->json(['success'=>false,'message' => 'An error occurred. Please try again.', 'error' => $e->getMessage()], 500);
         }
     }
@@ -1474,6 +1469,7 @@ public function employeeSkill(Request $request)
             if ($request->hasFile('nationality_doc')) {
                 $file = $request->file('nationality_doc');
                 $uniqueFolderName = time();
+                $filePath = $file->store('nationality_doc/' . $uniqueFolderName);
                 $nationalityDocPath = $filePath;
             } else {
                 $nationalityDocPath = null;
@@ -1501,7 +1497,6 @@ public function employeeSkill(Request $request)
                 'email'       =>   $request->input('email'),
                 'voter_id'     =>  $request->input('voter_id'),
                 'pan_no' => $request->input('pan_number'),
-                //'adhar_no' => $request->input('adhar_number'),
                 'driving_licence' => $request->input('driving_licence'),
                 'passport_no'   =>$request->input('passport_number'),
                 'passport_to'       =>  $request->input('passport_to'),
@@ -1518,7 +1513,6 @@ public function employeeSkill(Request $request)
 
             return $this->dynamicDB->table('company_employee')->orderBy('id', 'desc')->value('id');
         } catch (\Exception $e) {
-            // Log::error('Error creating company employee: ' . $e->getMessage());
             return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
         }
     }
@@ -1592,7 +1586,6 @@ public function employeeSkill(Request $request)
         }
       }
       catch (\Exception $e) {
-        // Log::error('Error creating company employee: ' . $e->getMessage());
         return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
        }
       
@@ -1626,6 +1619,7 @@ public function employeeSkill(Request $request)
 
         if ($request->hasFile('exp_certificate')) {
             $file = $request->file('exp_certificate');
+            $uniqueFolderName = time();
             $filePath = $file->store('exp_document/' . $uniqueFolderName);
             $experiencePath = $filePath;
            }
@@ -1677,6 +1671,7 @@ public function employeeSkill(Request $request)
                 $table->bigInteger('emp_id')->unsigned()->nullable();
                 $table->string('ac_holder_name')->nullable();
                 $table->string('ac_type')->nullable();
+              //  $table->string('ac_nature')->nullable();
                 $table->string('ac_number')->nullable();
                 $table->string('bank_name')->nullable();
                 $table->string('ifsc')->nullable();
@@ -1686,7 +1681,8 @@ public function employeeSkill(Request $request)
                 $table->string('bank_document_type')->nullable();
                 $table->string('bank_doc_path')->nullable();
                 $table->timestamps();
-                $table->foreign('emp_id')->references('id')->on('employee');
+
+                $table->foreign('emp_id')->references('id')->on('company_employee');
 
             });
         }
@@ -1712,7 +1708,6 @@ public function employeeSkill(Request $request)
                 'emp_id'   =>  $emp_id,
                 'ac_holder_name' => $request->input('acc_holder_name'),
                 'ac_type' => $request->input('acc_type'),
-               // 'ac_nature' => $request->input('acc_nature'),
                 'ac_number' => $request->input('acc_number'),
                 'bank_name'   =>$request->input('bank_name'),
                 'ifsc'       =>  $request->input('ifsc'),
@@ -1731,7 +1726,6 @@ public function employeeSkill(Request $request)
              return response()->json(['message' => 'Employee with ID ' . $emp_id . ' not found.'], 404); 
         }
          catch (\Exception $e) {
-            // Log::error('Error creating company employee: ' . $e->getMessage());
             return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
            }
     }
@@ -1783,7 +1777,6 @@ public function employeeSkill(Request $request)
 
         }
         catch (\Exception $e) {
-            // Log::error('Error creating company employee: ' . $e->getMessage());
             return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
            }
 
@@ -1811,6 +1804,7 @@ public function employeeSkill(Request $request)
         if ($request->hasFile('document_path')) {
             $file = $request->file('document_path');
             $uniqueFolderName = time();
+            $filePath = $file->store('document/' . $uniqueFolderName);
             $empDocPath = $filePath;
            }
            else 
@@ -1945,15 +1939,16 @@ public function employeeSkill(Request $request)
             'database' => $dbName,
             'username' => $username,
             'password' => $password,
+            'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
+            'strict' => true,
             'engine' => null,
         ];
 
         config(['database.connections.dynamic' => $config]);
         $this->dynamicDB = DB::connection('dynamic');
     }
-
 
 
 
