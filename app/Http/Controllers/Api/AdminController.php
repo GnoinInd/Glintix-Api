@@ -2025,6 +2025,25 @@ public function setNewPasswordUserAccess(Request $request)
 
 
 
+protected function validateCompanyUserTimeExpire($phone, $empId)
+{
+    $user = CompanyUserAccess::where('mobile_number', $phone)->where('emp_id', $empId)->first();
+
+    if ($user && Carbon::now()->lt($user->time_expire)) {
+        return $user;
+    } elseif ($user) {
+        $token = $user->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
+        return null;
+    }
+
+    return null;
+}
+
+
+
 
 
 public function logoutAccess(Request $request)
@@ -2544,7 +2563,6 @@ public function controlPannelCreate(Request $request)
 {
     try {
         $token = $request->user()->currentAccessToken();
-        
         if (!$token) {
             return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
         }
@@ -2552,33 +2570,48 @@ public function controlPannelCreate(Request $request)
         $code = $token->tokenable->company_code;
         $empId = $token->tokenable->id;
         $roleData = RoleUserAssign::where('emp_id',$empId)->where('company_code',$code)->first();
-        $modules = $roleData->modules;
-        $modules = explode(',',$modules);
-        if(!in_array($moduleId,$modules))
-        {
-            return response()->json(['success'=>false,'message'=>'you have no permission'],403);
-        }
-        $roleId = $roleData->role_id;
-        $role = RoleMaster::find($roleId);
-        
-        if (!$role) {
+        if (!$roleData) {
             return response()->json(['success' => false, 'message' => 'Data not found'], 404);
         }
-        
-        $permission = $role->permission;
+        $roleId = $roleData->role_id;
+        $roleData = RoleMaster::where('id',$roleId)->first();
+        // $modules = $roleData->modules;echo $modules;die;
+        $module = $roleData->modules;
+        if(!$module)
+        {
+            return response()->json(['success'=>false,'message'=>'you can not access']);
+        }
+        $modules = $this->modulesCheck($module,$moduleId);
+        if($modules)
+        {
+        $permit = "createControlPanel";
+        $permission = $roleData->permission;
         $permission = json_decode($permission,true);
-        $isControlPannel = in_array("createcontrolpannel", $permission);
-
+        $isControlPannel = in_array($permit, $permission);
+ 
         if (!$isControlPannel) {
             return response()->json(['success' => false, 'message' => 'you have no excess'], 403);
         }
-        
         return response()->json(['success' => true, 'message'=>'you can access control pannel','roleData' => $permission], 200);
+      }   
+         return response()->json(['success'=>false,'message'=>'you have no permission'],403);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.', 'error' => $e->getMessage()], 500);
     }
     
     
+}
+
+
+
+private function modulesCheck($module,$moduleId)
+{
+  $modules = explode(',',$module);
+  if(in_array($moduleId,$modules))
+  {
+    return $modules;
+  }
+  return null;
 }
 
 
@@ -2630,7 +2663,7 @@ public function permissionMaster(Request $request)
         ];
 
         return response()->json($modules);
- }
+ } 
 
 
 
