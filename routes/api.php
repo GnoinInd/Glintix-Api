@@ -105,6 +105,8 @@ Route::post('is-emp-permission',[AdminController::class,'isEmpPermission']);
 Route::post('permission-master',[AdminController::class,'permissionMaster']);
 
 Route::post('create-control-pannel',[AdminController::class,'controlPannelCreate']);
+Route::post('project-master',[AdminController::class,'projectMaster']);
+
  
 });
 
