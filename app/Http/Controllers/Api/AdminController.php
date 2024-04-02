@@ -2619,51 +2619,115 @@ private function modulesCheck($module,$moduleId)
 public function permissionMaster(Request $request)
 
  {
-        $modules = [
-            'Control Pannel' => [
-                '1' => ['readControlPanel', 'createControlPanel','updateControlPanel','deleteControlPanel'],
-            ],
-            'Masters' => [
-                '2' => ['readMasters', 'createMasters','updateMasters','deleteMasters'],
-                
-            ],
-            'Employee' => [
-                '3' => ['readEmployee', 'createEmployee','updateEmployee','deleteEmployee'],
-                
-            ],
-            'Leave' => [
-                '4' => ['readLeave','createLeave', 'updateLeave','deleteLeave'],
-                
-            ],
-            'Loan' => [
-                '5' => ['readLoan','createLoan', 'updateLoan','deleteLoan'],
-                
-            ],
-            'Salary Deatils' => [
-                '6' => ['readSalaryDetails','createSalaryDetails', 'updateSalaryDetails','deleteSalaryDetails'],
-                
-            ],
-            'Reports' => [
-                '7' => ['readReports','createReports', 'updateReports','deleteReports'],
-                
-            ],
-            'HR Management' => [
-                '8' => ['readHRManagement','createHRManagement', 'updateHRManagement','deleteHRManagement'],
-                
-            ],
-            'Timesheet' => [
-                '9' => ['readTimesheet','createTimesheet', 'updateModuleName','deleteTimesheet'],
-                
-                
-            ],
-            'Task Management' => [
-                '10' => ['readTaskManagement','createTaskManagement', 'updateTaskManagement','deleteTaskManagement'],
-                
-            ],
-        ];
-
-        return response()->json($modules);
+    $modules = [
+        [
+            'module_name' => 'Control Panel',
+            'module_id' => 1,
+            'permissions' => ['readControlPanel', 'createControlPanel','updateControlPanel','deleteControlPanel'],
+        ],
+        [
+            'module_name' => 'Masters',
+            'module_id' => 2,
+            'permissions' => ['readMasters', 'createMasters','updateMasters','deleteMasters'],
+        ],
+        [
+            'module_name' => 'Employee',
+            'module_id' => 3,
+            'permissions' => ['readEmployee', 'createEmployee','updateEmployee','deleteEmployee'],
+        ],
+        [
+            'module_name' => 'Leave',
+            'module_id' => 4,
+            'permissions' => ['readLeave','createLeave', 'updateLeave','deleteLeave'],
+        ],
+        [
+            'module_name' => 'Loan',
+            'module_id' => 5,
+            'permissions' => ['readLoan','createLoan', 'updateLoan','deleteLoan'],
+        ],
+        [
+            'module_name' => 'Salary Details',
+            'module_id' => 6,
+            'permissions' => ['readSalaryDetails','createSalaryDetails', 'updateSalaryDetails','deleteSalaryDetails'],
+        ],
+        [
+            'module_name' => 'Reports',
+            'module_id' => 7,
+            'permissions' => ['readReports','createReports', 'updateReports','deleteReports'],
+        ],
+        [
+            'module_name' => 'HR Management',
+            'module_id' => 8,
+            'permissions' => ['readHRManagement','createHRManagement', 'updateHRManagement','deleteHRManagement'],
+        ],
+        [
+            'module_name' => 'Timesheet',
+            'module_id' => 9,
+            'permissions' => ['readTimesheet','createTimesheet', 'updateModuleName','deleteTimesheet'],
+        ],
+        [
+            'module_name' => 'Task Management',
+            'module_id' => 10,
+            'permissions' => ['readTaskManagement','createTaskManagement', 'updateTaskManagement','deleteTaskManagement'],
+        ],
+    ];
+    
+    return response()->json($modules);
+    
+    
  } 
+
+
+
+ public function companyCretateRole(Request $request)
+ {
+    try
+    {
+            $token = $request->user()->currentAccessToken();
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
+    }
+    $code = $token->takenable->company_code;
+    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
+    $validatedData = $request->validate([
+        'role_name'   =>  'required',     
+    ]);
+    $role = RoleUserAssign::create([
+        'role_name' => $request->role_name,
+        'company_code' => $code,
+        'created_at' => $date,
+        'updated_at' => $date,
+    ]);
+
+    return response()->json(['success'=>true,'message' => 'Role Name Saved Successfully'], 200);
+
+ }
+ catch (Exception $e) {
+    return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+}
+    }
+
+
+
+
+    public function projectMaster(Request $request)
+    {
+        $token = $request->user()->currentAcccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'Token Not Found'],404);
+        }
+        $code = $token->tokenable->company_code;
+        $validatedData = $request->validate([
+            'branch'   =>  'required',     
+            'department' => 'required',
+            'proj_name'  =>  'required',
+            'proj_title'  =>  'required',
+            'proj_code'  => 'required',
+        ]);
+
+    }
+
 
 
 
