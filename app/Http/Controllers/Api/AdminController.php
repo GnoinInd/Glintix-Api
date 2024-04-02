@@ -2603,7 +2603,7 @@ public function controlPannelCreate(Request $request)
 }
 
 
-
+ 
 private function modulesCheck($module,$moduleId)
 {
   $modules = explode(',',$module);
@@ -2621,7 +2621,7 @@ public function permissionMaster(Request $request)
  {
         $modules = [
             'Control Pannel' => [
-                '1' => ['readControlPanel', 'createControlPanel',',updateControlPanel','deleteControlPanel'],
+                '1' => ['readControlPanel', 'createControlPanel','updateControlPanel','deleteControlPanel'],
             ],
             'Masters' => [
                 '2' => ['readMasters', 'createMasters','updateMasters','deleteMasters'],
