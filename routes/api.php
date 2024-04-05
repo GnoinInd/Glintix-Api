@@ -106,6 +106,10 @@ Route::post('permission-master',[AdminController::class,'permissionMaster']);
 Route::post('company-create-role',[AdminController::class,'companyCretateRole']);
 Route::post('create-control-pannel',[AdminController::class,'controlPannelCreate']);
 Route::post('project-master',[AdminController::class,'projectMaster']);
+Route::post('edit-project-master/{id}',[AdminController::class,'editProjectMaster']);
+Route::post('delete-project-master/{id}',[AdminController::class,'destroyProjectMaster']);
+Route::post('all-project-master',[AdminController::class,'allProjectMaster']);
+
 
  
 });
