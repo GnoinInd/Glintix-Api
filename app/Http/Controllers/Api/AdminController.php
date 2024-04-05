@@ -49,6 +49,7 @@ use App\Models\Permission;
 use App\Models\Module;
 use App\Models\RoleMaster;
 use App\Models\RoleUserAssign;
+use App\Models\ProjectMaster;
 
 
 class AdminController extends Controller
@@ -2621,52 +2622,52 @@ public function permissionMaster(Request $request)
  {
     $modules = [
         [
-            'module_name' => 'Control Panel',
+            'name' => 'Control Panel',
             'module_id' => 1,
             'permissions' => ['readControlPanel', 'createControlPanel','updateControlPanel','deleteControlPanel'],
         ],
         [
-            'module_name' => 'Masters',
+            'name' => 'Masters',
             'module_id' => 2,
             'permissions' => ['readMasters', 'createMasters','updateMasters','deleteMasters'],
         ],
         [
-            'module_name' => 'Employee',
+            'name' => 'Employee',
             'module_id' => 3,
             'permissions' => ['readEmployee', 'createEmployee','updateEmployee','deleteEmployee'],
         ],
         [
-            'module_name' => 'Leave',
+            'name' => 'Leave',
             'module_id' => 4,
             'permissions' => ['readLeave','createLeave', 'updateLeave','deleteLeave'],
         ],
         [
-            'module_name' => 'Loan',
+            'name' => 'Loan',
             'module_id' => 5,
             'permissions' => ['readLoan','createLoan', 'updateLoan','deleteLoan'],
         ],
         [
-            'module_name' => 'Salary Details',
+            'name' => 'Salary Details',
             'module_id' => 6,
             'permissions' => ['readSalaryDetails','createSalaryDetails', 'updateSalaryDetails','deleteSalaryDetails'],
         ],
         [
-            'module_name' => 'Reports',
+            'name' => 'Reports',
             'module_id' => 7,
             'permissions' => ['readReports','createReports', 'updateReports','deleteReports'],
         ],
         [
-            'module_name' => 'HR Management',
+            'name' => 'HR Management',
             'module_id' => 8,
             'permissions' => ['readHRManagement','createHRManagement', 'updateHRManagement','deleteHRManagement'],
         ],
         [
-            'module_name' => 'Timesheet',
+            'name' => 'Timesheet',
             'module_id' => 9,
             'permissions' => ['readTimesheet','createTimesheet', 'updateModuleName','deleteTimesheet'],
         ],
         [
-            'module_name' => 'Task Management',
+            'name' => 'Task Management',
             'module_id' => 10,
             'permissions' => ['readTaskManagement','createTaskManagement', 'updateTaskManagement','deleteTaskManagement'],
         ],
@@ -2712,8 +2713,10 @@ public function permissionMaster(Request $request)
 
     public function projectMaster(Request $request)
     {
-        $token = $request->user()->currentAcccessToken();
-        if(!$token)
+        try
+        {
+            $token = $request->user()->currentAccessToken();
+            if(!$token)
         {
             return response()->json(['success'=>false,'message'=>'Token Not Found'],404);
         }
@@ -2724,11 +2727,238 @@ public function permissionMaster(Request $request)
             'proj_name'  =>  'required',
             'proj_title'  =>  'required',
             'proj_code'  => 'required',
+            'methodology' => 'required',
+            'version'   =>  'required',
+            'description' => 'required',
+            'start_date' => 'required',
+            'target_date' => 'required',
+            'due_date' => 'required',
+            'duration' => 'required',
+            'priority' => 'required',
+            'risk' => 'required',
         ]);
+        $id = $token->tokenable->id;
+        $fileName = '';
+        if($request->file)
+        {
+            $file = $request->file;
+            $ext = $file->getClientOriginalExtension();
+            $fileName = $id.'.'.time().'.'.$ext;
+            $file->move(public_path('/project_file'),$fileName);
+
+        }
+        $projModule = new ProjectMaster;
+        $projModule->branch = $request->branch;
+        $projModule->department = $request->department;
+        $projModule->proj_name = $request->proj_name;
+        $projModule->proj_title = $request->proj_title;
+        $projModule->proj_code = $request->proj_code;
+        $projModule->methodology = $request->methodology;
+        $projModule->version = $request->version;
+        $projModule->description = $request->description;
+        $projModule->start_date = $request->start_date;
+        $projModule->target_date = $request->target_date;
+        $projModule->due_date = $request->due_date;
+        $projModule->duration = $request->duration;
+        $projModule->priority = $request->priority;
+        $projModule->risk = $request->risk;
+        $projModule->company_code = $code;
+        $projModule->resource_id = $request->resource_id;
+        $projModule->resource_name = $request->resource_name;
+        $projModule->location = $request->location;
+        $projModule->serial_no = $request->serial_no;
+        $projModule->memory_size = $request->memory_size;
+        $projModule->model = $request->model;
+        $projModule->comments = $request->comments;
+        $projModule->type_of_resource = $request->type_of_resource;
+        $projModule->quantity = $request->quantity;
+        $projModule->storage_capacity = $request->storage_capacity;
+        $projModule->assumption = $request->assumption;
+        $projModule->resource_description = $request->resource_description;
+        $projModule->mac_address = $request->mac_address;
+        $projModule->subnet_mask = $request->subnet_mask;
+        $projModule->dns = $request->dns;
+        $projModule->ip_address = $request->ip_address;
+        $projModule->gateway = $request->gateway;
+        $projModule->soft_name = $request->soft_name;
+        $projModule->soft_version = $request->soft_version;
+        $projModule->year_of_licence = $request->year_of_licence;
+        $projModule->soft_serial_no = $request->soft_serial_no;
+        $projModule->soft_licence = $request->soft_licence;
+        $projModule->title = $request->title;
+        $projModule->soft_quantity = $request->soft_quantity;
+        $projModule->soft_description = $request->soft_description;
+        $projModule->role = $request->role;
+        $projModule->no_of_roles = $request->no_of_roles;
+        $projModule->human_resource_description = $request->human_resource_description;
+        $projModule->cost_type = $request->cost_type;
+        $projModule->cost_resource_name = $request->cost_resource_name;
+        $projModule->cost_quantity = $request->cost_quantity;
+        $projModule->cost = $request->cost;
+        $projModule->total_cost = $request->total_cost;
+        $projModule->cost_description = $request->cost_description;
+        $projModule->client_id = $request->client_id;
+        $projModule->client_role = $request->client_role;
+        $projModule->client_name = $request->client_name;
+        $projModule->client_website = $request->client_website;
+        $projModule->client_domain = $request->client_domain;
+        $projModule->client_insurance = $request->client_insurance;
+        $projModule->document_type = $request->document_type;
+        $projModule->file = $fileName;
+        $projModule->save();
+        return response()->json(['success' => true, 'message' => 'Project Master Data Stored Successfully']);
+        }
+        catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
+    }
+
+
+
+
+    public function editProjectMaster(Request $request, $id)
+    {
+        try{
+            $token = $request->user()->currentAccessToken();
+            if(!$token)
+            {
+                return response()->json(['success'=>false,'message'=>'Token Not Found'],404);
+            }
+            $validatedData = $request->validate([
+                'branch'   =>  'required',     
+                'department' => 'required',
+                'proj_name'  =>  'required',
+                'proj_title'  =>  'required',
+                'proj_code'  => 'required',
+                'methodology' => 'required',
+                'version'   =>  'required',
+                'description' => 'required',
+                'start_date' => 'required',
+                'target_date' => 'required',
+                'due_date' => 'required',
+                'duration' => 'required',
+                'priority' => 'required',
+                'risk' => 'required',
+            ]);
+            $projModule = ProjectMaster::find($id);
+            if(!$projModule)
+            {
+                return response()->json(['success'=>false,'message'=>'Data Not Found'],404);
+            }
+            $id = $token->tokenable->id;
+            $projModule->branch = $request->branch;
+            $projModule->department = $request->department;
+            $projModule->proj_name = $request->proj_name;
+            $projModule->proj_title = $request->proj_title;
+            $projModule->proj_code = $request->proj_code;
+            $projModule->methodology = $request->methodology;
+            $projModule->version = $request->version;
+            $projModule->description = $request->description;
+            $projModule->start_date = $request->start_date;
+            $projModule->target_date = $request->target_date;
+            $projModule->due_date = $request->due_date;
+            $projModule->duration = $request->duration;
+            $projModule->priority = $request->priority;
+            $projModule->risk = $request->risk;
+            $projModule->resource_id = $request->resource_id;
+            $projModule->resource_name = $request->resource_name;
+            $projModule->location = $request->location;
+            $projModule->serial_no = $request->serial_no;
+            $projModule->memory_size = $request->memory_size;
+            $projModule->model = $request->model;
+            $projModule->comments = $request->comments;
+            $projModule->type_of_resource = $request->type_of_resource;
+            $projModule->quantity = $request->quantity;
+            $projModule->storage_capacity = $request->storage_capacity;
+            $projModule->assumption = $request->assumption;
+            $projModule->resource_description = $request->resource_description;
+            $projModule->mac_address = $request->mac_address;
+            $projModule->subnet_mask = $request->subnet_mask;
+            $projModule->dns = $request->dns;
+            $projModule->ip_address = $request->ip_address;
+            $projModule->gateway = $request->gateway;
+            $projModule->soft_name = $request->soft_name;
+            $projModule->soft_version = $request->soft_version;
+            $projModule->year_of_licence = $request->year_of_licence;
+            $projModule->soft_serial_no = $request->soft_serial_no;
+            $projModule->soft_licence = $request->soft_licence;
+            $projModule->title = $request->title;
+            $projModule->soft_quantity = $request->soft_quantity;
+            $projModule->soft_description = $request->soft_description;
+            $projModule->role = $request->role;
+            $projModule->no_of_roles = $request->no_of_roles;
+            $projModule->human_resource_description = $request->human_resource_description;
+            $projModule->cost_type = $request->cost_type;
+            $projModule->cost_resource_name = $request->cost_resource_name;
+            $projModule->cost_quantity = $request->cost_quantity;
+            $projModule->cost = $request->cost;
+            $projModule->total_cost = $request->total_cost;
+            $projModule->cost_description = $request->cost_description;
+            $projModule->client_id = $request->client_id;
+            $projModule->client_role = $request->client_role;
+            $projModule->client_name = $request->client_name;
+            $projModule->client_website = $request->client_website;
+            $projModule->client_domain = $request->client_domain;
+            $projModule->client_insurance = $request->client_insurance;
+            $projModule->document_type = $request->document_type;
+            if($request->file)
+            {
+                $file = $request->file;
+                $ext = $file->getClientOriginalExtension();
+                $fileName = $id.'.'.time().'.'.$ext;
+                $file->move(public_path('/project_file'),$fileName);
+                $projModule->file = $fileName;
+    
+            }
+            $projModule->save();  
+              return response()->json(['success' => true, 'message' => 'Project Master Data Updated Successfully']);
+
+        }
+
+        catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
 
     }
 
 
+
+
+    public function destroyProjectMaster(Request $request,$id)
+    {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'Token Not Found'],404);
+        }
+        $projModule = ProjectMaster::find($id);
+        if(!$projModule)
+        {
+            return response()->json(['success'=>false,'message'=>'Record Not Found'],404);
+        }
+        $projModule->delete();
+        return response()->json(['success'=>true,'message'=>'Record Deleted Successfully'],200);
+
+    }
+
+
+
+
+    public function allProjectMaster(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'token not found!'],404);
+        }
+        $code = $token->tokenable->company_code;
+        $allProject = ProjectMaster::where('company_code',$code)->get();
+        if(!$allProject)
+        {
+            return response()->json(['success'=>false,'message'=>'Data Not Found!'],404);
+        }
+        return response()->json(['success'=>true,'data'=>$allProject]);
+    }
 
 
 
