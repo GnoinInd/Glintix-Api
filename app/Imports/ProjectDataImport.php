@@ -4,8 +4,13 @@ namespace App\Imports;
 
 use App\Models\ProjectMaster;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 
-class ProjectDataImport implements ToModel
+
+// class ProjectDataImport implements ToModel
+class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
 {
     /**
     * @param array $row
@@ -14,63 +19,71 @@ class ProjectDataImport implements ToModel
     */
     public function model(array $row)
     {
+
         return new ProjectMaster([
-            'branch' => $row['1'],
-            'department' => $row['2'],
-            'proj_name' => $row['3'],
-            'proj_title' => $row['4'],
-            'description' => $row['5'],
-            'proj_code' => $row['6'],
-            'methodology' => $row['7'],
-            'version' =>  $row['8'],
-            'start_date' => $row['9'],
-            'target_date' => $row['10'],
-            'due_date' => $row['11'],
-            'duration' => $row['12'],
-            'priority' => $row['13'],
-            'risk'  =>   $row['14'],
-            'company_code' => $row['15'],
-            'resource_id' => $row['16'],
-            'resource_name' => $row['17'],
-            'location'  => $row['18'],
-            'serial_no'  => $row['19'],
-            'memory_size'  => $row['20'],
-            'model'   =>  $row['21'],
-            'comments'  => $row['22'],
-            'type_of_resource' => $row['23'],
-            'quantity'     => $row['24'],
-            'storage_capacity'  => $row['25'],
-            'assumption'   =>  $row['26'],
-            'resource_description'  => $row['27'],
-            'mac_address'   => $row['28'],
-            'subnet_mask'   => $row['29'],
-            'dns'        =>  $row['30'],
-            'ip_address'  => $row['31'],
-            'gateway'  =>  $row['32'],
-            'soft_name'  => $row['33'],
-            'soft_version'  => $row['34'],
-            'year_of_licence' => $row['35'],
-            'soft_serial_no' => $row['36'],
-            'soft_licence' => $row['37'],
-            'title'   => $row['38'],
-            'soft_quantity'  => $row['39'],
-            'soft_description' => $row['40'],
-            'role'   =>        $row['41'],
-            'no_of_roles'  =>  $row['42'],
-            'human_resource_description' => $row['43'],
-            'cost_type'  =>     $row['44'],
-            'cost_resource_name' => $row['45'],
-            'cost_quantity'   =>  $row['46'],
-            'cost'         =>    $row['47'],
-            'total_cost'  =>    $row['48'],
-            'cost_description' =>  $row['49'],
-            'client_id'   =>    $row['50'],
-            'client_role'  =>  $row['51'],
-            'client_name'  =>  $row['52'],
-            'client_website' => $row['53'],
-            'client_domain'  => $row['54'],
-            'client_insurance' => $row['55'],
-            'document_type'  =>  $row['56'],
+            'branch' => $row['branch'],
+            'department' => $row['department'],
+            'proj_name' => $row['proj_name'],
+            'proj_title' => $row['proj_title'],
+            'description' => $row['description'],
+            'proj_code' => $row['proj_code'],
+            'methodology' => $row['methodology'],
+            'version' =>  $row['version'],
+            'start_date' => $row['start_date'],
+            'target_date' => $row['target_date'],
+            'due_date' => $row['due_date'],
+            'duration' => $row['duration'],
+            'priority' => $row['priority'],
+            'risk'  =>   $row['risk'],
+            'company_code' => $row['company_code'],
+            'resource_id' => $row['resource_id'],
+            'resource_name' => $row['resource_name'],
+            'location'  => $row['location'],
+            'serial_no'  => $row['serial_no'],
+            'memory_size'  => $row['memory_size'],
+            'model'   =>  $row['model'],
+            'comments'  => $row['comments'],
+            'type_of_resource' => $row['type_of_resource'],
+            'quantity'     => $row['quantity'],
+            'storage_capacity'  => $row['storage_capacity'],
+            'assumption'   =>  $row['assumption'],
+            'resource_description'  => $row['resource_description'],
+            'mac_address'   => $row['mac_address'],
+            'subnet_mask'   => $row['subnet_mask'],
+            'dns'        =>  $row['dns'],
+            'ip_address'  => $row['ip_address'],
+            'gateway'  =>  $row['gateway'],
+            'soft_name'  => $row['soft_name'],
+            'soft_version'  => $row['soft_version'],
+            'year_of_licence' => $row['year_of_licence'],
+            'soft_serial_no' => $row['soft_serial_no'],
+            'soft_licence' => $row['soft_licence'],
+            'title'   => $row['title'],
+            'soft_quantity'  => $row['soft_quantity'],
+            'soft_description' => $row['soft_description'],
+            'role'   =>        $row['role'],
+            'no_of_roles'  =>  $row['no_of_roles'],
+            'human_resource_description' => $row['human_resource_description'],
+            'cost_type'  =>     $row['cost_type'],
+            'cost_resource_name' => $row['cost_resource_name'],
+            'cost_quantity'   =>  $row['cost_quantity'],
+            'cost'         =>    $row['cost'],
+            'total_cost'  =>    $row['total_cost'],
+            'cost_description' =>  $row['cost_description'],
+            'client_id'   =>    $row['client_id'],
+            'client_role'  =>  $row['client_role'],
+            'client_name'  =>  $row['client_name'],
+            'client_website' => $row['client_website'],
+            'client_domain'  => $row['client_domain'],
+            'client_insurance' => $row['client_insurance'],
+            'document_type'  =>  $row['document_type'],
         ]);
+        \Log::info('ProjectMaster instance created:', $projectMaster->toArray());
+    
+        return $projectMaster;
+    }
+    public function startRow(): int
+    {
+        return 2;
     }
 }
