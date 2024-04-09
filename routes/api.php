@@ -109,6 +109,12 @@ Route::post('project-master',[AdminController::class,'projectMaster']);
 Route::post('edit-project-master/{id}',[AdminController::class,'editProjectMaster']);
 Route::post('delete-project-master/{id}',[AdminController::class,'destroyProjectMaster']);
 Route::post('all-project-master',[AdminController::class,'allProjectMaster']);
+Route::post('current-date-project-master',[AdminController::class,'currentDateProject']);
+Route::post('monthwise-date-project-master',[AdminController::class,'MonthWiseDateProject']);
+Route::post('import-project-excel',[AdminController::class,'importProject']);
+Route::get('export-project-excel/{month}/{year}',[AdminController::class,'excelProject']);
+
+
 
 
  

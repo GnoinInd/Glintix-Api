@@ -23,6 +23,8 @@ Route::get('/', function () {
 Route::get('reset-password',[AdminController::class,'resetpasswordLoad']);
 Route::post('reset-password',[AdminController::class,'resetPassword'])->name('password.update');
 
+Route::get('export-project-excel/{month}/{year}',[AdminController::class,'testProject']);
+
 
 
 // Route::get('/car', [AdminController::class, 'showForm']);

@@ -50,6 +50,11 @@ use App\Models\Module;
 use App\Models\RoleMaster;
 use App\Models\RoleUserAssign;
 use App\Models\ProjectMaster;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProjectMasterData;
+
+use App\Imports\ProjectDataImport;
+
 
 
 class AdminController extends Controller
@@ -2953,13 +2958,120 @@ public function permissionMaster(Request $request)
         }
         $code = $token->tokenable->company_code;
         $allProject = ProjectMaster::where('company_code',$code)->get();
-        if(!$allProject)
+        if($allProject->isEmpty())
         {
             return response()->json(['success'=>false,'message'=>'Data Not Found!'],404);
         }
         return response()->json(['success'=>true,'data'=>$allProject]);
     }
 
+
+
+    public function currentDateProject(Request $request)
+    {
+     
+        try {
+            $token = $request->user()->currentAccessToken();
+            if (!$token) {
+                return response()->json(['success' => false, 'message' => 'Token not found!'], 404);
+            }
+        
+            $validatedData = $request->validate([
+                'from_date' => 'required|date',
+                'to_date' => 'required|date|after_or_equal:from_date',
+            ]);
+        
+            $code = $token['tokenable']['company_code'];
+            $fromDate = $validatedData['from_date'];
+            $toDate = $validatedData['to_date'];
+            
+            $currentDate = ProjectMaster::where('company_code', $code)
+                                        ->whereBetween('start_date', [$fromDate, $toDate])
+                                        ->get();
+        
+            if ($currentDate->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Data Not Found!'], 404);
+            }
+        
+            return response()->json(['success' => true, 'message' => 'Data Found', 'data' => $currentDate], 200);
+        
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
+        }
+        
+        
+
+    }
+
+
+
+
+    public function MonthWiseDateProject(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'Token Not Found!'],404);
+        }
+        $code = $token['tokenable']['company_code'];
+        $validatedData = $request->validate([
+            'month' => 'required|date_format:Y-m',
+        ]);
+        $month = $request->month;
+        $monthWiseData = ProjectMaster::where('company_code',$code)->whereYear('start_date','=',date('Y',strtotime($month)))
+        ->whereMonth('start_date','=',date('m',strtotime($month)))->get();
+        if($monthWiseData->isEmpty())
+        {
+            return response()->json(['success'=>false,'message'=>'Data Not Found!'],404);
+        }
+        return response()->json(['success'=>true,'message'=>'Data Found',$monthWiseData],200);
+    }
+
+
+
+
+    public function excelProject(Request $request,$month,$year)
+    {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'Token Not Found!'],404);
+        }
+        $code = $token['tokenable']['company_code'];
+      return Excel::download(new ProjectMasterData($month,$year,$code),'project_master_data.xlsx');
+    }
+
+
+    public function testProject(Request $request,$month,$year)
+    {
+       
+        $code = '65d_1708508552';
+      return Excel::download(new ProjectMasterData($month,$year,$code),'project_master_data.xlsx');
+    }
+
+
+
+    public function importProject(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
+        }
+    
+        $validatedData = $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+       $code = $token['tokenable']['company_code'];
+        $file = $request->file('file');
+    
+        try {
+            Excel::import(new ProjectDataImport(), $file);
+            return response()->json(['success' => true, 'message' => 'File imported successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
+        }
+    }
+    
 
 
 
