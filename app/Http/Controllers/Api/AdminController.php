@@ -57,6 +57,7 @@ use App\Imports\ProjectDataImport;
 
 
 
+
 class AdminController extends Controller
 {
 
@@ -2199,6 +2200,11 @@ public function assignRole(Request $request)
      $code = $token['tokenable']['company_code'];
      $empData = CompanyUserAccess::where('company_code',$code)->get(); 
      $modulesData = Module::all();
+     $roleName = RoleMaster::where('company_code',$code)->where('name',$request->name)->first();
+     if($roleName)
+     {
+        return response()->json(['success'=>false,'message'=>'Role Name already present']);
+     }
      $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
      $validatedData = $request->validate([
         'name' => 'required', 
@@ -3065,7 +3071,7 @@ public function permissionMaster(Request $request)
         $file = $request->file('file');
     
         try {
-            Excel::import(new ProjectDataImport(), $file);
+             Excel::import(new ProjectDataImport(), $file);
             return response()->json(['success' => true, 'message' => 'File imported successfully']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);

@@ -7,8 +7,8 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-// class ProjectMasterData implements FromCollection, WithHeadings
-class ProjectMasterData implements FromCollection
+class ProjectMasterData implements FromCollection, WithHeadings
+// class ProjectMasterData implements FromCollection
 {
     protected $month;
     protected $year;
@@ -33,12 +33,12 @@ class ProjectMasterData implements FromCollection
     }
 
 
-    // public function headings(): array
-    // {
-    //     $columns = Schema::getColumnListing('project_masters');
-    //     $filteredColumns = array_diff($columns, ['created_at', 'updated_at']);
-    //     return $filteredColumns;
-    // }
+    public function headings(): array
+    {
+        $columns = Schema::getColumnListing('project_masters');
+        $filteredColumns = array_diff($columns, ['created_at', 'updated_at']);
+        return $filteredColumns;
+    }
 
 
 }
