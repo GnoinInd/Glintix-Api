@@ -129,7 +129,7 @@ class BranchController extends Controller
          if ($tokenRole == 'admin' || $tokenRole == 'Super Admin') {
              $branchData = Branch::all();  
              if (!$branchData) {
-                 return response()->json(['success' => false, 'message' => 'Branch not found for the provided branch id.'], 404);
+                 return response()->json(['success' => false, 'message' => 'Branch not found.'], 404);
              }
              return response()->json(['success'=>true,'message' => $branchData],200);    
          }

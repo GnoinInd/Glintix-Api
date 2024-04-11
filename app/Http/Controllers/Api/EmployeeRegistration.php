@@ -6,18 +6,19 @@ use App\Models\CompanyUserAccess;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
+use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 use App\Models\CompanyModuleAccess;
+
 
 
 
@@ -1259,19 +1260,19 @@ public function employeeSkill(Request $request)
             if (!$company) {
                 return response()->json(['success' => false,'message' => 'Company not found.'], 404);
             }
-            if($tokenRole == 'admin' && $accessEmp != 1)
-            {
-               return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
-            }
-            if(!$accessEmp && $tokenRole == 'admin')
-            {
-              return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
-            }
+            // if($tokenRole == 'admin' && $accessEmp != 1)
+            // {
+            //    return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+            // }
+            // if(!$accessEmp && $tokenRole == 'admin')
+            // {
+            //   return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
+            // }
 
             $maxEmp = $company->total;
             $accessEmp = $token['tokenable']['create'];
 
-            if ($accessEmp == 'Super Admin') {
+            if ($tokenRole == 'Super Admin' || $tokenRole == 'admin' ) {
                 $validatedData = $request->validate([
                     'title' => 'nullable',
                     'first_name' => 'required',

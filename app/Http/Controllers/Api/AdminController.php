@@ -2223,7 +2223,7 @@ public function assignRole(Request $request)
         'updated_at' => $date,
     ]);
 
-    return response()->json(['success'=>true,'message' => 'Role assigned successfully','emp_data'=>$empData,'modules'=>$modulesData], 200);
+    return response()->json(['success'=>true,'message' => 'Role assigned successfully','modules'=>$modulesData], 200);
     
 }
 
@@ -3021,9 +3021,9 @@ public function permissionMaster(Request $request)
         }
         $code = $token['tokenable']['company_code'];
         $validatedData = $request->validate([
-            'month' => 'required|date_format:Y-m',
+            'month_year' => 'required|date_format:Y-m',
         ]);
-        $month = $request->month;
+        $month = $request->month_year;
         $monthWiseData = ProjectMaster::where('company_code',$code)->whereYear('start_date','=',date('Y',strtotime($month)))
         ->whereMonth('start_date','=',date('m',strtotime($month)))->get();
         if($monthWiseData->isEmpty())
