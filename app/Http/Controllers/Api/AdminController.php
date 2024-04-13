@@ -52,7 +52,7 @@ use App\Models\RoleUserAssign;
 use App\Models\ProjectMaster;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProjectMasterData;
-
+use App\Exports\ProjectFilterData;
 use App\Imports\ProjectDataImport;
 
 
@@ -3049,11 +3049,65 @@ public function permissionMaster(Request $request)
 
 
     public function testProject(Request $request,$month,$year)
-    {
-       
-        $code = '65d_1708508552';
+    {   
+      $code = '65d_1708508552';
       return Excel::download(new ProjectMasterData($month,$year,$code),'project_master_data.xlsx');
     }
+
+
+
+
+
+    public function excelProjectData(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Token Not Found!'], 404);
+        }
+        $code = $token['tokenable']['company_code'];
+            $validatedData = $request->validate([
+            'from_date' => 'required|date',
+            'to_date'   => 'required|date|after_or_equal:from_date',
+        ]);
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+    
+        $projects = ProjectMaster::where('company_code', $code)
+            ->whereBetween('start_date', [$fromDate, $toDate])
+            ->get();
+    
+        if ($projects->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'Data Not Available!'], 404);
+        }
+            return Excel::download(new ProjectFilterData($fromDate, $toDate, $code), 'project_date_filter_data.xlsx');
+    }
+    
+
+    public function showBlade()
+    {
+        return view('export.showBlade');
+    }
+
+    public function excelProjectDataTest(Request $request)
+    {
+        $code = '65d_1708508552';
+            $validatedData = $request->validate([
+            'from_date' => 'required|date',
+            'to_date'   => 'required|date|after_or_equal:from_date',
+        ]);
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+    
+        $projects = ProjectMaster::where('company_code', $code)
+            ->whereBetween('start_date', [$fromDate, $toDate])
+            ->get();
+    
+        if ($projects->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'Data Not Available!'], 404);
+        }
+            return Excel::download(new ProjectFilterData($fromDate, $toDate, $code), 'project_date_filter_data.xlsx');
+    }
+
 
 
 

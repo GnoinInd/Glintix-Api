@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Session\Middleware\StartSession;
 use App\Models\CompanyModuleAccess;
+use App\Models\RoleMaster; 
+use App\Models\RoleUserAssign;
 
 
 
@@ -1242,6 +1244,26 @@ public function employeeSkill(Request $request)
 }
 
 
+private function modulesCheck($module,$moduleId)
+{
+  $modules = explode(',',$module);
+  if(in_array($moduleId,$modules))
+  {
+    return $modules;
+  }
+  return null;
+}
+
+
+private function permitCheck($permit, $permitValue)
+{
+    $permitValue = json_decode($permitValue, true);
+    if (in_array($permit, $permitValue)) {
+        return ['success' => true]; 
+    }
+    return null; 
+}
+
 
     protected $dynamicDB;
 
@@ -1256,10 +1278,44 @@ public function employeeSkill(Request $request)
             $moduleId = 3;
             $empModule = CompanyModuleAccess::where('company_code',$code)->where('module_id',$moduleId)
             ->where('status',$status)->first();
-            $accessEmp = $token['tokenable']['create'];
+            // $accessEmp = $token['tokenable']['create'];
             if (!$company) {
                 return response()->json(['success' => false,'message' => 'Company not found.'], 404);
             }
+           
+
+
+            if($tokenRole == 'admin')
+            {
+                $empId = $token->tokenable->id;
+                $roleData = RoleUserAssign::where('emp_id',$empId)->where('company_code',$code)->first();
+                if (!$roleData) {
+                    return response()->json(['success' => false, 'message' => 'User not found'], 404);
+                }
+                $roleId = $roleData->role_id;
+                $roleData = RoleMaster::where('id',$roleId)->first();
+                $module = $roleData->modules;
+                if(!$module)
+                {
+                    return response()->json(['success'=>false,'message'=>'you can not access']);
+                }
+                $modules = $this->modulesCheck($module,$moduleId);
+                if(!$modules)
+                {
+                    return response()->json(['success'=>false,'message'=>'Access Denied'],403);
+                }
+                $permit = "createEmployee";
+                $permitValue = $roleData->permission;
+                $permission = $this->permitCheck($permit, $permitValue);
+
+                if (!$permission) { 
+                    return response()->json(['success' => false, 'message' => 'Access Denied!'], 403);
+                }
+               
+
+            }
+
+
             // if($tokenRole == 'admin' && $accessEmp != 1)
             // {
             //    return response()->json(['success' => false,'message' => 'you can not access employee module.'], 403);
@@ -1270,9 +1326,9 @@ public function employeeSkill(Request $request)
             // }
 
             $maxEmp = $company->total;
-            $accessEmp = $token['tokenable']['create'];
+            // $accessEmp = $token['tokenable']['create'];
 
-            if ($tokenRole == 'Super Admin' || $tokenRole == 'admin' ) {
+            if ($tokenRole == 'Super Admin' && $empModule || $tokenRole == 'admin' && $permission == true ) {
                 $validatedData = $request->validate([
                     'title' => 'nullable',
                     'first_name' => 'required',
