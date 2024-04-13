@@ -113,6 +113,7 @@ Route::post('current-date-project-master',[AdminController::class,'currentDatePr
 Route::post('monthwise-date-project-master',[AdminController::class,'MonthWiseDateProject']);
 Route::post('import-project-excel',[AdminController::class,'importProject']);
 Route::get('export-project-excel/{month}/{year}',[AdminController::class,'excelProject']);
+Route::post('export-project-data', [AdminController::class, 'excelProjectData']);
 
 
 
