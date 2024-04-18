@@ -1265,6 +1265,7 @@ private function permitCheck($permit, $permitValue)
 }
 
 
+
     protected $dynamicDB;
 
     public function createEmployeeAndDetails(Request $request)
@@ -2034,6 +2035,70 @@ private function permitCheck($permit, $permitValue)
         }catch (\Exception $e) {
         return response()->json(['success'=>false,'message' => 'An error occurred while creating company employee.', 'error' => $e->getMessage()], 500);
        }
+    }
+
+
+
+
+
+
+    public function readEmployeeAndDetails(request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
+        {
+            return response()->json(['success'=>false,'message'=>'Token Not Found!'],404);
+        }
+        $tokenRole = $token['tokenable']['role'];
+        $code = $token['tokenable']['company_code'];
+        $moduleId = 3;
+        $empModule = CompanyModuleAccess::where('company_code',$code)->where('module_id',$moduleId)
+        ->where('status','active')->first();
+
+
+        
+        if($tokenRole == 'admin')
+        {
+            $empId = $token->tokenable->id;
+            $roleData = RoleUserAssign::where('emp_id',$empId)->where('company_code',$code)->first();
+            if (!$roleData) {
+                return response()->json(['success' => false, 'message' => 'User not found'], 404);
+            }
+            $roleId = $roleData->role_id;
+            $roleData = RoleMaster::where('id',$roleId)->first();
+            $module = $roleData->modules;
+            if(!$module)
+            {
+                return response()->json(['success'=>false,'message'=>'you can not access']);
+            }
+            $modules = $this->modulesCheck($module,$moduleId);
+            if(!$modules)
+            {
+                return response()->json(['success'=>false,'message'=>'Access Denied'],403);
+            }
+            $permit = "readEmployee";
+            $permitValue = $roleData->permission;
+            $permission = $this->permitCheck($permit, $permitValue);
+
+            if (!$permission) { 
+                return response()->json(['success' => false, 'message' => 'Access Denied!'], 403);
+            }
+        }
+
+         if ($tokenRole == 'Super Admin' && $empModule || $tokenRole == 'admin' && $permission == true )
+             {
+                $employeeData = CompanyUserAccess::where('company_code',$code)->get();
+                if(!$employeeData)
+                {
+                    return response()->json(['success'=>false,'message' => 'data not found.'], 404);
+
+                }
+                return response()->json(['success'=>true,'message' => 'Data Found',$employeeData], 200);
+             }  
+             return response()->json(['success'=>false,'message' => 'You do not have permission to read employees.'], 403);
+       
+       
+
     }
 
 

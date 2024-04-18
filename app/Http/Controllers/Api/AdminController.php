@@ -3135,6 +3135,65 @@ public function permissionMaster(Request $request)
 
 
 
+    public function allTrashProjectData(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
+        }
+        $code = $token['tokenable']['company_code'];
+        $trashedData = ProjectMaster::where('company_code',$code)->onlyTrashed()->get();
+        if ($trashedData->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No Record In Archive'], 404);
+        }
+        return response()->json(['success' => true, 'date' =>$trashedData ], 200);
+
+    }
+
+
+    public function trashProjectDataRestore(Request $request, $id)
+    {
+        $token = $request->user()->currentAccessToken();
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
+        }
+        $code = $token['tokenable']['company_code'];
+        // $trashedData = ProjectMaster::where('company_code', $code)->withTrashed()->find($id);
+        $trashedData = ProjectMaster::where('company_code', $code)
+        ->withTrashed()
+        ->whereNotNull('deleted_at')
+        ->find($id);
+        if (!$trashedData) {
+            return response()->json(['success' => false, 'message' => 'Record Not Found'], 404);
+        }
+        $trashedData->restore();
+        return response()->json(['success' => true, 'message' => 'Record Restored Successfully'], 200);
+    }
+
+
+
+    public function trashProjectPermanent(Request $request, $id)
+    {
+        $token = $request->user()->currentAccessToken();
+    if (!$token) {
+        return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
+    }
+    $code = $token['tokenable']['company_code'];
+    $trashedData = ProjectMaster::where('company_code', $code)
+                                 ->withTrashed()
+                                 ->whereNotNull('deleted_at')
+                                 ->find($id);
+    if (!$trashedData) {
+        return response()->json(['success' => false, 'message' => 'Record Not Found or Not Trashed'], 404);
+    }    
+    $trashedData->forceDelete();
+    return response()->json(['success' => true, 'message' => 'Record Permanently Deleted Successfully'], 200);
+
+    }
+    
+
+
+
 
 
 
