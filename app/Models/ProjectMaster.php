@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProjectMaster extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
     protected $fillable = ['branch','department','proj_name','proj_title','description','proj_code','methodology','version',
 'start_date','target_date','due_date','duration','priority','risk','company_code','resource_id','resource_name','location',
 'serial_no','memory_size','model','comments','type_of_resource','quantity','storage_capacity','assumption',

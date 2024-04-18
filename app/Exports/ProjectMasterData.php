@@ -11,7 +11,7 @@ class ProjectMasterData implements FromCollection, WithHeadings
 // class ProjectMasterData implements FromCollection
 {
     protected $month;
-    protected $year;
+    protected $year; 
     protected $code;
 
     public function __construct(int $month, int $year, $code)
