@@ -114,6 +114,12 @@ Route::post('monthwise-date-project-master',[AdminController::class,'MonthWiseDa
 Route::post('import-project-excel',[AdminController::class,'importProject']);
 Route::get('export-project-excel/{month}/{year}',[AdminController::class,'excelProject']);
 Route::post('export-project-data', [AdminController::class, 'excelProjectData']);
+Route::post('all-trash-project',[AdminController::class,'allTrashProjectData']);
+Route::post('project-trash-restore/{id}',[AdminController::class,'trashProjectDataRestore']);
+Route::post('project-trash-permanent/{id}',[AdminController::class,'trashProjectPermanent']);
+Route::post('employee-api-read',[EmployeeRegistration::class,'readEmployeeAndDetails']);
+
+
 
 
 
