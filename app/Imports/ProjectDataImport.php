@@ -7,11 +7,13 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+use Carbon\Carbon;
 
 
 // class ProjectDataImport implements ToModel
 class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
 {
+    
     /**
     * @param array $row
     *
@@ -19,6 +21,7 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
     */
     public function model(array $row)
     {
+        
 
         return new ProjectMaster([
             'branch' => $row['branch'],
@@ -30,6 +33,7 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
             'methodology' => $row['methodology'],
             'version' =>  $row['version'],
             'start_date' => $row['start_date'],
+            // 'start_date' => $formatted_start_date,
             'target_date' => $row['target_date'],
             'due_date' => $row['due_date'],
             'duration' => $row['duration'],
@@ -79,6 +83,7 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
             'document_type'  =>  $row['document_type'],
         ]);
         \Log::info('ProjectMaster instance created:', $projectMaster->toArray());
+
     
         return $projectMaster;
     }
