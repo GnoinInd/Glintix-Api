@@ -8,12 +8,13 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+
 
 
 // class ProjectDataImport implements ToModel
 class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
 {
-    
     /**
     * @param array $row
     *
@@ -21,7 +22,9 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
     */
     public function model(array $row)
     {
-        
+        $start_date = Date::excelToDateTimeObject($row['start_date'])->format('Y-m-d');
+        $target_date = Date::excelToDateTimeObject($row['target_date'])->format('Y-m-d');
+      
 
         return new ProjectMaster([
             'branch' => $row['branch'],
@@ -32,9 +35,10 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
             'proj_code' => $row['proj_code'],
             'methodology' => $row['methodology'],
             'version' =>  $row['version'],
-            'start_date' => $row['start_date'],
-            // 'start_date' => $formatted_start_date,
-            'target_date' => $row['target_date'],
+            // 'start_date' => $row['start_date'],
+            'start_date' => $start_date,
+            // 'target_date' => $row['target_date'],
+            'target_date' => $target_date,
             'due_date' => $row['due_date'],
             'duration' => $row['duration'],
             'priority' => $row['priority'],
