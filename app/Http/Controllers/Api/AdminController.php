@@ -3131,12 +3131,12 @@ public function permissionMaster(Request $request)
         $file = $request->file('file');
     
         try {
-            
+            //  Excel::import(new ProjectDataImport(), $file);
             $import = new ProjectDataImport();
             Excel::import($import, $file);
             return response()->json(['success' => true, 'message' => 'File imported successfully']);
         } catch (\Exception $e) {
-            return response()->json(['success' => false,'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
         }
     }
     
