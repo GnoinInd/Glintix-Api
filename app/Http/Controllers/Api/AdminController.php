@@ -2726,12 +2726,18 @@ public function permissionMaster(Request $request)
     {
         try
         {
-            $token = $request->user()->currentAccessToken();
-            if(!$token)
+        $token = $request->user()->currentAccessToken();
+        if(!$token)
         {
             return response()->json(['success'=>false,'message'=>'Token Not Found'],404);
         }
         $code = $token->tokenable->company_code;
+        $projName = $request->proj_name;
+        $searchProj = ProjectMaster::where('company_code',$code)->where('proj_name',$projName)->first();
+        if($searchProj)
+        {
+            return response()->json(['success'=>false,'message'=>'Project Already Associate With Another Branch'],403);
+        }
         $validatedData = $request->validate([
             'branch'   =>  'required',     
             'department' => 'required',
@@ -2963,7 +2969,7 @@ public function permissionMaster(Request $request)
             return response()->json(['success'=>false,'message'=>'token not found!'],404);
         }
         $code = $token->tokenable->company_code;
-        $allProject = ProjectMaster::where('company_code',$code)->get();
+        $allProject = ProjectMaster::latest('id','DESC')->where('company_code',$code)->get();
         if($allProject->isEmpty())
         {
             return response()->json(['success'=>false,'message'=>'Data Not Found!'],404);
@@ -3125,10 +3131,12 @@ public function permissionMaster(Request $request)
         $file = $request->file('file');
     
         try {
-             Excel::import(new ProjectDataImport(), $file);
+            
+            $import = new ProjectDataImport();
+            Excel::import($import, $file);
             return response()->json(['success' => true, 'message' => 'File imported successfully']);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => false,'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
         }
     }
     
