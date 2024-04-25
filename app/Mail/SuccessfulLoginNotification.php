@@ -5,9 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
+
 
 class SuccessfulLoginNotification extends Mailable
 {
@@ -19,11 +17,7 @@ class SuccessfulLoginNotification extends Mailable
      *
      * @return void
      */
-    public $user;
-    public function __construct($user)
-    {
-       $this->user =$user;
-    }
+
 
 
     /**
@@ -34,7 +28,6 @@ class SuccessfulLoginNotification extends Mailable
     public function envelope()
     {
         return new Envelope(
-             subject: 'Successful Login Notification',
         );
     }
 
@@ -46,7 +39,6 @@ class SuccessfulLoginNotification extends Mailable
     public function content()
     {
         return new Content(
-             view: 'Mails.successful_login',
         );
     }
 

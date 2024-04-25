@@ -3,28 +3,22 @@
 namespace App\Imports;
 
 use App\Models\ProjectMaster;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Concerns\WithStartRow;
-use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Illuminate\Support\Facades\Validator;
 
+ 
 
-
-// class ProjectDataImport implements ToModel
-class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
+class ProjectDataImport implements ToModel
 {
     /**
     * @param array $row
     *
     * @return \Illuminate\Database\Eloquent\Model|null
     */
+
     public function model(array $row)
-    {
-        $start_date = Date::excelToDateTimeObject($row['start_date'])->format('Y-m-d');
-        $target_date = Date::excelToDateTimeObject($row['target_date'])->format('Y-m-d');
-      
+    { 
+        $branchExists = ProjectMaster::where('proj_name', $row['proj_name'])->first();            
 
         return new ProjectMaster([
             'branch' => $row['branch'],
@@ -35,10 +29,8 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
             'proj_code' => $row['proj_code'],
             'methodology' => $row['methodology'],
             'version' =>  $row['version'],
-            // 'start_date' => $row['start_date'],
-            'start_date' => $start_date,
-            // 'target_date' => $row['target_date'],
-            'target_date' => $target_date,
+            'start_date' => $row['start_date'],
+            'target_date' => $row['target_date'],
             'due_date' => $row['due_date'],
             'duration' => $row['duration'],
             'priority' => $row['priority'],
@@ -86,13 +78,8 @@ class ProjectDataImport implements ToModel, WithHeadingRow, WithStartRow
             'client_insurance' => $row['client_insurance'],
             'document_type'  =>  $row['document_type'],
         ]);
-        \Log::info('ProjectMaster instance created:', $projectMaster->toArray());
-
     
-        return $projectMaster;
+        return $ProjectMaster;
     }
-    public function startRow(): int
-    {
-        return 2;
-    }
+
 }

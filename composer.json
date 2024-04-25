@@ -13,6 +13,7 @@
         "laravel/sanctum": "^2.14",
         "laravel/tinker": "^2.7",
         "maatwebsite/excel": "^3.1",
+        "spatie/laravel-permission": "^6.3",
         "twilio/sdk": "^7.13"
     },
     "require-dev": {
@@ -28,7 +29,8 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": ["app/helpers/role.php"]
     },
     "autoload-dev": {
         "psr-4": {

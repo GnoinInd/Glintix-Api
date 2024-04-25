@@ -9,10 +9,4 @@ class Dept extends Model
 {
     use HasFactory;
 
-    public function branch()
-    {
-        return $this->belongsTo(Branch::class);
-    } 
-
-
 }

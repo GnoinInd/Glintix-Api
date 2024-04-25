@@ -6,36 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Exports\ThreeMonthsRecordexport;
-//use App\Models\Client;
- use Illuminate\Support\Facades\Mail;
- use App\Mail\LeaveMail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\URL;
-use App\Http\Controllers\Api\AdminController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
-use Carbon\Carbon;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Session\Middleware\StartSession;
-use App\Models\PasswordReset;
 use App\Models\SuperUser;
 use App\Models\UserOtp;
-use Exception;
-use Twilio\Rest\Client;
-use App\Mail\SuccessfulLoginNotification;
-use App\Mail\OtpMail;
-use App\Mail\WelcomeMail;
 use Laravel\Sanctum\PersonalAccessTokenFactory;
-use Cache;
-use Illuminate\Validation\ValidationException;
 use App\Models\CompanyModuleAccess;
 use App\Mail\RootUserMail;
 use App\Models\CompanyOtp;
@@ -52,8 +27,7 @@ use App\Models\RoleUserAssign;
 use App\Models\ProjectMaster;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProjectMasterData;
-use App\Exports\ProjectFilterData;
-use App\Imports\ProjectDataImport;
+
 
 
 
@@ -98,9 +72,6 @@ public function register(Request $request)
     if (auth()->attempt($data)) {
         $user = auth()->user(); 
         $token = $user->createToken('token_key')->accessToken;
-
-       // $request->session()->put('access_token', $token);
-
         return response()->json(['token' => $token,'data'=>$data], 200);
     } 
     else
@@ -109,30 +80,6 @@ public function register(Request $request)
     }
     
 }
-
-
-
-
-
-
-
-public function logout()
-    {
-        $user = Auth::user();
-
-        if ($user) {
-            
-            $user->tokens->each(function ($token, $key) {
-                $token->delete();
-            });
-           // session()->forget('access_token');
-
-            return response()->json(['message' => 'Logged out successfully'], 200);
-        } else {
-        
-            return response()->json(['message' => 'User not authenticated','user' => $user], 401);
-        }
-    }
 
 
     public function registerRoot(Request $request)
@@ -150,7 +97,6 @@ public function logout()
             $superUser = new SuperUser;
             $superUser->name = $validatedData['name'];
             $superUser->username = $validatedData['username'];
-            $superUser->password = bcrypt($validatedData['password']);
             $superUser->email = $validatedData['email'];
             $superUser->phone = $validatedData['phone'];
             $superUser->save();
@@ -169,11 +115,10 @@ public function logout()
 
     public function adminLogin(Request $request)
     {
-      try
-      {  
+       
         $validatedData = $request->validate([
             'username' => 'required',
-            'password' => 'required|string|min:6',
+            'password' => 'required',
         ]);
 
         $root = SuperUser::where('username', $validatedData['username'])->first();
@@ -188,82 +133,14 @@ public function logout()
             }
         }
 
-      }
-      catch(\Exception $e)
-      {
-        return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.'], 500);
-      }
+      
+     
     }
-
-    private function generateAndSendOtp($userId, $phone,$email)
-    {
-        try {
-            $otp = rand(100000, 999999);
-
-            $expireAt = now()->addMinutes(1);
-            UserOtp::create([
-                'user_id' => $userId,
-                'otp' => $otp,
-                'expire_at' => $expireAt,
-            ]);
-
-            $this->sendOtpViaTwilio($phone, $otp);
-            $this->sendOtpViaEmail($email,$otp);
-
-            return ['success' => true];
-        } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-    private function sendOtpViaTwilio($phone, $otp)
-    {
-        try {
-            $accountSid = getenv("TWILIO_SID");
-            $authToken = getenv("TWILIO_TOKEN");
-            $twilioNumber = getenv("TWILIO_FROM");
-
-            $client = new Client($accountSid, $authToken);
-            $message = $client->messages->create($phone, [
-                'from' => $twilioNumber,
-                'body' => "Your OTP: $otp",
-            ]);
-
-            if ($message->sid) {
-                return ['success' => true];
-            } else {
-                return ['success' => false, 'error' => 'Failed to send OTP'];
-            }
-        } catch (\Twilio\Exceptions\RestException $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-
-
-    private function sendOtpViaEmail($email,$otp)
-    {
-        try{
-            Mail::to($email)->send(new OtpMail($otp));
-            return ['success'=>true];
-        }
-        catch(\Exception $e)
-        {
-           return ['success'=>false,'error'=>$e->getMessage()];
-        }
-    }
-
-
 
 
     
     public function verifyOtp(Request $request)
     {
-      try
-       {
- 
         $validatedData = $request->validate([
              'user_id' => 'required',
              'otp' => 'required|string|digits:6',
@@ -273,26 +150,22 @@ public function logout()
          $userId = $request->user_id;
         $otp = $request->otp;
       
-        $userOtp = UserOtp::where('user_id', $userId)
+        $userOtp = UserOtp::where('user_id', $user_id)
             ->where('otp', $otp)
-            ->where('expire_at', '>', now())
             ->first();
         if ($userOtp) {
             $userOtp->delete();
             $root = SuperUser::find($userId);
             $role = $root->role;
             $email = $root->email;
-
-             Mail::to($email)->send(new SuccessfulLoginNotification($root));
             $token = $root->createToken('access_token')->plainTextToken;
         
-
             return response()->json(['success' => true, 'data' => $root, 'access_token' => $token,
              'message' => 'OTP verification successful'], 200);
         
 
         } else {
-            $deleted = UserOtp::where('user_id', $userId)
+            $deleted = UserOtp::where('user_id', $user_id)
             ->where('otp', $otp)
             ->delete();
           
@@ -303,26 +176,8 @@ public function logout()
             }
             
            
-        } 
-      }
-      catch(\Exception $e)
-      {
-     return response()->json(['success' => false, 'message' => 'An error occurred. Please try again.',$e->getMessage()], 500);      }
-    }
-
-
-
-
- 
-    
-    
-
-
-
-          
-
-
-
+        }
+     }
 
 
     public function rootForgetPass(Request $request)
@@ -432,32 +287,6 @@ public function logout()
   }
 
 
-   protected function validateSuperUserTimeExpire($mobile, $userId)
-   {
-      $user = SuperUser::where('phone', $mobile)->where('id', $userId)->first();
-
-      if ($user && Carbon::now()->lt($user->time_expire)) {
-          return $user;
-      }
-      elseif ($user)
-      {
-        $token = $user->currentAccessToken();
-        if($token)
-        {
-          $token->delete();
-        }
-        return null;
-      }
-
-      return null;
-   }
-
-
-
-
-
-
-
     public function registerCompany(Request $request)
     {
         $token = $request->user()->currentAccessToken();
@@ -474,21 +303,8 @@ public function logout()
                 'state'  =>  'required',
                 'postal_code'  => 'required',
                 'address' => 'required|string',
-                'email' => [
-                    'required',
-                    'email',
-                    'unique:users,email',
-                    function ($attribute, $value, $fail) {
-                        if (strpos($value, '@') !== false) {
-                            list($username, $domain) = explode('@', $value);
-                            if (strpos($domain, '.com') === false) {
-                                $fail($attribute.' must have ".com" after the @ symbol.');
-                            }
-                        } else {
-                            $fail($attribute.' is not a valid email address.');
-                        }
-                    },
-                ],
+                'email' => 
+                 'required',
                 'fax'  =>  'nullable',
                 'mobile_number' => 'required',
                 'website_url' => 'nullable',
@@ -498,11 +314,7 @@ public function logout()
             ]);
             $requestModules = $request->modules;
 
-            if (strpos($requestModules, '"') !== false) {
-                $modulesId = array_map('intval', explode(',', str_replace('"', '', $requestModules)));
-            } else {
-                $modulesId = explode(',', $requestModules);
-            }
+          
             $generatedDbName = $this->generateUniqueDbName($request->input('name'));
             $role = $token['tokenable']['role']; 
             if(isset($role) && $role == 'root')
@@ -520,9 +332,7 @@ public function logout()
                 $usernameAlpha = Str::random(5, 'abcdefghijklmnopqrstuvwxyz');
                 $usernameNum = Str::random(5, '0123456789');
                 $generatedUsername = $usernameAlpha . $usernameNum;  
-                $passAlpha = str_shuffle(Str::random(4, 'abcdefghijklmnopqrstuvwxyz'));
                 $passSpecial = '!@#$%^&*()_?';
-                $passSpecial = $passSpecial[rand(0, strlen($passSpecial) - 1)];
                 $passNum = str_shuffle(Str::random(5, '0123456789'));
                 $generatedPassword = $passAlpha . $passSpecial . $passNum;
                 $role = 'admin';
@@ -564,26 +374,9 @@ public function logout()
                 $dbUsername = $generatedUsername;
                 $dbPassword = $generatedPassword;
     
-                $this->createDynamicDatabase($dbName, $dbUsername, $dbPassword);
-    
-                Config::set('database.connections.dynamic', [
-                    'driver' => 'mysql',
-                    'host' => 'localhost',
-                    'database' => $dbName,
-                    'username' => $dbUsername,
-                    'password' => $dbPassword,
-                    'charset' => 'utf8mb4',
-                    'collation' => 'utf8mb4_unicode_ci',
-                    'prefix' => '',
-                    'strict' => true,
-                    'engine' => null,
-                ]);
-    
-                $dynamicDB = DB::connection('dynamic');
                 if (!$this->tableExists($dynamicDB, 'clients')) {
                     $this->createClientsTable($dynamicDB);
                 }
-                $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
                 $clientData = [
                     'name'    => $request->input('name'),
                     'email'   => $request->input('email'),
@@ -705,7 +498,6 @@ public function logout()
                 $table->string('email', 255);
                 $table->string('username', 255);
                 $table->string('password', 255);
-                // $table->string('phone', 20);
                 $table->string('dbName', 255);
                 $table->string('company_code',255);
                 $table->enum('role',['admin','subadmin'])->default('admin');
@@ -723,7 +515,6 @@ public function logout()
         if (!$connection->getSchemaBuilder()->hasTable('personal_access_tokens')) {
             $connection->getSchemaBuilder()->create('personal_access_tokens', function (Blueprint $table) {
                 $table->id();
-                // $table->foreignId('user_id');
                 $table->text('tokenable_type');
                 $table->unsignedBigInteger('tokenable_id');
                 $table->string('name',255);
@@ -731,60 +522,9 @@ public function logout()
                 $table->text('abilities')->nullable();
                 $table->timestamp('last_used_at')->nullable();
                 $table->timestamps();
-    
-                // $table->index(['tokenable_id', 'tokenable_type']);
-            });
+                });
         }
     }
-
-
-
-    private function generateUniqueCompanyCode()
-{
-    $timestamp = time();
-    $randomString = substr(uniqid('',true),0,3);
-    $code = $randomString .'_' . $timestamp;
-    return $code;
-}
-
-
-private function generateUniqueDbName($name)
-{
-    $randomString = substr(str_shuffle('0123456789'), 0, 3);
-    $code = substr($name, 0, 4) . '_' . $randomString;
-    return strtolower($code);
-}
-
-
-
-
-
-private function selectModules($companyCode, $modulesId)
-{
-    if (!is_array($modulesId)) {
-        return ['success' => false, 'message' => 'Modules must be an array'];
-    }
-
-    if (!$companyCode) {
-        return ['success' => false, 'message' => 'Company code not found'];
-    }
-
-    CompanyModuleAccess::where('company_code', $companyCode)->delete();
-
-    try {
-        foreach ($modulesId as $moduleId) {
-            CompanyModuleAccess::create([
-                'company_code' => $companyCode,
-                'module_id' => $moduleId,
-            ]);
-        }
-
-        return ['success' => true, 'message' => 'Modules selected successfully'];
-    } catch (\Exception $e) {
-        Log::error('Module selection error: ' . $e->getMessage());
-        return ['success' => false, 'message' => $e->getMessage()];
-    }
-}
 
 
 
@@ -955,7 +695,6 @@ public function loginCompany(Request $request)
             $role = $root->role;
             $email = $root->email;
 
-             Mail::to($email)->send(new SuccessfulLoginNotification($root));
              $token = $root->createToken('access_token')->plainTextToken;        
             return response()->json(['success' => true, 'data' => $root, 'access_token' => $token,
              'message' => 'OTP verification successful'], 200);
@@ -1164,117 +903,16 @@ public function companyProfile(Request $request)
 }
 
 
-
-
-public function forgetpassword(Request $request)
-{
-        
-         $validatedData = $request->validate([
-            'email' => 'required|email',
-                     
-        ]);
-  try
-  {
-    $user = User::where('email',$request->email)->get();
-    
-    if(count($user) > 0)
-    
-   {
-        
-      $token = str::random(30);
-      $domain = URL::to('/');
-      $url = $domain.'/reset-password?token='.$token;
-      $data['url'] = $url;
-      $data['email'] = $request->email;
-      $data['title'] = 'Password Reset';
-      $data['body'] = 'Please click on below link to reset your password';
-
-
-      
-      Mail::send('forget-password-mail', ['data' => $data],function($message) use ($data) {
-        
-         $message->to($data['email'])->subject($data['title']);
-
-    });
-
-
-
-      $datetime = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-      PasswordReset::updateOrCreate(
-        ['email' => $request->email],
-        ['email' => $request->email,
-        'token' => $token,
-        'created_at' => $datetime
-        ] 
-      );
-      
-      return response()->json(['success' => 'pls check your mail to reset your password'],200);
-
-    }
-    else
-    {
-        return response()->json(['success' => false, 'msg' => 'User not found'],404);
-    }
-  
-
-  }
-  catch(\Exception $e)
-  {
-    Log::error('Email sending error: ' . $e->getMessage());
-    
-   return response()->json(['success' => false,'msg'=>$e->getMessage()],500);
-  }
-
-
-
-}
-
-
-
-public function resetpasswordLoad(Request $request)   
-{
-    $token = $request->token;
-    $userData = DB::table('password_resets')->where('token',$token)->get();
-    
-    if(isset($request->token) && count($userData) > 0)
-    {
-    $usersData = DB::table('password_resets')->where('token',$token)->value('email');
-     
-      return view('resetPassword',compact('usersData'));
-    }
-    else
-    {
-    return view('404');
-    }
-}
-
-public function resetPassword(Request $request)
-{
-    $request->validate([
-   'password' => 'required|string|min:6|confirmed'
-    ]);
-   $email = $request->email;
-    $userUpdate = DB::table('users')->where('email',$email)->value('id');
-    $user = User::find($userUpdate);
-   $user->password = Hash::make($request->password);
-   $user->save();
-   PasswordReset::where('email',$email)->delete();
-   return "<h1> Your Password has been reset Successfully </h1>";
-    
-}
 public function addEmployee(Request $request)
 {
     try{
         $token = $request->user()->currentAccessToken();
     
-    if (!$token) {
-        return response()->json(['success' => false, 'message' => 'Token not found!'],404);
-    }
+   
     $companyCode = $token['tokenable']['company_code'];
     $moduleId = 3;
     $empModule = CompanyModuleAccess::where('company_code', $companyCode)
     ->where('module_id', $moduleId)
-    ->where('status', 'active')
     ->first();  
     
     if(!$empModule)
@@ -1353,9 +991,9 @@ public function addEmployee(Request $request)
         $lastInsertedRecord = $dynamicDB->table('employees')->orderBy('id','desc')->first();
 
         return response()->json(['success'=>true,'message' => 'Employee added successfully','empData'=> $lastInsertedRecord, 'data' => $employee], 201);
-    } else {
+    }else {
         return response()->json(['success'=>false,'message' => 'Maximum employee limit reached. Cannot add more.'],422);
-    }
+    } 
   }
    return response()->json(['success'=>false,'message' => 'Access Denied!'],422);
 
@@ -1480,8 +1118,6 @@ public function editEmployee(Request $request, $employeeId)
         if (!$employee) {
             return response()->json(['success'=>false,'message' => 'Employee not found'], 404);
         }
-
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
 
         DB::connection('dynamic')->table('employees')->where('id', $employeeId)->update([
             'name' => $request->input('name'),
@@ -1642,7 +1278,6 @@ public function newUser(Request $request)
         $password = $token['tokenable']['dbPass'];
         $dbName = $token['tokenable']['dbName'];
         $companyCode = $token['tokenable']['company_code'];
-        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
 
         Config::set('database.connections.dynamic', [
             'driver' => 'mysql',
@@ -1650,13 +1285,8 @@ public function newUser(Request $request)
             'database' => $dbName,
             'username' => $username,
             'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
+     
         ]);
-        $dynamicDB = DB::connection('dynamic');
         $empId = $request->emp_id;
         $empIdCheck = $dynamicDB->table('employees')->where('id',$empId)->first();
         if(!$empIdCheck)
@@ -1731,7 +1361,6 @@ public function editUser(Request $request,$id)
         $username = $_SESSION['username'];
         $password = $_SESSION['password'];
         $dbName   = $_SESSION['dbName'];
-        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
 
         Config::set('database.connections.dynamic', [
             'driver' => 'mysql',
@@ -1739,17 +1368,8 @@ public function editUser(Request $request,$id)
             'database' => $dbName,
             'username' => $username,
             'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
+      
         ]);
-
-
-
-        $dynamicDB = DB::connection('dynamic');
-
         $permission = $dynamicDB->table('permission')->find($id);
         if(!$permission)
         {
@@ -1800,23 +1420,6 @@ public function delUser(Request $request,$id)
         $username = $_SESSION['username'];
         $password = $_SESSION['password'];
         $dbName   = $_SESSION['dbName'];
-        $date = now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s');
-
-        Config::set('database.connections.dynamic', [
-            'driver' => 'mysql',
-            'host' => 'localhost',
-            'database' => $dbName,
-            'username' => $username,
-            'password' => $password,
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-
-        $dynamicDB = DB::connection('dynamic');
        $delUser =  $dynamicDB->table('permission')->find($id);
        if(!$delUser)
        {
@@ -2105,7 +1708,6 @@ public function empApproveByAdmin(Request $request)
                $branchId = $request->branch_id;
                $deptId = $request->dept_id;
                $status = $request->status;
-               $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
 
        $employee = CompanyUserAccess::find($emp_id);
        if($employee)
@@ -2205,7 +1807,6 @@ public function assignRole(Request $request)
      {
         return response()->json(['success'=>false,'message'=>'Role Name already present']);
      }
-     $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
      $validatedData = $request->validate([
         'name' => 'required', 
         'modules'     =>  'required',
@@ -2268,7 +1869,6 @@ public function addPermission(Request $request)
     }
     $roleId = $roleData->id;
     $roleName = $roleData->name;
-    $date = Carbon::now()->timezone('Asia/kolkata')->format('Y-m-d H:i:s');
     $permission = Permission::create([
      'name' => $roleName,
      'guard_name' => 'api',
@@ -2470,7 +2070,6 @@ public function editPermission(Request $request,$id)
         return response()->json(['success'=>false,'message'=>'invalid token'],401);
     }
     $code = $token->tokenable->company_code;
-    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
     $validatedData = $request->validate([
         'modules_name' => 'required|string' ,
         'modules_name.*' => 'integer|distinct',
@@ -2500,7 +2099,6 @@ public function userRole(Request $request)
         }
         
         $code = $token['tokenable']['company_code'];
-        $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
         $validatedData = $request->validate([
            'emp_id' => 'required',
            'role_id'   =>  'required',  
@@ -2700,7 +2298,6 @@ public function permissionMaster(Request $request)
         return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
     }
     $code = $token->takenable->company_code;
-    $date = Carbon::now()->timezone('Asia/Kolkata')->format('Y-m-d H:i:s');
     $validatedData = $request->validate([
         'role_name'   =>  'required',     
     ]);
@@ -2991,14 +2588,9 @@ public function permissionMaster(Request $request)
             $validatedData = $request->validate([
                 'from_date' => 'required|date',
                 'to_date' => 'required|date|after_or_equal:from_date',
-            ]);
-        
-            $code = $token['tokenable']['company_code'];
-            $fromDate = $validatedData['from_date'];
-            $toDate = $validatedData['to_date'];
-            
+            ]);            
             $currentDate = ProjectMaster::where('company_code', $code)
-                                        ->whereBetween('start_date', [$fromDate, $toDate])
+                                        ->whereBetween('start_date',2024-04-05)
                                         ->get();
         
             if ($currentDate->isEmpty()) {
@@ -3053,17 +2645,6 @@ public function permissionMaster(Request $request)
       return Excel::download(new ProjectMasterData($month,$year,$code),'project_master_data.xlsx');
     }
 
-
-    public function testProject(Request $request,$month,$year)
-    {   
-      $code = '65d_1708508552';
-      return Excel::download(new ProjectMasterData($month,$year,$code),'project_master_data.xlsx');
-    }
-
-
-
-
-
     public function excelProjectData(Request $request)
     {
         $token = $request->user()->currentAccessToken();
@@ -3072,19 +2653,12 @@ public function permissionMaster(Request $request)
         }
         $code = $token['tokenable']['company_code'];
             $validatedData = $request->validate([
-            'from_date' => 'required|date',
-            'to_date'   => 'required|date|after_or_equal:from_date',
+            'from_date' => 'required',
+            'to_date'   => 'required',
         ]);
-        $fromDate = $request->from_date;
-        $toDate = $request->to_date;
+        $projects = ProjectMaster::where('start_date','2024-05-04') ->get();
     
-        $projects = ProjectMaster::where('company_code', $code)
-            ->whereBetween('start_date', [$fromDate, $toDate])
-            ->get();
-    
-        if ($projects->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Data Not Available!'], 404);
-        }
+      
             return Excel::download(new ProjectFilterData($fromDate, $toDate, $code), 'project_date_filter_data.xlsx');
     }
     
@@ -3098,20 +2672,12 @@ public function permissionMaster(Request $request)
     {
         $code = '65d_1708508552';
             $validatedData = $request->validate([
-            'from_date' => 'required|date',
-            'to_date'   => 'required|date|after_or_equal:from_date',
+            'from_date' => 'required',
+            'to_date'   => 'required',
         ]);
-        $fromDate = $request->from_date;
-        $toDate = $request->to_date;
+        $projects = ProjectMaster::whereBetween('start_date',2024-05-04)->get();
+        return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
     
-        $projects = ProjectMaster::where('company_code', $code)
-            ->whereBetween('start_date', [$fromDate, $toDate])
-            ->get();
-    
-        if ($projects->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Data Not Available!'], 404);
-        }
-            return Excel::download(new ProjectFilterData($fromDate, $toDate, $code), 'project_date_filter_data.xlsx');
     }
 
 
@@ -3125,19 +2691,13 @@ public function permissionMaster(Request $request)
         }
     
         $validatedData = $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
+            'file' => 'required',
         ]);
-       $code = $token['tokenable']['company_code'];
         $file = $request->file('file');
     
-        try {
-            //  Excel::import(new ProjectDataImport(), $file);
             $import = new ProjectDataImport();
             Excel::import($import, $file);
-            return response()->json(['success' => true, 'message' => 'File imported successfully']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'An error occurred during import', 'error' => $e->getMessage()], 500);
-        }
+            return response()->json(['success' => true, 'message' => 'File imported successfully']); 
     }
     
 
@@ -3149,12 +2709,8 @@ public function permissionMaster(Request $request)
         if (!$token) {
             return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
         }
-        $code = $token['tokenable']['company_code'];
-        $trashedData = ProjectMaster::where('company_code',$code)->onlyTrashed()->get();
-        if ($trashedData->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'No Record In Archive'], 404);
-        }
-        return response()->json(['success' => true, 'date' =>$trashedData ], 200);
+
+        return response()->json(['success' => true ], 200);
 
     }
 
@@ -3165,16 +2721,7 @@ public function permissionMaster(Request $request)
         if (!$token) {
             return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
         }
-        $code = $token['tokenable']['company_code'];
-        // $trashedData = ProjectMaster::where('company_code', $code)->withTrashed()->find($id);
-        $trashedData = ProjectMaster::where('company_code', $code)
-        ->withTrashed()
-        ->whereNotNull('deleted_at')
-        ->find($id);
-        if (!$trashedData) {
-            return response()->json(['success' => false, 'message' => 'Record Not Found'], 404);
-        }
-        $trashedData->restore();
+      
         return response()->json(['success' => true, 'message' => 'Record Restored Successfully'], 200);
     }
 
@@ -3186,15 +2733,7 @@ public function permissionMaster(Request $request)
     if (!$token) {
         return response()->json(['success' => false, 'message' => 'Authentication token not found. Please log in.'], 401);
     }
-    $code = $token['tokenable']['company_code'];
-    $trashedData = ProjectMaster::where('company_code', $code)
-                                 ->withTrashed()
-                                 ->whereNotNull('deleted_at')
-                                 ->find($id);
-    if (!$trashedData) {
-        return response()->json(['success' => false, 'message' => 'Record Not Found or Not Trashed'], 404);
-    }    
-    $trashedData->forceDelete();
+ 
     return response()->json(['success' => true, 'message' => 'Record Permanently Deleted Successfully'], 200);
 
     }

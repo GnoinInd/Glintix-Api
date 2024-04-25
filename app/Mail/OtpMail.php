@@ -5,9 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
+
 
 class OtpMail extends Mailable
 {
@@ -18,11 +16,7 @@ class OtpMail extends Mailable
      *
      * @return void
      */
-    public $otp;
-    public function __construct($otp)
-    {
-        $this->otp = $otp;
-    }
+  
 
     /**
      * Get the message envelope.
@@ -32,19 +26,18 @@ class OtpMail extends Mailable
     public function envelope()
     {
         return new Envelope(
-            subject: 'Otp Mail',
+           
         );
     }
 
     /**
      * Get the message content definition.
      *
-     * @return \Illuminate\Mail\Mailables\Content
      */
     public function content()
     {
         return new Content(
-            view: 'Mails.otp',
+           
         );
     }
 
