@@ -68,7 +68,7 @@ public function register(Request $request)
     $data = [
         'email' => $request->email,
         'password' => $request->password
-    ];
+    ]; 
     if (auth()->attempt($data)) {
         $user = auth()->user(); 
         $token = $user->createToken('token_key')->accessToken;
